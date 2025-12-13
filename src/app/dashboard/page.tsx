@@ -13,6 +13,7 @@ import {
     Calendar,
     Award
 } from 'lucide-react'
+import { getDashboardStats } from '@/lib/analyticsService'
 import { getUserTasks } from '@/lib/taskService'
 import { getUserKRAs } from '@/lib/kraService'
 import { getPriorityColor, getStatusColor, formatDate, calculateProgress } from '@/lib/utils'
