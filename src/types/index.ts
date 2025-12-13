@@ -52,6 +52,7 @@ export interface KRA {
     type: KRAType
     priority: Priority
     assignedTo: string[] // User IDs
+    teamIds?: string[] // Team IDs for team-wide assignments
     createdBy: string
     status: KRAStatus
     startDate: Date
@@ -146,6 +147,38 @@ export interface Notification {
     link?: string
     read: boolean
     createdAt: Date
+}
+
+// Notification Rule Interface (Admin Management)
+export interface NotificationRule {
+    id: string
+    name: string
+    description: string
+    type: NotificationType
+    conditions: {
+        trigger: string
+        threshold?: number
+        filters?: any
+    }
+    template: {
+        title: string
+        message: string
+        priority: Priority
+    }
+    recipients: {
+        roles: string[]
+        teams?: string[]
+        users?: string[]
+    }
+    schedule: {
+        enabled: boolean
+        frequency?: 'immediate' | 'daily' | 'weekly'
+        time?: string
+    }
+    isActive: boolean
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
 }
 
 // Dashboard Stats Interface

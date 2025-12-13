@@ -1,5 +1,5 @@
 // src/lib/userService.ts
-import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { User } from '@/types';
 import { timestampToDate, handleError } from './utils';
@@ -21,6 +21,30 @@ export async function getAllUsers(): Promise<User[]> {
         });
     } catch (error) {
         handleError(error, 'Failed to fetch users');
+        throw error;
+    }
+}
+
+/**
+ * Fetch a single user by ID.
+ */
+export async function getUserById(uid: string): Promise<User | null> {
+    try {
+        const docRef = doc(db, 'users', uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            } as User;
+        }
+        return null;
+    } catch (error) {
+        handleError(error, 'Failed to fetch user');
         throw error;
     }
 }

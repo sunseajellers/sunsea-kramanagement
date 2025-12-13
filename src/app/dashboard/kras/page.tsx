@@ -10,6 +10,7 @@ import { NoKRAsEmptyState } from '@/components/EmptyState'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEffect } from 'react'
 import { fetchKRAs } from '@/lib/kraService'
+import { getAllTeams } from '@/lib/teamService'
 
 export default function KRAPage() {
     const { user } = useAuth()
@@ -18,23 +19,28 @@ export default function KRAPage() {
     const [refreshKey, setRefreshKey] = useState(0)
     const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list')
     const [kras, setKras] = useState<any[]>([])
+    const [teams, setTeams] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    // Load KRAs for calendar view
+    // Load KRAs and teams
     useEffect(() => {
-        const loadKRAs = async () => {
+        const loadData = async () => {
             if (!user) return
             setLoading(true)
             try {
-                const data = await fetchKRAs(user.uid)
-                setKras(data)
+                const [kraData, teamData] = await Promise.all([
+                    fetchKRAs(user.uid),
+                    getAllTeams()
+                ])
+                setKras(kraData)
+                setTeams(teamData)
             } catch (error) {
-                console.error('Failed to load KRAs', error)
+                console.error('Failed to load KRAs or teams', error)
             } finally {
                 setLoading(false)
             }
         }
-        loadKRAs()
+        loadData()
     }, [user, refreshKey])
 
     const handleCreate = () => {
@@ -115,7 +121,7 @@ export default function KRAPage() {
                     {activeTab === 'list' ? (
                         <KRAList key={refreshKey} onEdit={handleEdit} />
                     ) : (
-                        <KRACalendar kras={kras} />
+                        <KRACalendar kras={kras} teams={teams} />
                     )}
                 </>
             )}

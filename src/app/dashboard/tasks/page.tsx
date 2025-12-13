@@ -199,13 +199,13 @@ export default function TasksPage() {
                             <div className="flex-1 min-w-[250px]">
                                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Search Tasks</label>
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                     <input
                                         type="text"
                                         placeholder="Search by title or description..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="input-field w-full text-sm pl-10"
+                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 text-sm"
                                     />
                                     {searchQuery && (
                                         <button
@@ -223,7 +223,7 @@ export default function TasksPage() {
                                 <select
                                     value={filterStatus}
                                     onChange={(e) => setFilterStatus(e.target.value)}
-                                    className="input-field w-full text-sm"
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 text-sm"
                                 >
                                     <option value="all">All Statuses</option>
                                     <option value="assigned">Assigned</option>
@@ -238,7 +238,7 @@ export default function TasksPage() {
                                 <select
                                     value={filterPriority}
                                     onChange={(e) => setFilterPriority(e.target.value)}
-                                    className="input-field w-full text-sm"
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 text-sm"
                                 >
                                     <option value="all">All Priorities</option>
                                     <option value="low">Low</option>

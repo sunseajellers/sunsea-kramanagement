@@ -6,6 +6,7 @@ import { KRA, KRAType, Priority, KRAStatus } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2, X, Calendar, Target, FileText, Type } from 'lucide-react'
 import { getAllUsers } from '@/lib/userService'
+import { getAllTeams } from '@/lib/teamService'
 
 interface Props {
     initialData?: KRA | null
@@ -18,6 +19,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
     const isEdit = !!initialData
     const [loading, setLoading] = useState(false)
     const [users, setUsers] = useState<any[]>([])
+    const [teams, setTeams] = useState<any[]>([])
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -26,14 +28,18 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
         priority: 'medium' as Priority,
         status: 'not_started' as KRAStatus,
         assignedTo: [] as string[],
+        teamIds: [] as string[],
         startDate: '',
         endDate: '',
     })
 
     useEffect(() => {
-        // Load users for assignment (admin/manager only)
+        // Load users and teams for assignment (admin/manager only)
         if (userData?.role === 'admin' || userData?.role === 'manager') {
-            getAllUsers().then(setUsers).catch(console.error)
+            Promise.all([
+                getAllUsers().then(setUsers).catch(console.error),
+                getAllTeams().then(setTeams).catch(console.error)
+            ])
         }
     }, [userData])
 
@@ -56,6 +62,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                 priority: initialData.priority,
                 status: initialData.status,
                 assignedTo: initialData.assignedTo,
+                teamIds: initialData.teamIds || [],
                 startDate: formatDate(initialData.startDate.toString()),
                 endDate: formatDate(initialData.endDate.toString()),
             })
@@ -75,6 +82,15 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
         }))
     }
 
+    const handleTeamAssignmentChange = (teamId: string) => {
+        setForm(prev => ({
+            ...prev,
+            teamIds: prev.teamIds.includes(teamId)
+                ? prev.teamIds.filter(id => id !== teamId)
+                : [...prev.teamIds, teamId]
+        }))
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!user) return
@@ -87,6 +103,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                 startDate: new Date(form.startDate),
                 endDate: new Date(form.endDate),
                 assignedTo: form.assignedTo.length > 0 ? form.assignedTo : [user.uid],
+                teamIds: form.teamIds,
                 createdBy: user.uid,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -110,8 +127,8 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-8 overflow-hidden animate-scale-in">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-scale-in">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-6 flex justify-between items-center text-white">
                     <h2 className="text-xl font-bold">{isEdit ? '✏️ Edit Goal' : '✨ Create New Goal'}</h2>
@@ -124,17 +141,18 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+                    <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     {/* Title */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Goal Title</label>
                         <div className="relative">
-                            <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                             <input
                                 name="title"
                                 required
                                 placeholder="e.g., Q4 Sales Targets"
-                                className="input-field pl-10 w-full"
+                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 value={form.title}
                                 onChange={handleChange}
                             />
@@ -145,12 +163,12 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
                         <div className="relative">
-                            <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                            <FileText className="absolute left-4 top-4 w-4 h-4 text-gray-400 z-10" />
                             <textarea
                                 name="description"
                                 required
                                 placeholder="Describe the objectives and scope..."
-                                className="input-field pl-10 w-full h-24 resize-none py-2"
+                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 h-24 resize-none"
                                 value={form.description}
                                 onChange={handleChange}
                             />
@@ -161,12 +179,12 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Goal</label>
                         <div className="relative">
-                            <Target className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                             <input
                                 name="target"
                                 required
                                 placeholder="e.g., Increase revenue by 20%"
-                                className="input-field pl-10 w-full"
+                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 value={form.target}
                                 onChange={handleChange}
                             />
@@ -183,7 +201,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                                 name="type"
                                 value={form.type}
                                 onChange={handleChange}
-                                className="input-field w-full"
+                                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 required
                             >
                                 <option value="daily">📅 Daily</option>
@@ -199,7 +217,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                                 name="priority"
                                 value={form.priority}
                                 onChange={handleChange}
-                                className="input-field w-full"
+                                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 required
                             >
                                 <option value="low">🟢 Low</option>
@@ -217,7 +235,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                             name="status"
                             value={form.status}
                             onChange={handleChange}
-                            className="input-field w-full"
+                            className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                             required
                         >
                             <option value="not_started">⚪ Not Started</option>
@@ -231,12 +249,12 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Start Date</label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                 <input
                                     type="date"
                                     name="startDate"
                                     required
-                                    className="input-field pl-10 w-full"
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                     value={form.startDate}
                                     onChange={handleChange}
                                 />
@@ -245,12 +263,12 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1.5">End Date</label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                 <input
                                     type="date"
                                     name="endDate"
                                     required
-                                    className="input-field pl-10 w-full"
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                     value={form.endDate}
                                     onChange={handleChange}
                                 />
@@ -280,6 +298,34 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                         </div>
                     )}
 
+                    {/* Assign to Teams (Admin/Manager only) */}
+                    {(userData?.role === 'admin' || userData?.role === 'manager') && teams.length > 0 && (
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Assign to Teams
+                            </label>
+                            <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                                {teams.map(team => (
+                                    <label key={team.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.teamIds.includes(team.id)}
+                                            onChange={() => handleTeamAssignmentChange(team.id)}
+                                            className="w-4 h-4 text-secondary-600 rounded focus:ring-secondary-500"
+                                        />
+                                        <div className="flex-1">
+                                            <span className="text-sm font-medium text-gray-700">{team.name}</span>
+                                            <span className="text-xs text-gray-500 ml-2">({team.memberIds.length} members)</span>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Team assignments will automatically include all current team members
+                            </p>
+                        </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
                         <button
@@ -305,6 +351,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                         </button>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
     )

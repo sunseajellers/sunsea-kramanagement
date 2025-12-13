@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Settings, BarChart3, Award, FileText, TrendingUp } from 'lucide-react';
+import { Users, Settings, BarChart3, Award, FileText, TrendingUp, Bell } from 'lucide-react';
 
 export default function AdminHome() {
     const adminCards = [
@@ -33,6 +33,13 @@ export default function AdminHome() {
             title: 'Analytics',
             description: 'View system-wide analytics',
             color: 'from-orange-500 to-orange-600'
+        },
+        {
+            href: '/dashboard/admin/notifications',
+            icon: Bell,
+            title: 'Notifications',
+            description: 'Manage notification rules and templates',
+            color: 'from-red-500 to-red-600'
         },
         {
             href: '/dashboard/admin/reports',

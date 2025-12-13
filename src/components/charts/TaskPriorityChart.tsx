@@ -7,7 +7,7 @@ interface TaskPriorityChartProps {
         low: number
         medium: number
         high: number
-        urgent: number
+        critical: number
     }
 }
 
@@ -16,7 +16,7 @@ export default function TaskPriorityChart({ data }: TaskPriorityChartProps) {
         { name: 'Low', value: data.low, fill: '#3B82F6' },
         { name: 'Medium', value: data.medium, fill: '#F59E0B' },
         { name: 'High', value: data.high, fill: '#F97316' },
-        { name: 'Urgent', value: data.urgent, fill: '#EF4444' },
+        { name: 'Critical', value: data.critical, fill: '#EF4444' },
     ]
 
     return (

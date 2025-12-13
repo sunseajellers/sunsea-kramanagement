@@ -52,10 +52,12 @@ service cloud.firestore {
     
     // --- KRAs Collection ---
     match /kras/{kraId} {
-      // Read: Assigned users, Owner, Managers, or Admins
+      // Read: Assigned users, Owner, Team members (if teamIds exist), Managers, or Admins
       allow read: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo 
         || resource.data.ownerId == request.auth.uid
+        || (resource.data.teamIds != null && 
+            resource.data.teamIds.hasAny([get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId]))
         || isManagerOrAdmin()
       );
       
@@ -63,10 +65,11 @@ service cloud.firestore {
       allow create: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid;
       
-      // Update: Owner, Admin, or Manager can update
-      // Assigned users might update status (if you allow it), but let's restrict to owner/admin/manager for structure
+      // Update: Owner, Team members (for team KRAs), Admin, or Manager can update
       allow update: if isAuthenticated() && (
         resource.data.ownerId == request.auth.uid 
+        || (resource.data.teamIds != null && 
+            resource.data.teamIds.hasAny([get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId]))
         || isManagerOrAdmin()
       );
       
@@ -124,20 +127,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
-    // --- Notifications Collection ---
-    match /notifications/{notificationId} {
-      // Read: Only the owner of the notification
-      allow read: if isOwner(resource.data.userId);
+    // --- Notification Rules Collection (Admin Only) ---
+    match /notificationRules/{ruleId} {
+      // Read: Admins only
+      allow read: if isAdmin();
       
-      // Create: System/Backend usually creates these. 
-      // If client creates them (e.g. on task assignment), allow authenticated.
-      allow create: if isAuthenticated();
+      // Create: Admins only
+      allow create: if isAdmin();
       
-      // Update: Owner can mark as read
-      allow update: if isOwner(resource.data.userId);
+      // Update: Admins only
+      allow update: if isAdmin();
       
-      // Delete: Owner can delete
-      allow delete: if isOwner(resource.data.userId);
+      // Delete: Admins only
+      allow delete: if isAdmin();
     }
     
     // --- Reports Collection ---
@@ -148,6 +150,73 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated();
       allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // --- Weekly Reports Collection ---
+    match /weeklyReports/{reportId} {
+      // Read: Report owner, Managers, Admins
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid 
+        || isManagerOrAdmin()
+      );
+      
+      // Create: System/Admin (for automated report generation)
+      allow create: if isAuthenticated();
+      
+      // Update: Admins only
+      allow update: if isAdmin();
+      
+      // Delete: Admins only
+      allow delete: if isAdmin();
+    }
+    
+    // --- Team Weekly Reports Collection ---
+    match /teamWeeklyReports/{reportId} {
+      // Read: Team members, Managers, Admins
+      allow read: if isAuthenticated() && (
+        isManagerOrAdmin() ||
+        (exists(/databases/$(database)/documents/teams/$(resource.data.teamId)) &&
+         get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.memberIds.hasAny([request.auth.uid]))
+      );
+      
+      // Create: System/Admin
+      allow create: if isAuthenticated();
+      
+      // Update: Admins only
+      allow update: if isAdmin();
+      
+      // Delete: Admins only
+      allow delete: if isAdmin();
+    }
+    
+    // --- Scoring Configuration Collection (Admin Only) ---
+    match /scoringConfig/{configId} {
+      // Read: All authenticated users (to get scoring rules)
+      allow read: if isAuthenticated();
+      
+      // Create: Admins only
+      allow create: if isAdmin();
+      
+      // Update: Admins only
+      allow update: if isAdmin();
+      
+      // Delete: Admins only
+      allow delete: if isAdmin();
+    }
+    
+    // --- Analytics Data Collection (Admin Only) ---
+    match /analytics/{analyticsId} {
+      // Read: Admins only
+      allow read: if isAdmin();
+      
+      // Create: System/Admin
+      allow create: if isAuthenticated();
+      
+      // Update: Admins only
+      allow update: if isAdmin();
+      
+      // Delete: Admins only
       allow delete: if isAdmin();
     }
     

@@ -2,6 +2,8 @@
 import { DashboardStats } from '@/types';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';
+import { getAllUsers } from './userService';
+import { getAllTeams } from './teamService';
 import { handleError } from './utils';
 
 /**
@@ -130,4 +132,322 @@ export async function exportAnalyticsData(uid: string) {
     // Placeholder for export functionality
     console.log('Exporting analytics for', uid);
     return true;
+}
+
+// ===== ADMIN-ONLY ANALYTICS FUNCTIONS =====
+
+/**
+ * Get comprehensive admin dashboard analytics
+ */
+export async function getAdminDashboardAnalytics() {
+    try {
+        const [users, teams] = await Promise.all([
+            getAllUsers(),
+            getAllTeams()
+        ]);
+
+        // Get all tasks and KRAs for comprehensive analysis
+        const allTasksPromises = users.map(user => getUserTasks(user.id));
+        const allKRAsPromises = users.map(user => getUserKRAs(user.id));
+
+        const [allTasksArrays, allKRAsArrays] = await Promise.all([
+            Promise.all(allTasksPromises),
+            Promise.all(allKRAsPromises)
+        ]);
+
+        const allTasks = allTasksArrays.flat();
+        const allKRAs = allKRAsArrays.flat();
+
+        // Remove duplicates (users might have overlapping team KRAs)
+        const uniqueKRAs = allKRAs.filter((kra, index, self) =>
+            index === self.findIndex(k => k.id === kra.id)
+        );
+
+        // Calculate comprehensive metrics
+        const totalUsers = users.length;
+        const totalTeams = teams.length;
+        const totalTasks = allTasks.length;
+        const totalKRAs = uniqueKRAs.length;
+
+        const completedTasks = allTasks.filter(t => t.status === 'completed').length;
+        const inProgressTasks = allTasks.filter(t => t.status === 'in_progress').length;
+        const overdueTasks = allTasks.filter(t => {
+            const now = new Date();
+            return t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed';
+        }).length;
+
+        const activeKRAs = uniqueKRAs.filter(k => k.status === 'in_progress').length;
+        const completedKRAs = uniqueKRAs.filter(k => k.status === 'completed').length;
+
+        // Team performance metrics
+        const teamPerformance = teams.map(team => {
+            const teamMembers = users.filter(u => u.teamId === team.id);
+            const teamTasks = allTasks.filter(t => teamMembers.some(m => t.assignedTo.includes(m.id)));
+            const teamKRAs = uniqueKRAs.filter(k => teamMembers.some(m => k.assignedTo.includes(m.id) || k.teamIds?.includes(team.id)));
+
+            const completedTeamTasks = teamTasks.filter(t => t.status === 'completed').length;
+            const teamCompletionRate = teamTasks.length ? Math.round((completedTeamTasks / teamTasks.length) * 100) : 0;
+
+            return {
+                teamId: team.id,
+                teamName: team.name,
+                memberCount: teamMembers.length,
+                totalTasks: teamTasks.length,
+                completedTasks: completedTeamTasks,
+                completionRate: teamCompletionRate,
+                activeKRAs: teamKRAs.filter(k => k.status === 'in_progress').length,
+                totalKRAs: teamKRAs.length
+            };
+        });
+
+        // User performance metrics
+        const userPerformance = users.map(user => {
+            const userTasks = allTasks.filter(t => t.assignedTo.includes(user.id));
+            const userKRAs = uniqueKRAs.filter(k => k.assignedTo.includes(user.id) || k.teamIds?.includes(user.teamId || ''));
+
+            const completedUserTasks = userTasks.filter(t => t.status === 'completed').length;
+            const userCompletionRate = userTasks.length ? Math.round((completedUserTasks / userTasks.length) * 100) : 0;
+
+            return {
+                userId: user.id,
+                userName: user.fullName,
+                role: user.role,
+                teamName: teams.find(t => t.id === user.teamId)?.name || 'No Team',
+                totalTasks: userTasks.length,
+                completedTasks: completedUserTasks,
+                completionRate: userCompletionRate,
+                activeKRAs: userKRAs.filter(k => k.status === 'in_progress').length,
+                totalKRAs: userKRAs.length
+            };
+        });
+
+        // Time-based analytics (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const recentTasks = allTasks.filter(t => new Date(t.createdAt) >= thirtyDaysAgo);
+        const recentKRAs = uniqueKRAs.filter(k => new Date(k.createdAt) >= thirtyDaysAgo);
+
+        // Priority distribution
+        const priorityDistribution = {
+            low: allTasks.filter(t => t.priority === 'low').length,
+            medium: allTasks.filter(t => t.priority === 'medium').length,
+            high: allTasks.filter(t => t.priority === 'high').length,
+            critical: allTasks.filter(t => t.priority === 'critical').length
+        };
+
+        // KRA type distribution
+        const kraTypeDistribution = {
+            daily: uniqueKRAs.filter(k => k.type === 'daily').length,
+            weekly: uniqueKRAs.filter(k => k.type === 'weekly').length,
+            monthly: uniqueKRAs.filter(k => k.type === 'monthly').length
+        };
+
+        return {
+            overview: {
+                totalUsers,
+                totalTeams,
+                totalTasks,
+                totalKRAs,
+                completedTasks,
+                inProgressTasks,
+                overdueTasks,
+                activeKRAs,
+                completedKRAs,
+                overallCompletionRate: totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0
+            },
+            teamPerformance,
+            userPerformance,
+            recentActivity: {
+                tasksCreated: recentTasks.length,
+                krasCreated: recentKRAs.length,
+                tasksCompleted: recentTasks.filter(t => t.status === 'completed').length
+            },
+            distributions: {
+                priority: priorityDistribution,
+                kraTypes: kraTypeDistribution
+            }
+        };
+    } catch (error) {
+        handleError(error, 'Failed to fetch admin analytics');
+        throw error;
+    }
+}
+
+/**
+ * Get detailed team analytics for admin reports
+ */
+export async function getTeamDetailedAnalytics(teamId: string) {
+    try {
+        const [users, team] = await Promise.all([
+            getAllUsers(),
+            getAllTeams().then(teams => teams.find(t => t.id === teamId))
+        ]);
+
+        if (!team) throw new Error('Team not found');
+
+        const teamMembers = users.filter(u => u.teamId === teamId);
+
+        // Get all tasks and KRAs for team members
+        const memberTasksPromises = teamMembers.map(user => getUserTasks(user.id));
+        const memberKRAsPromises = teamMembers.map(user => getUserKRAs(user.id));
+
+        const [memberTasksArrays, memberKRAsArrays] = await Promise.all([
+            Promise.all(memberTasksPromises),
+            Promise.all(memberKRAsPromises)
+        ]);
+
+        const allMemberTasks = memberTasksArrays.flat();
+        const allMemberKRAs = memberKRAsArrays.flat();
+
+        // Remove duplicates
+        const uniqueMemberKRAs = allMemberKRAs.filter((kra, index, self) =>
+            index === self.findIndex(k => k.id === kra.id)
+        );
+
+        // Calculate team metrics
+        const totalTasks = allMemberTasks.length;
+        const completedTasks = allMemberTasks.filter(t => t.status === 'completed').length;
+        const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        // Member performance breakdown
+        const memberPerformance = teamMembers.map(member => {
+            const memberTasks = allMemberTasks.filter(t => t.assignedTo.includes(member.id));
+            const memberKRAs = uniqueMemberKRAs.filter(k =>
+                k.assignedTo.includes(member.id) || k.teamIds?.includes(teamId)
+            );
+
+            return {
+                userId: member.id,
+                userName: member.fullName,
+                role: member.role,
+                tasksAssigned: memberTasks.length,
+                tasksCompleted: memberTasks.filter(t => t.status === 'completed').length,
+                krasAssigned: memberKRAs.length,
+                krasActive: memberKRAs.filter(k => k.status === 'in_progress').length,
+                completionRate: memberTasks.length ? Math.round((memberTasks.filter(t => t.status === 'completed').length / memberTasks.length) * 100) : 0
+            };
+        });
+
+        // Weekly progress tracking (last 4 weeks)
+        const weeklyProgress = [];
+        for (let i = 3; i >= 0; i--) {
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - (i * 7) - 6);
+            const weekEnd = new Date();
+            weekEnd.setDate(weekEnd.getDate() - (i * 7));
+
+            const weekTasks = allMemberTasks.filter(t => {
+                const created = new Date(t.createdAt);
+                return created >= weekStart && created <= weekEnd;
+            });
+
+            const weekCompletedTasks = weekTasks.filter(t => t.status === 'completed');
+
+            weeklyProgress.push({
+                week: `Week ${4 - i}`,
+                startDate: weekStart.toISOString().split('T')[0],
+                endDate: weekEnd.toISOString().split('T')[0],
+                tasksCreated: weekTasks.length,
+                tasksCompleted: weekCompletedTasks.length,
+                completionRate: weekTasks.length ? Math.round((weekCompletedTasks.length / weekTasks.length) * 100) : 0
+            });
+        }
+
+        return {
+            teamInfo: {
+                id: team.id,
+                name: team.name,
+                description: team.description,
+                managerId: team.managerId,
+                managerName: users.find(u => u.id === team.managerId)?.fullName || 'Unknown',
+                memberCount: teamMembers.length
+            },
+            performance: {
+                totalTasks,
+                completedTasks,
+                completionRate,
+                activeKRAs: uniqueMemberKRAs.filter(k => k.status === 'in_progress').length,
+                totalKRAs: uniqueMemberKRAs.length
+            },
+            memberPerformance,
+            weeklyProgress,
+            recentActivity: {
+                overdueTasks: allMemberTasks.filter(t => {
+                    const now = new Date();
+                    return t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed';
+                }).length,
+                blockedTasks: allMemberTasks.filter(t => t.status === 'blocked').length,
+                highPriorityTasks: allMemberTasks.filter(t => t.priority === 'high' || t.priority === 'critical').length
+            }
+        };
+    } catch (error) {
+        handleError(error, 'Failed to fetch team detailed analytics');
+        throw error;
+    }
+}
+
+/**
+ * Generate comprehensive reports for export
+ */
+export async function generateAdminReport(reportType: 'overview' | 'teams' | 'users' | 'performance', dateRange?: { start: Date, end: Date }) {
+    try {
+        const analytics = await getAdminDashboardAnalytics();
+
+        let reportData;
+
+        switch (reportType) {
+            case 'overview':
+                reportData = {
+                    generatedAt: new Date().toISOString(),
+                    dateRange: dateRange || { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), end: new Date() },
+                    summary: analytics.overview,
+                    distributions: analytics.distributions,
+                    recentActivity: analytics.recentActivity
+                };
+                break;
+
+            case 'teams':
+                reportData = {
+                    generatedAt: new Date().toISOString(),
+                    teams: analytics.teamPerformance,
+                    summary: {
+                        totalTeams: analytics.teamPerformance.length,
+                        avgCompletionRate: Math.round(analytics.teamPerformance.reduce((sum, team) => sum + team.completionRate, 0) / analytics.teamPerformance.length),
+                        topPerformingTeam: analytics.teamPerformance.sort((a, b) => b.completionRate - a.completionRate)[0]
+                    }
+                };
+                break;
+
+            case 'users':
+                reportData = {
+                    generatedAt: new Date().toISOString(),
+                    users: analytics.userPerformance,
+                    summary: {
+                        totalUsers: analytics.userPerformance.length,
+                        avgCompletionRate: Math.round(analytics.userPerformance.reduce((sum, user) => sum + user.completionRate, 0) / analytics.userPerformance.length),
+                        topPerformers: analytics.userPerformance.sort((a, b) => b.completionRate - a.completionRate).slice(0, 5)
+                    }
+                };
+                break;
+
+            case 'performance':
+                reportData = {
+                    generatedAt: new Date().toISOString(),
+                    overallMetrics: analytics.overview,
+                    trends: analytics.recentActivity,
+                    insights: {
+                        completionTrend: analytics.overview.overallCompletionRate >= 75 ? 'Excellent' : analytics.overview.overallCompletionRate >= 50 ? 'Good' : 'Needs Improvement',
+                        overdueRatio: Math.round((analytics.overview.overdueTasks / analytics.overview.totalTasks) * 100),
+                        activeEngagement: Math.round((analytics.overview.inProgressTasks / analytics.overview.totalTasks) * 100)
+                    }
+                };
+                break;
+        }
+
+        return reportData;
+    } catch (error) {
+        handleError(error, 'Failed to generate admin report');
+        throw error;
+    }
 }

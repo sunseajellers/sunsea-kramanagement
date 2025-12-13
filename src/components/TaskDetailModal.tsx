@@ -285,7 +285,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                     onChange={(e) => setNewChecklistItem(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddChecklistItem()}
                                     placeholder="Add a checklist item..."
-                                    className="input-field flex-1"
+                                    className="flex-1 py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 />
                                 <button
                                     onClick={handleAddChecklistItem}
@@ -335,7 +335,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                             value={reassignEmail}
                             onChange={(e) => setReassignEmail(e.target.value)}
                             placeholder="user@example.com"
-                            className="input-field w-full mb-4"
+                            className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 mb-4"
                         />
                         <div className="flex justify-end space-x-3">
                             <button

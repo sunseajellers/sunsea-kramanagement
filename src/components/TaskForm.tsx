@@ -120,9 +120,9 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-scale-in">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-6 flex justify-between items-center text-white sticky top-0 z-10">
+                <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-6 flex justify-between items-center text-white">
                     <h2 className="text-xl font-bold">{isEdit ? 'Edit Task' : 'Create New Task'}</h2>
                     <button
                         onClick={onClose}
@@ -133,17 +133,18 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+                    <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     {/* Title */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Task Title</label>
                         <div className="relative">
-                            <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                             <input
                                 name="title"
                                 required
                                 placeholder="e.g., Complete Q4 sales report"
-                                className="input-field pl-10 w-full"
+                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 value={form.title}
                                 onChange={handleChange}
                             />
@@ -154,12 +155,12 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
                         <div className="relative">
-                            <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                            <FileText className="absolute left-4 top-4 w-4 h-4 text-gray-400 z-10" />
                             <textarea
                                 name="description"
                                 required
                                 placeholder="Describe the task details..."
-                                className="input-field pl-10 w-full h-24 resize-none py-2"
+                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 h-24 resize-none"
                                 value={form.description}
                                 onChange={handleChange}
                             />
@@ -171,10 +172,10 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
                             <div className="relative">
-                                <Flag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                 <select
                                     name="priority"
-                                    className="input-field pl-10 w-full appearance-none"
+                                    className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
                                     value={form.priority}
                                     onChange={handleChange}
                                 >
@@ -195,7 +196,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
                             <select
                                 name="status"
-                                className="input-field w-full appearance-none"
+                                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
                                 value={form.status}
                                 onChange={handleChange}
                             >
@@ -213,10 +214,10 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             Link to KRA (Optional)
                         </label>
                         <div className="relative">
-                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                             <select
                                 name="kraId"
-                                className="input-field pl-10 w-full appearance-none"
+                                className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
                                 value={form.kraId}
                                 onChange={handleChange}
                             >
@@ -239,12 +240,12 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Due Date</label>
                         <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                             <input
                                 type="date"
                                 name="dueDate"
                                 required
-                                className="input-field pl-10 w-full"
+                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
                                 value={form.dueDate}
                                 onChange={handleChange}
                             />
@@ -276,6 +277,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                         </button>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
     )

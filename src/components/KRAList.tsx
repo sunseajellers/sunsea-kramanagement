@@ -5,28 +5,52 @@ import { useAuth } from '@/contexts/AuthContext'
 import { fetchKRAs, deleteKRA } from '@/lib/kraService'
 import { KRA, KRAType } from '@/types'
 import { Loader2, Trash2, Edit, Calendar, Target, Filter } from 'lucide-react'
+import { getAllTeams } from '@/lib/teamService'
 
 export default function KRAList({ onEdit }: { onEdit: (kra: KRA) => void }) {
     const { user } = useAuth()
     const [kras, setKras] = useState<KRA[]>([])
     const [loading, setLoading] = useState(true)
     const [filterType, setFilterType] = useState<KRAType | 'all'>('all')
+    const [teams, setTeams] = useState<any[]>([])
+
+    const filteredKras = filterType === 'all' ? kras : kras.filter(kra => kra.type === filterType)
 
     const loadKras = async () => {
         if (!user) return
         setLoading(true)
         try {
-            const data = await fetchKRAs(user.uid)
-            setKras(data)
+            const [kraData, teamData] = await Promise.all([
+                fetchKRAs(user.uid),
+                getAllTeams()
+            ])
+            setKras(kraData)
+            setTeams(teamData)
         } catch (error) {
-            console.error("Failed to load KRAs", error)
+            console.error("Failed to load KRAs or teams", error)
         } finally {
             setLoading(false)
         }
     }
 
     useEffect(() => {
-        loadKras()
+        const loadData = async () => {
+            if (!user) return
+            setLoading(true)
+            try {
+                const [kraData, teamData] = await Promise.all([
+                    fetchKRAs(user.uid),
+                    getAllTeams()
+                ])
+                setKras(kraData)
+                setTeams(teamData)
+            } catch (error) {
+                console.error("Failed to load KRAs or teams", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadData()
     }, [user])
 
     const handleDelete = async (id: string) => {
@@ -89,9 +113,12 @@ export default function KRAList({ onEdit }: { onEdit: (kra: KRA) => void }) {
         return icons[type as keyof typeof icons] || '📋'
     }
 
-    const filteredKras = filterType === 'all'
-        ? kras
-        : kras.filter(k => k.type === filterType)
+    const getTeamNames = (teamIds: string[]) => {
+        return teamIds.map(id => {
+            const team = teams.find(t => t.id === id)
+            return team ? team.name : 'Unknown Team'
+        }).join(', ')
+    }
 
     if (loading) {
         return (
@@ -216,6 +243,16 @@ export default function KRAList({ onEdit }: { onEdit: (kra: KRA) => void }) {
                                     <Target className="w-4 h-4 mr-2 text-secondary-500" />
                                     <span className="font-medium text-gray-700 truncate">{kra.target}</span>
                                 </div>
+
+                                {/* Team Assignment Display */}
+                                {kra.teamIds && kra.teamIds.length > 0 && (
+                                    <div className="flex items-center text-sm text-gray-500 bg-blue-50 p-2 rounded-lg">
+                                        <span className="w-4 h-4 mr-2 text-blue-500">👥</span>
+                                        <span className="font-medium text-gray-700 truncate">
+                                            Teams: {getTeamNames(kra.teamIds)}
+                                        </span>
+                                    </div>
+                                )}
 
                                 {/* Priority and Status Badges */}
                                 <div className="flex space-x-2">

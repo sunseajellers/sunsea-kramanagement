@@ -73,7 +73,7 @@ export default function AdminTeamsPage() {
                     placeholder="Search teams..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="flex-1 px-4 py-2 border rounded mr-4 focus:outline-none focus:ring-2 focus:ring-primary-600"
+                    className="flex-1 py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 mr-4"
                 />
                 <span className="text-sm text-gray-600">
                     Page {page} of {pageCount}

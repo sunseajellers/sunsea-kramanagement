@@ -6,11 +6,19 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 
 interface Props {
     kras: KRA[]
+    teams?: any[]
 }
 
-export default function KRACalendar({ kras }: Props) {
+export default function KRACalendar({ kras, teams = [] }: Props) {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
+    const getTeamNames = (teamIds: string[]) => {
+        return teamIds.map(id => {
+            const team = teams.find(t => t.id === id)
+            return team ? team.name : 'Unknown Team'
+        }).join(', ')
+    }
 
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
@@ -210,6 +218,11 @@ export default function KRACalendar({ kras }: Props) {
                                         </div>
                                         <h4 className="font-semibold text-gray-900">{kra.title}</h4>
                                         <p className="text-sm text-gray-600 mt-1">{kra.description}</p>
+                                        {kra.teamIds && kra.teamIds.length > 0 && (
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                👥 Teams: {getTeamNames(kra.teamIds)}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
