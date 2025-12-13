@@ -12,7 +12,7 @@ import {
     limit
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { WeeklyReport, ScoringConfig, TeamWeeklyReport, Task } from '@/types';
+import { WeeklyReport, ScoringConfig, TeamWeeklyReport } from '@/types';
 import { timestampToDate, handleError } from './utils';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';

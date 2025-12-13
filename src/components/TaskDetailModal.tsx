@@ -1,19 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Task, ChecklistItem } from '@/types'
+import { Task } from '@/types'
 import { updateTask, updateChecklistItem, addChecklistItem, reassignTask } from '@/lib/taskService'
 import { useAuth } from '@/contexts/AuthContext'
 import {
     X,
     Calendar,
-    Flag,
     User,
     CheckSquare,
     Plus,
     Clock,
-    MessageSquare,
-    Paperclip,
     History,
     UserPlus
 } from 'lucide-react'

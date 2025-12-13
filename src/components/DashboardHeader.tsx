@@ -28,7 +28,7 @@ export default function DashboardHeader() {
     const handleLogout = async () => {
         try {
             await logout()
-            router.push('/login')
+            router.push('/')
         } catch (error) {
             console.error('Failed to logout:', error)
         }

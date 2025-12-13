@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
 import { DashboardStats, Task, KRA } from '@/types'
 import {
     TrendingUp,
@@ -14,13 +13,11 @@ import {
     Calendar,
     Award
 } from 'lucide-react'
-import { getDashboardStats } from '@/lib/analyticsService'
 import { getUserTasks } from '@/lib/taskService'
 import { getUserKRAs } from '@/lib/kraService'
 import { getPriorityColor, getStatusColor, formatDate, calculateProgress } from '@/lib/utils'
 import { StatsSkeleton, TaskListSkeleton } from '@/components/Skeletons'
 import EmptyState from '@/components/EmptyState'
-import { Plus } from 'lucide-react'
 
 export default function DashboardPage() {
     const { userData } = useAuth()
@@ -40,7 +37,7 @@ export default function DashboardPage() {
                 ])
                 setStats(statsData)
                 setRecentTasks(tasks.slice(0, 5))
-                setActiveKRAs(kras.filter(kra => kra.status === 'in_progress').slice(0, 3))
+                setActiveKRAs(kras.filter((kra: KRA) => kra.status === 'in_progress').slice(0, 3))
             } catch (err) {
                 console.error('Failed to load dashboard data', err)
             } finally {

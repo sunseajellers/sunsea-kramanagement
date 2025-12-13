@@ -1,22 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
 import { getAllUsers } from '@/lib/userService'
 import { getAllTeams } from '@/lib/teamService'
 import { getAllTasks } from '@/lib/taskService'
-import { getUserKRAs } from '@/lib/kraService'
-import { getUserWeeklyReports } from '@/lib/reportService'
 import { User, Team, Task, KRA, WeeklyReport } from '@/types'
 import {
-    BarChart3,
     Users,
     CheckCircle2,
     Target,
-    TrendingUp,
     Award,
-    Calendar,
-    Activity,
     Loader2,
     Download,
     FileText
@@ -26,7 +19,6 @@ import TaskPriorityChart from '@/components/charts/TaskPriorityChart'
 import KRAProgressChart from '@/components/charts/KRAProgressChart'
 
 export default function AdminAnalyticsPage() {
-    const { userData } = useAuth()
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState<{
         users: User[]

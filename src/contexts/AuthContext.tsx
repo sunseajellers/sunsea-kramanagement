@@ -39,7 +39,7 @@ export const useAuth = () => {
     return context
 }
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }): JSX.Element => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }): React.ReactElement => {
     const [user, setUser] = useState<User | null>(null)
     const [userData, setUserData] = useState<UserData | null>(null)
     const [loading, setLoading] = useState(true)

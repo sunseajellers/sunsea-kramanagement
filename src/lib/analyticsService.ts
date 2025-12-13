@@ -1,7 +1,5 @@
 // src/lib/analyticsService.ts
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from './firebase';
-import { DashboardStats, Task, KRA } from '@/types';
+import { DashboardStats } from '@/types';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';
 import { handleError } from './utils';

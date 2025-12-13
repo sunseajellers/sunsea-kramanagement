@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAllUsers, updateUser } from '@/lib/userService'
-import { getAllTeams, updateTeam } from '@/lib/teamService'
+import { getAllTeams } from '@/lib/teamService'
 import { User, Team } from '@/types'
-import { Loader2, Users, Plus, UserMinus, UserPlus, Crown, Award } from 'lucide-react'
+import { Loader2, Users, Plus, UserMinus } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/utils'
 import Modal from '@/components/Modal'
 
@@ -40,10 +40,6 @@ export default function TeamPage() {
 
     const getTeamMembers = (teamId: string) => {
         return users.filter(user => user.teamId === teamId)
-    }
-
-    const getUserTeam = (userId: string) => {
-        return teams.find(team => team.id === users.find(u => u.id === userId)?.teamId)
     }
 
     const handleAddToTeam = async (userId: string, teamId: string) => {

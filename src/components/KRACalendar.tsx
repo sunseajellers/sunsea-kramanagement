@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { KRA } from '@/types'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 

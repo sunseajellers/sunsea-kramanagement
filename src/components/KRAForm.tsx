@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createKRA, updateKRA } from '@/lib/kraService'
 import { KRA, KRAType, Priority, KRAStatus } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { Loader2, X, Calendar, Target, FileText, Type, Flag, Zap, Users } from 'lucide-react'
+import { Loader2, X, Calendar, Target, FileText, Type } from 'lucide-react'
 import { getAllUsers } from '@/lib/userService'
 
 interface Props {

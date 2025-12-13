@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import DashboardHeader from '@/components/DashboardHeader'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -12,12 +12,12 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     // Sidebar removed — using top navbar instead
-    const { user, userData, loading } = useAuth()
+    const { user, loading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
         if (!loading && !user) {
-            router.push('/login')
+            router.push('/')
         }
     }, [user, loading, router])
 

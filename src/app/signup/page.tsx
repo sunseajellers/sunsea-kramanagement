@@ -298,7 +298,7 @@ export default function SignupPage() {
                     {/* Login Link */}
                     <p className="mt-8 text-center text-gray-600">
                         Already have an account?{' '}
-                        <Link href="/login" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+                        <Link href="/" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
                             Sign in
                         </Link>
                     </p>

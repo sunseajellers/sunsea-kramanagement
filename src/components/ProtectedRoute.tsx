@@ -28,7 +28,7 @@ export default function ProtectedRoute({
         if (!user) {
             // Save the intended destination
             sessionStorage.setItem('redirectAfterLogin', pathname)
-            router.push('/login')
+            router.push('/')
             return
         }
 

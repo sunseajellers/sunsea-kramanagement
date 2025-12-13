@@ -20,7 +20,7 @@ export default function AdminLayout({
 
         // Not logged in - redirect to login
         if (!user) {
-            router.replace('/login');
+            router.replace('/');
             return;
         }
 

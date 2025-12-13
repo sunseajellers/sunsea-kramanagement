@@ -461,8 +461,7 @@ npm run dev
 ```
 
 7. **Access the Application**
-- Landing Page: `http://localhost:3000`
-- Login: `http://localhost:3000/login`
+- Home/Login: `http://localhost:3000`
 - Signup: `http://localhost:3000/signup`
 - Dashboard: `http://localhost:3000/dashboard`
 
@@ -1456,7 +1455,7 @@ Unauthorized copying, modification, distribution, or use of this software is str
 
 **Solution**: 
 - Added authentication check in `src/app/dashboard/layout.tsx`
-- Redirects unauthenticated users to `/login`
+- Redirects unauthenticated users to `/`
 - Saves intended destination for redirect after login
 
 ### 2. **Non-Admin Access to Admin Panel**
@@ -1489,13 +1488,12 @@ Unauthorized copying, modification, distribution, or use of this software is str
 
 ### Route Protection
 ✅ **Public Routes** - Accessible without authentication
-- `/` - Landing page (redirects if logged in)
-- `/login` - Login page
+- `/` - Login page (redirects to dashboard if logged in)
 - `/signup` - Signup page
 
 ✅ **Protected Routes** - Requires authentication
 - `/dashboard/*` - All dashboard routes
-- Automatic redirect to `/login` if not authenticated
+- Automatic redirect to `/` if not authenticated
 
 ✅ **Admin-Only Routes** - Requires admin role
 - `/dashboard/admin/*` - All admin panel routes
@@ -1548,9 +1546,9 @@ Grant Access
 ## 🧪 Testing Checklist
 
 ### ✅ Unauthenticated User
-- [x] Cannot access `/dashboard` → Redirects to `/login`
-- [x] Cannot access `/dashboard/admin` → Redirects to `/login`
-- [x] Can access `/`, `/login`, `/signup`
+- [x] Cannot access `/dashboard` → Redirects to `/`
+- [x] Cannot access `/dashboard/admin` → Redirects to `/`
+- [x] Can access `/`, `/signup`
 - [x] Intended destination saved when accessing protected route
 - [x] Redirected to intended destination after login
 
@@ -1585,7 +1583,7 @@ Grant Access
 // src/app/dashboard/layout.tsx
 useEffect(() => {
     if (!loading && !user) {
-        router.push('/login')
+        router.push('/')
     }
 }, [user, loading, router])
 ```
@@ -1597,7 +1595,7 @@ useEffect(() => {
     if (loading) return;
     
     if (!user) {
-        router.replace('/login');
+        router.replace('/');
         return;
     }
     
@@ -1622,7 +1620,7 @@ useEffect(() => {
 
 ### 4. Login Redirect
 ```typescript
-// src/app/login/page.tsx
+// src/app/page.tsx
 const redirectTo = sessionStorage.getItem('redirectAfterLogin') || '/dashboard'
 sessionStorage.removeItem('redirectAfterLogin')
 router.push(redirectTo)

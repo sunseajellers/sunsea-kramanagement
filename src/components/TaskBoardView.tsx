@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Task, TaskStatus } from '@/types'
 import { updateTask } from '@/lib/taskService'
-import { Clock, Flag, User, Calendar, CheckSquare } from 'lucide-react'
+import { User, Calendar, CheckSquare } from 'lucide-react'
 
 interface Props {
     tasks: Task[]

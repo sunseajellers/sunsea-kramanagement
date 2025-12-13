@@ -9,9 +9,9 @@ import TaskBoardView from '@/components/TaskBoardView'
 import TaskCalendarView from '@/components/TaskCalendarView'
 import TaskForm from '@/components/TaskForm'
 import TaskDetailModal from '@/components/TaskDetailModal'
-import { Plus, ListTodo, Clock, CheckCircle2, AlertCircle, Loader2, List, LayoutGrid, Calendar as CalendarIcon, Search } from 'lucide-react'
+import { Plus, ListTodo, Clock, CheckCircle2, AlertCircle, List, LayoutGrid, Calendar as CalendarIcon, Search } from 'lucide-react'
 import { StatsSkeleton, TaskListSkeleton, BoardSkeleton } from '@/components/Skeletons'
-import EmptyState, { NoTasksEmptyState, NoSearchResultsEmptyState } from '@/components/EmptyState'
+import { NoTasksEmptyState, NoSearchResultsEmptyState } from '@/components/EmptyState'
 
 export default function TasksPage() {
     const { user } = useAuth()
