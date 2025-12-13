@@ -64,17 +64,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             teamId: data.teamId || undefined
                         })
                     } else {
-                        // If no Firestore document exists, create default user data
-                        console.warn('No Firestore document found for user, using defaults')
-                        setUserData({
-                            uid: firebaseUser.uid,
-                            email: firebaseUser.email,
-                            fullName: firebaseUser.displayName || 'User',
-                            role: 'employee',
-                            isAdmin: false,
-                            avatar: undefined,
-                            teamId: undefined
-                        })
+                        // If no Firestore document exists, don't allow access
+                        console.warn('No Firestore document found for user')
+                        setUserData(null)
+                        setError('Account not found in database. Please contact support.')
                     }
                     setError(null)
                 } catch (err: any) {

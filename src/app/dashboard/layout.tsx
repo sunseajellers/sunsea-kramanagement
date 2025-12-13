@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import DashboardHeader from '@/components/DashboardHeader'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -12,14 +12,17 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     // Sidebar removed — using top navbar instead
-    const { user, loading } = useAuth()
+    const { user, userData, loading } = useAuth()
     const router = useRouter()
 
+    const redirectRef = useRef(false)
+
     useEffect(() => {
-        if (!loading && !user) {
+        if (!redirectRef.current && !loading && (!user || !userData)) {
+            redirectRef.current = true
             router.push('/')
         }
-    }, [user, loading, router])
+    }, [user, userData, loading, router])
 
     if (loading) {
         return (
@@ -32,7 +35,7 @@ export default function DashboardLayout({
         )
     }
 
-    if (!user) return null
+    if (!user || !userData) return null
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">

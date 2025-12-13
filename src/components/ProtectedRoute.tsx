@@ -25,7 +25,7 @@ export default function ProtectedRoute({
         if (loading) return
 
         // Not authenticated - redirect to login
-        if (!user) {
+        if (!user || !userData) {
             // Save the intended destination
             sessionStorage.setItem('redirectAfterLogin', pathname)
             router.push('/')

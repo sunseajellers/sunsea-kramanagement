@@ -69,7 +69,7 @@ export const signInWithEmail = async (
 }
 
 // Sign in with Google
-export const signInWithGoogle = async (): Promise<UserCredential> => {
+export const signInWithGoogle = async (allowCreate: boolean = false): Promise<{ success: boolean, userCredential?: UserCredential, error?: string }> => {
     try {
         const userCredential = await signInWithPopup(auth, googleProvider)
         const user = userCredential.user
@@ -77,23 +77,32 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
         // Check if user document exists
         const userDoc = await getDoc(doc(db, 'users', user.uid))
 
-        // If user doesn't exist, create user document
-        if (!userDoc.exists()) {
-            await setDoc(doc(db, 'users', user.uid), {
-                uid: user.uid,
-                email: user.email,
-                fullName: user.displayName || 'User',
-                role: 'employee', // Default role for Google sign-in
-                isAdmin: false, // Default to false, must be manually set to true by developer
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            })
+        // Handle based on allowCreate
+        if (allowCreate) {
+            // For signup: if exists, error; if not, create
+            if (userDoc.exists()) {
+                return { success: false, error: 'Account already exists. Please sign in instead.' }
+            } else {
+                await setDoc(doc(db, 'users', user.uid), {
+                    uid: user.uid,
+                    email: user.email,
+                    fullName: user.displayName || 'User',
+                    role: 'employee', // Default role for Google sign-in
+                    isAdmin: false, // Default to false, must be manually set to true by developer
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                })
+                return { success: true, userCredential }
+            }
+        } else {
+            // For login: must exist
+            if (!userDoc.exists()) {
+                return { success: false, error: 'Account not found. Please sign up first.' }
+            }
+            return { success: true, userCredential }
         }
-
-        return userCredential
     } catch (error: any) {
-        handleError(error, 'Failed to sign in with Google')
-        throw new Error(error.message || 'Failed to sign in with Google')
+        return { success: false, error: error.message || 'Failed to sign in with Google' }
     }
 }
 
