@@ -19,12 +19,46 @@ export type NotificationType =
     | 'report_ready'
     | 'reassignment'
 
+// Permission Types
+export type Permission =
+    | 'view_dashboard'
+    | 'view_tasks'
+    | 'create_tasks'
+    | 'update_tasks'
+    | 'delete_tasks'
+    | 'assign_tasks'
+    | 'view_kras'
+    | 'create_kras'
+    | 'update_kras'
+    | 'delete_kras'
+    | 'assign_kras'
+    | 'view_teams'
+    | 'manage_teams'
+    | 'view_reports'
+    | 'generate_reports'
+    | 'view_analytics'
+    | 'manage_analytics'
+    | 'view_notifications'
+    | 'manage_notifications'
+    | 'manage_users'
+    | 'manage_roles'
+    | 'manage_scoring'
+    | 'system_admin'
+
+// Role Permissions Configuration
+export interface RolePermissions {
+    role: UserRole
+    permissions: Permission[]
+    description: string
+}
+
 // User Interface
 export interface User {
     id: string
     fullName: string
     email: string
     role: UserRole
+    permissions?: Permission[] // Custom permissions override role defaults
     isAdmin: boolean // Manually set by developer in database
     avatar?: string
     teamId?: string
