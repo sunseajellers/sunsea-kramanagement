@@ -9,21 +9,10 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
 
-        // Get user ID from middleware (authenticated requests)
-        const authUserId = request.headers.get('x-user-id');
-
         if (!userId) {
             return NextResponse.json(
                 { error: 'Missing required parameter: userId' },
                 { status: 400 }
-            );
-        }
-
-        // Ensure user can only access their own data
-        if (authUserId && authUserId !== userId) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Can only access your own dashboard data' },
-                { status: 403 }
             );
         }
 
@@ -45,10 +34,14 @@ export async function GET(request: NextRequest) {
                 kraAnalytics
             }
         });
-    } catch (error) {
-        console.error('Failed to get dashboard data:', error);
+    } catch (error: any) {
+        console.error('Dashboard API Error:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        });
         return NextResponse.json(
-            { error: 'Failed to get dashboard data' },
+            { error: error.message || 'Failed to get dashboard data' },
             { status: 500 }
         );
     }

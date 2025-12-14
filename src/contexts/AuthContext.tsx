@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType>({
     userData: null,
     loading: true,
     error: null,
-    logout: async () => {},
+    logout: async () => { },
     getDefaultRoute: () => '/dashboard'
 })
 
@@ -53,7 +53,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                 try {
                     // Fetch user data from Firestore
                     const data = await getUserData(firebaseUser.uid)
-                    console.log('🔍 AuthContext Debug - Raw Firestore data:', data)
                     if (data) {
                         const processedUserData = {
                             uid: data.uid || firebaseUser.uid,
@@ -63,27 +62,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             avatar: data.avatar || undefined,
                             teamId: data.teamId || undefined
                         }
-                        console.log('🔍 AuthContext Debug - Processed userData:', processedUserData)
                         setUserData(processedUserData)
+                        setError(null)
                     } else {
                         // If no Firestore document exists, don't allow access
                         console.warn('No Firestore document found for user')
                         setUserData(null)
                         setError('Account not found in database. Please contact support.')
                     }
-                    setError(null)
-                } catch (err: any) {
-                    console.error('Error fetching user data:', err)
-                    setError(err.message || 'Failed to fetch user data')
-                    // Set default user data even on error
-                    setUserData({
-                        uid: firebaseUser.uid,
-                        email: firebaseUser.email,
-                        fullName: firebaseUser.displayName || 'User',
-                        roleIds: [],
-                        avatar: undefined,
-                        teamId: undefined
-                    })
+                } catch (err: unknown) {
+                    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch user data'
+                    console.error('Error fetching user data:', errorMessage)
+                    setError(errorMessage)
+                    // SECURITY FIX: Don't set userData on error - force re-auth
+                    // Previously this would set empty roles, which is a security risk
+                    setUserData(null)
                 }
             } else {
                 setUserData(null)
@@ -109,7 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
 
     const getDefaultRoute = () => {
         if (!userData) return '/dashboard'
-        
+
         // All authenticated users go to regular dashboard
         // Permission checks are handled by ProtectedRoute components
         return '/dashboard'

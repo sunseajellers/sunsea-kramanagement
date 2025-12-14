@@ -55,16 +55,12 @@ export default function RolesPage() {
     const handleCreateRole = async () => {
         try {
             const roleId = await createRole({
-                name: formData.name as UserRole,
+                name: formData.name,  // Can be any string for custom roles
                 description: formData.description,
-                isSystem: true,
-                isActive: formData.isActive
+                isSystem: false,  // Custom roles are not system roles
+                isActive: formData.isActive,
+                permissions: selectedPermissions  // Include selected permissions
             });
-
-            // Assign permissions
-            if (selectedPermissions.length > 0) {
-                await assignPermissionsToRole(roleId, selectedPermissions);
-            }
 
             toast.success('Role created successfully');
             setDialogOpen(false);
@@ -81,13 +77,11 @@ export default function RolesPage() {
 
         try {
             await updateRole(editingRole.id, {
-                name: formData.name as UserRole,
+                name: formData.name,  // Can be custom string
                 description: formData.description,
-                isActive: formData.isActive
+                isActive: formData.isActive,
+                permissions: selectedPermissions  // Update permissions directly
             });
-
-            // Update permissions
-            await assignPermissionsToRole(editingRole.id, selectedPermissions);
 
             toast.success('Role updated successfully');
             setDialogOpen(false);

@@ -8,21 +8,10 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
 
-        // Get user ID from middleware (authenticated requests)
-        const authUserId = request.headers.get('x-user-id');
-
         if (!userId) {
             return NextResponse.json(
                 { error: 'Missing required parameter: userId' },
                 { status: 400 }
-            );
-        }
-
-        // Ensure user can only access their own KRAs
-        if (authUserId && authUserId !== userId) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Can only access your own KRAs' },
-                { status: 403 }
             );
         }
 

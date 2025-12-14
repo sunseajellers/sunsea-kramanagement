@@ -1,4 +1,7 @@
 // src/lib/rbacService.ts
+// SIMPLIFIED RBAC - Uses embedded roleIds in user documents
+// and embedded permissions in role documents
+
 import { db } from './firebase';
 import {
     collection,
@@ -11,10 +14,19 @@ import {
     where,
     orderBy,
     writeBatch,
-    getDoc
+    getDoc,
+    documentId
 } from 'firebase/firestore';
-import { Role, Permission } from '@/types';
+import { Role, Permission, SystemRole } from '@/types';
 import { timestampToDate, handleError } from './utils';
+
+// System role names that are always available
+export const SYSTEM_ROLES: SystemRole[] = ['admin', 'manager', 'employee'];
+
+// Check if a role name is a system role
+export function isSystemRole(roleName: string): roleName is SystemRole {
+    return SYSTEM_ROLES.includes(roleName as SystemRole);
+}
 
 /**
  * ROLES MANAGEMENT
@@ -296,20 +308,25 @@ export async function removeAllPermissionsFromRole(roleId: string): Promise<void
  */
 
 /**
- * Get roles for a user
+ * Get roles for a user - SIMPLIFIED: reads from user document
  */
 export async function getUserRoles(userId: string): Promise<Role[]> {
     try {
-        const q = query(collection(db, 'user_roles'), where('userId', '==', userId));
-        const snapshot = await getDocs(q);
+        // Read roleIds directly from user document
+        const userDoc = await getDoc(doc(db, 'users', userId));
 
-        const roleIds = snapshot.docs.map(doc => doc.data().roleId);
+        if (!userDoc.exists()) {
+            return [];
+        }
+
+        const userData = userDoc.data();
+        const roleIds: string[] = userData.roleIds || [];
 
         if (roleIds.length === 0) {
             return [];
         }
 
-        // Get role details
+        // Batch fetch all roles (more efficient than N queries)
         const roles: Role[] = [];
         for (const roleId of roleIds) {
             const role = await getRoleById(roleId);
@@ -326,31 +343,16 @@ export async function getUserRoles(userId: string): Promise<Role[]> {
 }
 
 /**
- * Assign roles to a user
+ * Assign roles to a user - SIMPLIFIED: updates user document directly
  */
-export async function assignRolesToUser(userId: string, roleIds: string[], assignedBy: string): Promise<void> {
+export async function assignRolesToUser(userId: string, roleIds: string[], _assignedBy: string): Promise<void> {
     try {
-        const batch = writeBatch(db);
-
-        // Remove existing roles
-        const existingQuery = query(collection(db, 'user_roles'), where('userId', '==', userId));
-        const existingSnapshot = await getDocs(existingQuery);
-        existingSnapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
+        // Simply update the roleIds array on the user document
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+            roleIds: roleIds,
+            updatedAt: new Date()
         });
-
-        // Add new roles
-        roleIds.forEach(roleId => {
-            const docRef = doc(collection(db, 'user_roles'));
-            batch.set(docRef, {
-                userId,
-                roleId,
-                assignedBy,
-                assignedAt: new Date()
-            });
-        });
-
-        await batch.commit();
     } catch (error) {
         handleError(error, 'Failed to assign roles to user');
         throw error;
@@ -413,22 +415,47 @@ export async function userHasPermission(userId: string, module: string, action: 
 }
 
 /**
- * Get all permissions for a user
+ * Get all permissions for a user - OPTIMIZED: uses embedded permissions
  */
 export async function getUserPermissions(userId: string): Promise<Permission[]> {
     try {
         const userRoles = await getUserRoles(userId);
-        const allPermissions: Permission[] = [];
+        const allPermissionIds: string[] = [];
 
+        // Collect all permission IDs from roles (now embedded)
         for (const role of userRoles) {
-            const permissions = await getRolePermissions(role.id);
-            allPermissions.push(...permissions);
+            if (role.permissions && Array.isArray(role.permissions)) {
+                allPermissionIds.push(...role.permissions);
+            } else {
+                // Fallback to old method if permissions not embedded
+                const permissions = await getRolePermissions(role.id);
+                allPermissionIds.push(...permissions.map(p => p.id));
+            }
         }
 
-        // Remove duplicates
-        return allPermissions.filter((permission, index, self) =>
-            index === self.findIndex(p => p.id === permission.id)
-        );
+        // Remove duplicate IDs
+        const uniqueIds = [...new Set(allPermissionIds)];
+
+        if (uniqueIds.length === 0) {
+            return [];
+        }
+
+        // Batch fetch all permissions
+        const permissions: Permission[] = [];
+        for (const permId of uniqueIds) {
+            const permDoc = await getDoc(doc(db, 'permissions', permId));
+            if (permDoc.exists()) {
+                const data = permDoc.data();
+                permissions.push({
+                    id: permDoc.id,
+                    ...data,
+                    createdAt: timestampToDate(data.createdAt),
+                    updatedAt: timestampToDate(data.updatedAt)
+                } as Permission);
+            }
+        }
+
+        return permissions;
     } catch (error) {
         handleError(error, 'Failed to get user permissions');
         return [];
@@ -436,7 +463,7 @@ export async function getUserPermissions(userId: string): Promise<Permission[]> 
 }
 
 /**
- * Initialize default roles and permissions
+ * Initialize default roles and permissions - Creates all system roles
  */
 export async function initializeDefaultRBAC(): Promise<void> {
     try {
@@ -492,29 +519,78 @@ export async function initializeDefaultRBAC(): Promise<void> {
             { name: 'System Administration', module: 'system', action: 'admin' }
         ];
 
-        // Create permissions
+        // Create permissions and collect their IDs
+        const permissionIds: string[] = [];
         for (const perm of defaultPermissions) {
-            await createPermission({
+            const permId = await createPermission({
                 ...perm,
                 description: `${perm.action} ${perm.module}`,
                 isSystem: true
             });
+            permissionIds.push(permId);
         }
 
-        // Create default roles
-        const adminRoleId = await createRole({
+        // Define permission sets for each role
+        const allPermissions = await getAllPermissions();
+        const getPermIds = (filters: { module?: string; action?: string }[]) => {
+            return allPermissions
+                .filter(p => filters.some(f =>
+                    (!f.module || p.module === f.module) &&
+                    (!f.action || p.action === f.action)
+                ))
+                .map(p => p.id);
+        };
+
+        // Admin: All permissions
+        const adminPermIds = allPermissions.map(p => p.id);
+
+        // Manager: Team management, reports, tasks, KRAs (no system admin)
+        const managerPermIds = getPermIds([
+            { module: 'dashboard' },
+            { module: 'tasks' },
+            { module: 'kras' },
+            { module: 'teams' },
+            { module: 'reports' },
+            { module: 'analytics', action: 'view' },
+            { module: 'notifications', action: 'view' }
+        ]);
+
+        // Employee: Basic view and own task management
+        const employeePermIds = getPermIds([
+            { module: 'dashboard', action: 'view' },
+            { module: 'tasks', action: 'view' },
+            { module: 'tasks', action: 'edit' },
+            { module: 'kras', action: 'view' },
+            { module: 'reports', action: 'view' },
+            { module: 'notifications', action: 'view' }
+        ]);
+
+        // Create all system roles with embedded permissions
+        await createRole({
             name: 'admin',
-            description: 'Full system access',
+            description: 'Full system access - can manage all settings and users',
             isSystem: true,
-            isActive: true
+            isActive: true,
+            permissions: adminPermIds
         });
 
-        // Assign permissions to roles
-        const allPermissions = await getAllPermissions();
+        await createRole({
+            name: 'manager',
+            description: 'Team management, task assignment, and reporting',
+            isSystem: true,
+            isActive: true,
+            permissions: managerPermIds
+        });
 
-        // Admin gets all permissions
-        const adminPermissionIds = allPermissions.map(p => p.id);
-        await assignPermissionsToRole(adminRoleId, adminPermissionIds);
+        await createRole({
+            name: 'employee',
+            description: 'View and update assigned tasks and KRAs',
+            isSystem: true,
+            isActive: true,
+            permissions: employeePermIds
+        });
+
+        console.log('✅ RBAC initialized with admin, manager, and employee roles');
 
     } catch (error) {
         handleError(error, 'Failed to initialize RBAC');

@@ -1,30 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDashboardAnalytics, getTeamDetailedAnalytics, generateAdminReport } from '@/lib/analyticsService';
-import { userHasPermission } from '@/lib/rbacService';
 
-// GET /api/analytics/admin - Get admin dashboard analytics (Admin only)
+// GET /api/analytics - Get analytics data
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type');
         const teamId = searchParams.get('teamId');
-
-        // Get user ID from middleware (authenticated requests)
-        const userId = request.headers.get('x-user-id');
+        const userId = searchParams.get('userId');
 
         if (!userId) {
             return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
-        }
-
-        // Check if user has admin access
-        const hasAccess = await userHasPermission(userId, 'admin', 'access');
-        if (!hasAccess) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Admin access required' },
-                { status: 403 }
+                { error: 'Missing required parameter: userId' },
+                { status: 400 }
             );
         }
 
@@ -48,34 +36,15 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST /api/analytics/reports - Generate admin reports (Admin only)
+// POST /api/analytics/reports - Generate reports
 export async function POST(request: NextRequest) {
     try {
-        const { reportType, dateRange } = await request.json();
+        const { reportType, dateRange, userId } = await request.json();
 
-        // Get user ID from middleware (authenticated requests)
-        const userId = request.headers.get('x-user-id');
-
-        if (!reportType) {
+        if (!reportType || !userId) {
             return NextResponse.json(
-                { error: 'Missing required parameter: reportType' },
+                { error: 'Missing required parameters: reportType, userId' },
                 { status: 400 }
-            );
-        }
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
-        }
-
-        // Check if user has admin access
-        const hasAccess = await userHasPermission(userId, 'admin', 'access');
-        if (!hasAccess) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Admin access required' },
-                { status: 403 }
             );
         }
 

@@ -1,5 +1,15 @@
-// SIMPLE RBAC MODEL - ONE SOURCE OF TRUTH
-export type UserRole = 'admin'
+// HYBRID RBAC MODEL - System roles + Custom roles
+// System roles are predefined and can't be deleted
+// Custom roles can be created by admins
+
+// System roles - hardcoded, always exist
+export type SystemRole = 'admin' | 'manager' | 'employee'
+
+// All role names - can be system or custom (string for custom roles from DB)
+export type RoleName = SystemRole | string
+
+// Legacy alias for backwards compatibility
+export type UserRole = SystemRole
 
 // COMMON TYPES
 export type Priority = 'low' | 'medium' | 'high' | 'critical'
@@ -24,13 +34,14 @@ export type NotificationType =
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
 
-// RBAC Types - System roles only
+// RBAC Types - Supports both system and custom roles
 export interface Role {
     id: string
-    name: UserRole  // Only system roles
+    name: RoleName           // Can be SystemRole or custom string
     description: string
-    isSystem: true  // Always true for system roles
+    isSystem: boolean        // true = can't delete, false = custom role
     isActive: boolean
+    permissions: string[]    // Embedded permission IDs for simplified lookup
     createdAt: Date
     updatedAt: Date
 }

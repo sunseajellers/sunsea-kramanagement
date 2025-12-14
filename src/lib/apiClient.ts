@@ -1,47 +1,29 @@
-// API client utility for authenticated requests
-import { auth } from '@/lib/firebase'
+// API client utility - simplified (no token middleware)
+// Client-side auth is handled by Firebase SDK directly
+// API routes read from request params or use service calls with userId
 
 /**
- * Get Firebase ID token for authenticated requests
+ * Make API request (no special headers needed)
  */
-export async function getAuthToken(): Promise<string | null> {
-    try {
-        if (!auth.currentUser) {
-            return null
-        }
-        return await auth.currentUser.getIdToken()
-    } catch (error) {
-        console.error('Failed to get auth token:', error)
-        return null
-    }
-}
-
-/**
- * Make authenticated API request
- */
-export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
-    const token = await getAuthToken()
-
-    const headers = new Headers(options.headers)
-    if (token) {
-        headers.set('Authorization', `Bearer ${token}`)
-    }
-
+export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
     return fetch(url, {
         ...options,
-        headers
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
     })
 }
 
 /**
- * Make authenticated JSON API request
+ * Make JSON API request with automatic error handling
  */
 export async function authenticatedJsonFetch<T = any>(
     url: string,
     options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
-        const response = await authenticatedFetch(url, {
+        const response = await fetch(url, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',

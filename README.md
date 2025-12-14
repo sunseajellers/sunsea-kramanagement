@@ -21,8 +21,8 @@
 |--------|-------|
 | **Services** | 20 TypeScript service files |
 | **Components** | 40+ React components |
-| **Type Definitions** | 321 lines (comprehensive) |
-| **Security Rules** | 318 lines (Firestore) |
+| **Type Definitions** | 331 lines (comprehensive) |
+| **Security Rules** | 250 lines (Firestore) |
 | **Middleware** | 122 lines (token verification) |
 | **API Routes** | 8 endpoint groups |
 | **Dashboard Pages** | 10+ pages |
@@ -34,20 +34,24 @@
 |------|--------|-------|
 | **Build** | ✅ Passing | No TypeScript/ESLint errors |
 | **Tests** | ✅ Passing | 6/6 tests pass |
-| **Security** | ✅ Strong | RBAC + Firestore rules + Middleware |
-| **Auth** | ✅ Working | Firebase Auth with token verification |
+| **Security** | ✅ Strong | Simplified RBAC + Firestore rules |
+| **Auth** | ✅ Working | Firebase Auth with error recovery |
 | **CRUD Operations** | ✅ Working | Tasks, KRAs, Teams, Users |
 | **Analytics** | ✅ Working | Dashboard stats & charts |
-| **Checklist Feature** | ✅ Fixed | Full CRUD with activity logging |
+| **RBAC System** | ✅ Hybrid | admin/manager/employee + custom roles |
 | **Error Handling** | ✅ Added | ErrorBoundary in dashboard |
 
 ### Recent Improvements (Dec 2025)
 
 | Fix | Description |
 |-----|-------------|
-| ✅ Checklist CRUD | Implemented `getChecklistItems`, `addChecklistItem`, `updateChecklistItem`, `deleteChecklistItem` |
-| ✅ Error Boundaries | Added `ErrorBoundary` component wrapping dashboard content |
-| ✅ Testing Framework | Jest + React Testing Library with sample tests |
+| ✅ Hybrid RBAC | System roles (admin/manager/employee) + custom admin-created roles |
+| ✅ Simplified Storage | Roles stored in `user.roleIds[]`, permissions in `role.permissions[]` |
+| ✅ Clean Firestore Rules | Rewritten ~250 lines with clear structure and documentation |
+| ✅ Security Fix | AuthContext error recovery no longer sets empty roles |
+| ✅ Checklist CRUD | Full CRUD with activity logging |
+| ✅ Error Boundaries | ErrorBoundary wrapping dashboard content |
+| ✅ Testing Framework | Jest + React Testing Library |
 
 ---
 

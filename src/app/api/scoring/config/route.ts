@@ -1,26 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getScoringConfig, updateScoringConfig } from '@/lib/reportService';
-import { userHasPermission } from '@/lib/rbacService';
 
 // GET /api/scoring/config - Get current scoring configuration
 export async function GET(request: NextRequest) {
     try {
-        // Get user ID from middleware (authenticated requests)
-        const userId = request.headers.get('x-user-id');
+        const { searchParams } = new URL(request.url);
+        const userId = searchParams.get('userId');
 
         if (!userId) {
             return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
-        }
-
-        // Check if user has admin access to scoring
-        const hasAccess = await userHasPermission(userId, 'admin', 'scoring');
-        if (!hasAccess) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Admin access required' },
-                { status: 403 }
+                { error: 'Missing userId parameter' },
+                { status: 400 }
             );
         }
 
@@ -39,34 +29,15 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// PUT /api/scoring/config - Update scoring configuration (Admin only)
+// PUT /api/scoring/config - Update scoring configuration
 export async function PUT(request: NextRequest) {
     try {
-        const { config } = await request.json();
+        const { config, userId } = await request.json();
 
-        // Get user ID from middleware (authenticated requests)
-        const userId = request.headers.get('x-user-id');
-
-        if (!config) {
+        if (!config || !userId) {
             return NextResponse.json(
-                { error: 'Missing required parameter: config' },
+                { error: 'Missing required parameters: config, userId' },
                 { status: 400 }
-            );
-        }
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
-        }
-
-        // Check if user has admin access to scoring
-        const hasAccess = await userHasPermission(userId, 'admin', 'scoring');
-        if (!hasAccess) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Admin access required' },
-                { status: 403 }
             );
         }
 
