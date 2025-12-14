@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { userHasPermission } from '@/lib/rbacService';
-import { Loader2, ShieldAlert } from 'lucide-react';
-import AdminHeader from '@/components/AdminHeader';
+import { Loader2 } from 'lucide-react';
+import { UnifiedHeader } from '@/components/layout'
 
 export default function AdminLayout({
     children,
@@ -63,7 +63,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Admin Header */}
-            <AdminHeader />
+            <UnifiedHeader mode="admin" showAdminControls={true} />
 
             {/* Main Content */}
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">

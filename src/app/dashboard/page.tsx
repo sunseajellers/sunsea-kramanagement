@@ -20,13 +20,9 @@ import {
 } from 'lucide-react'
 import { userHasPermission } from '@/lib/rbacService'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { getPriorityColor, getStatusColor, formatDate, calculateProgress } from '@/lib/utils'
-import { StatsSkeleton, TaskListSkeleton } from '@/components/Skeletons'
-import EmptyState from '@/components/EmptyState'
-import TaskStatusChart from '@/components/charts/TaskStatusChart'
-import TaskPriorityChart from '@/components/charts/TaskPriorityChart'
-import TaskTrendChart from '@/components/charts/TaskTrendChart'
-import KRAProgressChart from '@/components/charts/KRAProgressChart'
+import { getPriorityColor, getStatusColor, formatDate } from '@/lib/utils'
+import { StatsSkeleton, TaskListSkeleton, EmptyState } from '@/components/common'
+import { TaskStatusChart, TaskPriorityChart, TaskTrendChart, KRAProgressChart } from '@/components/features/analytics'
 
 export default function DashboardPage() {
     const { userData, loading: authLoading } = useAuth()

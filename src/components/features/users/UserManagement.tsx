@@ -11,9 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import toast from 'react-hot-toast'
-import { UserCheck, Settings, Shield, Search, Filter, Download, Trash2, Edit, Users, MoreHorizontal, CheckSquare, Square } from 'lucide-react'
+import { UserCheck, Settings, Search, Download, Trash2, Users, MoreHorizontal } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -105,35 +104,6 @@ export default function UserManagement() {
 
         return filtered
     }, [users, searchTerm, roleFilter, statusFilter, sortBy, sortOrder])
-
-    const handleRoleChange = async (userId: string, newRole: string) => {
-        if (!currentUser) {
-            toast.error('You must be logged in to perform this action')
-            return
-        }
-
-        // Find the target user
-        const targetUser = users.find(u => u.id === userId)
-        if (!targetUser) {
-            toast.error('User not found')
-            return
-        }
-
-        try {
-            // First, find the role ID for the new role
-            const roles = await getAllRoles()
-            const roleToAssign = roles.find(r => r.name.toLowerCase() === newRole.toLowerCase())
-            if (roleToAssign) {
-                await assignRolesToUser(userId, [roleToAssign.id], currentUser!.uid)
-                toast.success('Role updated successfully')
-                loadUsers()
-            } else {
-                toast.error('Role not found')
-            }
-        } catch (error) {
-            toast.error('Failed to update role')
-        }
-    }
 
     const handleBulkAction = async () => {
         if (!bulkAction || selectedUsers.size === 0) return
@@ -236,15 +206,6 @@ export default function UserManagement() {
     const openBulkDialog = (action: BulkAction) => {
         setBulkAction(action)
         setBulkDialogOpen(true)
-    }
-
-    const getRoleBadgeColor = (role: string) => {
-        switch (role) {
-            case 'admin': return 'bg-red-100 text-red-800'
-            case 'manager': return 'bg-blue-100 text-blue-800'
-            case 'employee': return 'bg-green-100 text-green-800'
-            default: return 'bg-gray-100 text-gray-800'
-        }
     }
 
     if (loading) {
@@ -567,9 +528,8 @@ function RoleAssignment({ userId, onRoleChange }: { userId: string; onRoleChange
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [allRoles, userPerms] = await Promise.all([
-                    getAllRoles(),
-                    getUserPermissions(userId)
+                const [allRoles] = await Promise.all([
+                    getAllRoles()
                 ])
                 setRoles(allRoles)
                 // For now, show all roles - in future we could determine assigned roles from permissions

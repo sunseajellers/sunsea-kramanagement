@@ -16,23 +16,6 @@ export default function KRAList({ onEdit }: { onEdit: (kra: KRA) => void }) {
 
     const filteredKras = filterType === 'all' ? kras : kras.filter(kra => kra.type === filterType)
 
-    const loadKras = async () => {
-        if (!user) return
-        setLoading(true)
-        try {
-            const [kraData, teamData] = await Promise.all([
-                fetchKRAs(user.uid),
-                getAllTeams()
-            ])
-            setKras(kraData)
-            setTeams(teamData)
-        } catch (error) {
-            console.error("Failed to load KRAs or teams", error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     useEffect(() => {
         const loadData = async () => {
             if (!user) return

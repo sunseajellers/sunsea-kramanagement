@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import Header from '@/components/Header'
+import { UnifiedHeader } from '@/components/layout'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
@@ -12,7 +12,7 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     // Sidebar removed — using top navbar instead
-    const { user, userData, loading, getDefaultRoute } = useAuth()
+    const { user, userData, loading } = useAuth()
     const router = useRouter()
 
     const redirectRef = useRef(false)
@@ -45,7 +45,7 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Top navbar/header */}
-            <Header />
+            <UnifiedHeader mode="dashboard" />
 
             {/* Main Content */}
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">

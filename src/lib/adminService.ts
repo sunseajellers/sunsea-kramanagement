@@ -1,6 +1,6 @@
 // src/lib/adminService.ts
 import { db } from './firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
 export interface SystemHealth {
     database: 'healthy' | 'warning' | 'error';

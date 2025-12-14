@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAdminDashboardAnalytics, getTeamDetailedAnalytics } from '@/lib/analyticsService'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
 import { userHasPermission } from '@/lib/rbacService'
 import { BarChart3, Users, Target, TrendingUp, Download, FileText, PieChart, Activity } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Area, AreaChart, Pie } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, Area, AreaChart, Pie } from 'recharts'
 
 export default function AdminAnalyticsPage() {
-    const { user, userData } = useAuth()
+    const { userData } = useAuth()
     const [analytics, setAnalytics] = useState<any>(null)
-    const [selectedTeam, setSelectedTeam] = useState<string>('')
     const [teamDetails, setTeamDetails] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'users' | 'reports'>('overview')
@@ -59,7 +57,6 @@ export default function AdminAnalyticsPage() {
             const result = await authenticatedJsonFetch(`/api/analytics?type=team&teamId=${teamId}`)
             if (result.success && result.data) {
                 setTeamDetails(result.data)
-                setSelectedTeam(teamId)
             } else {
                 throw new Error(result.error || 'Failed to load team details')
             }
@@ -220,7 +217,7 @@ export default function AdminAnalyticsPage() {
                                         dataKey="value"
                                         label={({ name, percent }: any) => `${name || ''} ${(percent * 100).toFixed(0)}%`}
                                     >
-                                        {Object.entries(analytics.distributions.priority).map((entry, index) => (
+                                        {Object.entries(analytics.distributions.priority).map((_, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>

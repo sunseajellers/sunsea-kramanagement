@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-    Settings, 
     Bell, 
     Shield, 
     Palette, 
@@ -38,7 +37,7 @@ interface AppSettings {
 }
 
 export default function SettingsPage() {
-    const { userData, loading } = useAuth();
+    const { loading } = useAuth();
     const [saving, setSaving] = useState(false);
     
     const [notifications, setNotifications] = useState<NotificationSettings>({

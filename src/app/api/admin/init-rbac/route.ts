@@ -3,7 +3,7 @@ import { initializeDefaultRBAC } from '@/lib/rbacService';
 import { withRBAC } from '@/lib/rbacMiddleware';
 
 export async function POST(request: NextRequest) {
-    return withRBAC(request, 'system', 'admin', async (request, userId) => {
+    return withRBAC(request, 'system', 'admin', async () => {
         try {
             await initializeDefaultRBAC();
             return NextResponse.json({

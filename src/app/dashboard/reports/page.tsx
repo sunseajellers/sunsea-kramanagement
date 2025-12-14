@@ -3,10 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getTaskAnalytics, getKRAAnalytics, exportAnalyticsData } from '@/lib/analyticsService'
-import TaskStatusChart from '@/components/charts/TaskStatusChart'
-import TaskPriorityChart from '@/components/charts/TaskPriorityChart'
-import TaskTrendChart from '@/components/charts/TaskTrendChart'
-import KRAProgressChart from '@/components/charts/KRAProgressChart'
+import { TaskStatusChart, TaskPriorityChart, TaskTrendChart, KRAProgressChart } from '@/components/features/analytics'
 import {
     BarChart3,
     Download,

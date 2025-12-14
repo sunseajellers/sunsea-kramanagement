@@ -1,8 +1,8 @@
 // src/app/dashboard/admin/notifications/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, TestTube, BarChart3, Settings, Bell, Users, Clock, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, TestTube, Settings, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     getAllNotificationRules,
@@ -14,7 +14,6 @@ import {
     NotificationRule,
     NotificationType,
     NotificationPriority,
-    DEFAULT_NOTIFICATION_RULES,
     initializeDefaultNotificationRules
 } from '@/lib/notificationService';
 import toast from 'react-hot-toast';

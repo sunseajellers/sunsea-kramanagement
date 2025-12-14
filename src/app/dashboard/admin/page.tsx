@@ -7,13 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { Users, Settings, BarChart3, Award, FileText, TrendingUp, Bell, Server, Activity, Database, Shield, AlertTriangle, RefreshCw, Download, Search } from 'lucide-react';
+import { Users, Settings, BarChart3, Award, FileText, Bell, Server, Activity, Database, Shield, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import TaskStatusChart from '@/components/charts/TaskStatusChart';
-import TaskPriorityChart from '@/components/charts/TaskPriorityChart';
-import TaskTrendChart from '@/components/charts/TaskTrendChart';
+import { TaskStatusChart, TaskPriorityChart } from '@/components/features/analytics'
 
 interface SystemHealth {
     database: 'healthy' | 'warning' | 'error';
@@ -35,7 +33,7 @@ interface DbStats {
 }
 
 export default function AdminHome() {
-    const { userData } = useAuth();
+    const { } = useAuth();
     const { hasPermission } = usePermissions();
     const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
     const [dbStats, setDbStats] = useState<DbStats | null>(null);
@@ -151,15 +149,6 @@ export default function AdminHome() {
             setError('Failed to load dashboard data. Please check your permissions and try again.');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const getHealthStatusColor = (status: string) => {
-        switch (status) {
-            case 'healthy': return 'text-green-600';
-            case 'warning': return 'text-yellow-600';
-            case 'error': return 'text-red-600';
-            default: return 'text-gray-600';
         }
     };
 

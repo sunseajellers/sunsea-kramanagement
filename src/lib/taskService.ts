@@ -128,12 +128,7 @@ export async function reassignTask(
 /**
  * Update checklist item status
  */
-export async function updateChecklistItem(
-    taskId: string,
-    checklistItemId: string,
-    completed: boolean,
-    userId: string
-): Promise<void> {
+export async function updateChecklistItem(): Promise<void> {
     // TODO: Implement checklist functionality with subcollections
     throw new Error('Checklist functionality not yet implemented');
 }
@@ -141,11 +136,7 @@ export async function updateChecklistItem(
 /**
  * Add a checklist item to a task
  */
-export async function addChecklistItem(
-    taskId: string,
-    text: string,
-    userId: string
-): Promise<void> {
+export async function addChecklistItem(): Promise<void> {
     // TODO: Implement checklist functionality with subcollections
     throw new Error('Checklist functionality not yet implemented');
 }

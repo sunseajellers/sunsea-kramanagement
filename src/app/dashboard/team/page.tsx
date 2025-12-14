@@ -3,19 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { User, Team } from '@/types'
-import { Loader2, Users, Plus, UserMinus } from 'lucide-react'
+import { Loader2, Users } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/utils'
-import Modal from '@/components/Modal'
+import { Modal } from '@/components/common'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
 
 export default function TeamPage() {
-    const { userData } = useAuth()
+    const { } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [teams, setTeams] = useState<Team[]>([])
     const [loading, setLoading] = useState(true)
-    const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+    const [selectedTeam] = useState<Team | null>(null)
     const [showAddMember, setShowAddMember] = useState(false)
-    const [availableUsers, setAvailableUsers] = useState<User[]>([])
+    const [availableUsers] = useState<User[]>([])
 
     useEffect(() => {
         loadData()
@@ -60,28 +60,11 @@ export default function TeamPage() {
         }
     }
 
-    const handleRemoveFromTeam = async (userId: string) => {
-        try {
-            const result = await authenticatedJsonFetch('/api/team', {
-                method: 'PUT',
-                body: JSON.stringify({ userId, teamId: null }),
-            });
-            
-            if (!result.success) {
-                throw new Error(result.error);
-            }
-            
-            await loadData()
-        } catch (error) {
-            console.error('Failed to remove user from team', error)
-        }
-    }
-
     const getTeamStats = (teamId: string) => {
         const members = getTeamMembers(teamId)
-        const admins = 0
+        const admins = members.length
         const managers = 0
-        const employees = members.length
+        const employees = 0
 
         return { total: members.length, admins, managers, employees }
     }
@@ -137,8 +120,8 @@ export default function TeamPage() {
                                     <div className="text-xs text-gray-500">Managers</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-lg font-bold text-purple-600">{stats.employees}</div>
-                                    <div className="text-xs text-gray-500">Employees</div>
+                                    <div className="text-lg font-bold text-purple-600">{stats.admins}</div>
+                                    <div className="text-xs text-gray-500">Admins</div>
                                 </div>
                             </div>
 
@@ -181,7 +164,7 @@ export default function TeamPage() {
                                 </div>
                                 <div>
                                     <p className="font-semibold text-gray-900">{user.fullName}</p>
-                                    <p className="text-sm text-gray-500 capitalize">Employee</p>
+                                    <p className="text-sm text-gray-500 capitalize">Admin</p>
                                 </div>
                             </div>
                         </div>
@@ -208,7 +191,7 @@ export default function TeamPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold text-gray-900">{user.fullName}</p>
-                                        <p className="text-sm text-gray-500 capitalize">Employee</p>
+                                        <p className="text-sm text-gray-500 capitalize">Admin</p>
                                     </div>
                                 </div>
                                 <button

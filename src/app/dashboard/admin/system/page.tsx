@@ -3,14 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/contexts/PermissionsContext';
-import { getSystemHealth, updateSystemSettings, toggleMaintenanceMode, performSystemBackup, getSystemSettings, getDatabaseStats } from '@/lib/adminService';
+import { getSystemHealth, updateSystemSettings, performSystemBackup, getSystemSettings, getDatabaseStats } from '@/lib/adminService';
 import { userHasPermission } from '@/lib/rbacService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Settings,
@@ -21,10 +19,8 @@ import {
     CheckCircle,
     XCircle,
     Download,
-    Upload,
     RefreshCw,
     Server,
-    Users,
     FileText,
     Lock,
     Unlock
@@ -149,15 +145,6 @@ export default function SystemAdminPage() {
         } catch (error) {
             console.error('Failed to toggle maintenance mode', error);
             toast.error('Failed to toggle maintenance mode');
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'healthy': return 'text-green-600';
-            case 'warning': return 'text-yellow-600';
-            case 'error': return 'text-red-600';
-            default: return 'text-gray-600';
         }
     };
 

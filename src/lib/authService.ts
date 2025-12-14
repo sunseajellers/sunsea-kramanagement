@@ -13,7 +13,6 @@ import {
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from './firebase'
-import { UserRole } from '@/types'
 import { handleError, timestampToDate } from './utils'
 import { assignRolesToUser } from './rbacService'
 
@@ -24,8 +23,7 @@ const googleProvider = new GoogleAuthProvider()
 export const signUpWithEmail = async (
     email: string,
     password: string,
-    fullName: string,
-    role: UserRole = 'employee'
+    fullName: string
 ): Promise<UserCredential> => {
     try {
         // Create user in Firebase Auth

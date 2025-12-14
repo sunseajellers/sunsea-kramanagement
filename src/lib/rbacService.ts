@@ -13,7 +13,7 @@ import {
     writeBatch,
     getDoc
 } from 'firebase/firestore';
-import { Role, Permission, RolePermission, UserRole } from '@/types';
+import { Role, Permission } from '@/types';
 import { timestampToDate, handleError } from './utils';
 
 /**

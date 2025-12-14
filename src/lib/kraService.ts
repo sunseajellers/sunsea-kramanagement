@@ -1,5 +1,5 @@
 // src/lib/kraService.ts
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, limit, or } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import { KRA } from '@/types';
 import { timestampToDate, handleError } from './utils';

@@ -11,13 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Shield, Users, Settings, Eye, PlusCircle, Edit3, Trash } from 'lucide-react';
+import { Plus, Shield, Users, Settings, Eye, Edit3, Trash } from 'lucide-react';
 import { getAllRoles, createRole, updateRole, deleteRole, getRolePermissions, assignPermissionsToRole, getPermissionsByModule, initializeDefaultRBAC } from '@/lib/rbacService';
 import { Role, Permission, UserRole } from '@/types';
 import { toast } from 'sonner';
 
 export default function RolesPage() {
-    const { userData } = useAuth();
+    const { } = useAuth();
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Record<string, Permission[]>>({});
     const [loading, setLoading] = useState(true);

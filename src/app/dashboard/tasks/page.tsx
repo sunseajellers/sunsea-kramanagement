@@ -4,14 +4,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Task, TaskView } from '@/types'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import TaskList from '@/components/TaskList'
-import TaskBoardView from '@/components/TaskBoardView'
-import TaskCalendarView from '@/components/TaskCalendarView'
-import TaskForm from '@/components/TaskForm'
-import TaskDetailModal from '@/components/TaskDetailModal'
+import { TaskList, TaskBoardView, TaskCalendarView, TaskForm, TaskDetailModal } from '@/components/features/tasks'
 import { Plus, ListTodo, Clock, CheckCircle2, AlertCircle, List, LayoutGrid, Calendar as CalendarIcon, Search } from 'lucide-react'
-import { StatsSkeleton, TaskListSkeleton, BoardSkeleton } from '@/components/Skeletons'
-import { NoTasksEmptyState, NoSearchResultsEmptyState } from '@/components/EmptyState'
+import { StatsSkeleton, TaskListSkeleton, BoardSkeleton, NoTasksEmptyState, NoSearchResultsEmptyState } from '@/components/common'
 
 export default function TasksPage() {
     const { user } = useAuth()

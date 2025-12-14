@@ -1,7 +1,6 @@
 // src/lib/rbacMiddleware.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { userHasPermission } from './rbacService';
-import { adminAuth } from './firebase-admin';
 
 /**
  * RBAC Middleware for API routes
@@ -65,10 +64,7 @@ export async function withRBAC(
  * Higher-order component for protecting client-side components
  */
 export function withPermissionCheck(
-    WrappedComponent: React.ComponentType<any>,
-    requiredModule: string,
-    requiredAction: string,
-    fallbackComponent?: React.ComponentType<any>
+    WrappedComponent: React.ComponentType<any>
 ) {
     return function PermissionProtectedComponent(props: any) {
         // This would be implemented with React context or hooks
@@ -80,7 +76,7 @@ export function withPermissionCheck(
 /**
  * Hook for checking permissions in components
  */
-export function usePermission(module: string, action: string): boolean {
+export function usePermission(): boolean {
     // This would check the current user's permissions
     // Implementation would use React context or state management
     // For now, return true (will be implemented properly)

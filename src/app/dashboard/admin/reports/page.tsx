@@ -4,11 +4,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllTeams, getTeamWeeklyReport } from '@/lib/teamService';
-import { getAllUsers } from '@/lib/userService';
 import { generateAdminReport } from '@/lib/analyticsService';
 import { userHasPermission } from '@/lib/rbacService';
-import { Team, User } from '@/types';
-import { FileText, Download, Calendar, Users, TrendingUp, BarChart3, Loader2 } from 'lucide-react';
+import { Team } from '@/types';
+import { FileText, Download, Users, TrendingUp, BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import toast from 'react-hot-toast';
@@ -31,7 +30,6 @@ interface WeeklyReport {
 export default function AdminReportsPage() {
     const { userData } = useAuth();
     const [teams, setTeams] = useState<Team[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
     const [selectedWeek, setSelectedWeek] = useState<string>('');
     const [report, setReport] = useState<WeeklyReport | null>(null);
@@ -57,12 +55,8 @@ export default function AdminReportsPage() {
 
     const loadData = async () => {
         try {
-            const [teamsData, usersData] = await Promise.all([
-                getAllTeams(),
-                getAllUsers()
-            ]);
+            const teamsData = await getAllTeams();
             setTeams(teamsData);
-            setUsers(usersData);
         } catch (error) {
             console.error('Failed to load data', error);
             toast.error('Failed to load data');

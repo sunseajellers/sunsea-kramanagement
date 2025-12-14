@@ -2,7 +2,7 @@
 // BUSINESS LOGIC SERVICE - Scoring calculations
 // This is the SINGLE SOURCE OF TRUTH for all scoring logic
 
-import { Task, KRA, WeeklyReport, ScoringConfig } from '@/types';
+import { Task, WeeklyReport, ScoringConfig } from '@/types';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';
 
@@ -41,7 +41,7 @@ export class ScoringService {
      * This is a placeholder - would need checklist completion data
      * For now, returns 80 as baseline
      */
-    static calculateQualityScore(tasks: Task[]): number {
+    static calculateQualityScore(): number {
         // TODO: Implement based on checklist completion rates
         // For now, return a reasonable baseline
         return 80;
@@ -67,7 +67,7 @@ export class ScoringService {
     ): number {
         const completionScore = this.calculateCompletionScore(tasks);
         const timelinessScore = this.calculateTimelinessScore(tasks);
-        const qualityScore = this.calculateQualityScore(tasks);
+        const qualityScore = this.calculateQualityScore();
         const kraAlignmentScore = this.calculateKraAlignmentScore(tasks);
 
         const weightedScore =
@@ -98,7 +98,7 @@ export class ScoringService {
         // Calculate individual scores
         const completionScore = this.calculateCompletionScore(weekTasks);
         const timelinessScore = this.calculateTimelinessScore(weekTasks);
-        const qualityScore = this.calculateQualityScore(weekTasks);
+        const qualityScore = this.calculateQualityScore();
         const kraAlignmentScore = this.calculateKraAlignmentScore(weekTasks);
         const overallScore = this.calculateOverallScore(weekTasks, config);
 

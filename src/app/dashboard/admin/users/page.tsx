@@ -1,4 +1,4 @@
-import UserManagement from '@/components/UserManagement'
+import { UserManagement } from '@/components/features/users'
 
 export default function UsersPage() {
     return (

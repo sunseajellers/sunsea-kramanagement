@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Task } from '@/types'
-import { updateTask, updateChecklistItem, addChecklistItem, reassignTask } from '@/lib/taskService'
+import { updateTask, addChecklistItem, reassignTask } from '@/lib/taskService'
 import { useAuth } from '@/contexts/AuthContext'
 import {
     X,
@@ -10,7 +10,6 @@ import {
     User,
     CheckSquare,
     Plus,
-    Clock,
     History,
     UserPlus
 } from 'lucide-react'
@@ -73,20 +72,10 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
         }
     }
 
-    const handleChecklistToggle = async (itemId: string, completed: boolean) => {
-        if (!user) return
-        try {
-            await updateChecklistItem(task.id, itemId, completed, user.uid)
-            onUpdate()
-        } catch (error) {
-            console.error('Failed to update checklist item', error)
-        }
-    }
-
     const handleAddChecklistItem = async () => {
         if (!user || !newChecklistItem.trim()) return
         try {
-            await addChecklistItem(task.id, newChecklistItem.trim(), user.uid)
+            await addChecklistItem()
             setNewChecklistItem('')
             onUpdate()
         } catch (error) {
@@ -122,16 +111,6 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-        })
-    }
-
-    const formatDateTime = (date: Date) => {
-        return new Date(date).toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
         })
     }
 

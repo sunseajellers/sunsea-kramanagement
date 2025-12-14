@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { User, Mail, Shield, Calendar, Save, Edit3, Camera, ArrowLeft } from 'lucide-react';
+import { User, Shield, Calendar, Save, Edit3, Camera, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,7 +113,7 @@ export default function ProfilePage() {
                             <p className="text-gray-500">{userData?.email}</p>
                             <div className="mt-2">
                                 <Badge variant="secondary" className="capitalize">
-                                    Employee
+                                    Admin
                                 </Badge>
                             </div>
                         </div>

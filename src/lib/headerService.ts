@@ -1,6 +1,6 @@
 // src/lib/headerService.ts
 import { db } from './firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { HeaderConfig } from '@/types';
 
 const HEADER_CONFIG_DOC_ID = 'global_header_config';
@@ -46,11 +46,11 @@ export function getDefaultHeaderConfig(): HeaderConfig {
         logo: '',
         title: 'JewelMatrix',
         navigation: [
-            { name: 'The Hub', href: '/dashboard', roles: ['admin', 'manager', 'employee'] },
-            { name: 'Goals & Vibes', href: '/dashboard/kras', roles: ['admin', 'manager', 'employee'] },
-            { name: 'To-Do\'s', href: '/dashboard/tasks', roles: ['admin', 'manager', 'employee'] },
-            { name: 'Stats & Wins', href: '/dashboard/reports', roles: ['admin', 'manager', 'employee'] },
-            { name: 'The Squad', href: '/dashboard/team', roles: ['admin', 'manager'] },
+            { name: 'The Hub', href: '/dashboard', roles: ['admin'] },
+            { name: 'Goals & Vibes', href: '/dashboard/kras', roles: ['admin'] },
+            { name: 'To-Do\'s', href: '/dashboard/tasks', roles: ['admin'] },
+            { name: 'Stats & Wins', href: '/dashboard/reports', roles: ['admin'] },
+            { name: 'The Squad', href: '/dashboard/team', roles: ['admin'] },
         ],
         theme: 'indian'
     };

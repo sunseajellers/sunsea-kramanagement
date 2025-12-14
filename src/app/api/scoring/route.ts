@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateUserScore, getScoringConfig, updateScoringConfig } from '@/lib/reportService';
+import { calculateUserScore } from '@/lib/reportService';
 
 // POST /api/scoring/calculate - Calculate user score for a specific period
 export async function POST(request: NextRequest) {
