@@ -47,11 +47,11 @@ export const signUpWithEmail = async (
             updatedAt: serverTimestamp()
         })
 
-        // Assign default employee role if RBAC is initialized
+        // Assign default admin role if RBAC is initialized
         try {
-            const employeeRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'Employee')));
-            if (!employeeRole.empty) {
-                const roleId = employeeRole.docs[0].id;
+            const adminRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'admin')));
+            if (!adminRole.empty) {
+                const roleId = adminRole.docs[0].id;
                 await assignRolesToUser(user.uid, [roleId], 'system');
             }
         } catch (error) {
@@ -104,11 +104,11 @@ export const signInWithGoogle = async (allowCreate: boolean = false): Promise<{ 
                     updatedAt: serverTimestamp()
                 })
 
-                // Assign default employee role if RBAC is initialized
+                // Assign default admin role if RBAC is initialized
                 try {
-                    const employeeRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'Employee')));
-                    if (!employeeRole.empty) {
-                        const roleId = employeeRole.docs[0].id;
+                    const adminRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'admin')));
+                    if (!adminRole.empty) {
+                        const roleId = adminRole.docs[0].id;
                         await assignRolesToUser(user.uid, [roleId], 'system');
                     }
                 } catch (error) {

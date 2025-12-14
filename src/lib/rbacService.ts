@@ -509,44 +509,12 @@ export async function initializeDefaultRBAC(): Promise<void> {
             isActive: true
         });
 
-        const managerRoleId = await createRole({
-            name: 'manager',
-            description: 'Team management and oversight',
-            isSystem: true,
-            isActive: true
-        });
-
-        const employeeRoleId = await createRole({
-            name: 'employee',
-            description: 'Basic employee access',
-            isSystem: true,
-            isActive: true
-        });
-
         // Assign permissions to roles
         const allPermissions = await getAllPermissions();
 
         // Admin gets all permissions
         const adminPermissionIds = allPermissions.map(p => p.id);
         await assignPermissionsToRole(adminRoleId, adminPermissionIds);
-
-        // Manager gets most permissions except system admin
-        const managerPermissionIds = allPermissions
-            .filter(p => p.module !== 'system')
-            .map(p => p.id);
-        await assignPermissionsToRole(managerRoleId, managerPermissionIds);
-
-        // Employee gets basic permissions
-        const employeePermissionIds = allPermissions
-            .filter(p =>
-                (p.module === 'dashboard' && p.action === 'view') ||
-                (p.module === 'tasks' && ['view', 'edit', 'assign'].includes(p.action)) ||
-                (p.module === 'kras' && p.action === 'view') ||
-                (p.module === 'reports' && p.action === 'view') ||
-                (p.module === 'teams' && p.action === 'view')
-            )
-            .map(p => p.id);
-        await assignPermissionsToRole(employeeRoleId, employeePermissionIds);
 
     } catch (error) {
         handleError(error, 'Failed to initialize RBAC');

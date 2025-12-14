@@ -3,12 +3,13 @@
 > **A comprehensive Task Delegation & KRA Management Platform for Modern Teams**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.0.10-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.3-blue)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4.0-blue)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.0-38bdf8)](https://tailwindcss.com/)
 [![Firebase](https://img.shields.io/badge/Firebase-12.6.0-orange)](https://firebase.google.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
-A powerful web-based platform that helps organizations set Key Result Areas (KRAs), delegate daily tasks, monitor progress in real-time, and generate automatic weekly performance reports with intelligent scoring. Features a comprehensive **Role-Based Access Control (RBAC)** system for secure, scalable permission management.
+A powerful web-based platform that helps organizations set Key Result Areas (KRAs), delegate daily tasks, monitor progress in real-time, and generate automatic weekly performance reports with intelligent scoring. Features a simplified **Role-Based Access Control (RBAC)** system with clear separation between system permissions and business rules.
 
 ---
 
@@ -16,26 +17,1437 @@ A powerful web-based platform that helps organizations set Key Result Areas (KRA
 
 - [Overview](#-overview)
 - [Architecture](#️-architecture)
-- [Security & RBAC System](#-security--rbac-system)
+- [Security Model](#-security-model)
 - [Data Models & Database Schema](#-data-models--database-schema)
-- [Performance Considerations](#-performance-considerations)
-- [API Endpoints & Services](#-api-endpoints--services)
-- [Business Logic & Workflows](#-business-logic--workflows)
+- [Service Layer](#-service-layer)
+- [Business Logic](#-business-logic)
+- [API Endpoints](#-api-endpoints)
 - [Features](#-features)
 - [Tech Stack](#️-tech-stack)
 - [Getting Started](#-getting-started)
 - [Project Structure](#-project-structure)
 - [User Roles & Permissions](#-user-roles--permissions)
-- [RBAC System](#-rbac-system)
-- [Detailed Feature Documentation](#-detailed-feature-documentation)
-- [API & Services](#-api--services)
-- [Database Schema](#-database-schema)
-- [Design System](#-design-system)
 - [Development Guide](#-development-guide)
 - [Deployment](#-deployment)
 - [Troubleshooting](#-troubleshooting)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
+
+---
+
+## 🎯 Overview
+
+JewelMatrix is a modern, full-stack KRA (Key Result Area) management and task delegation platform designed for organizations that want to:
+
+- **Set Clear Objectives**: Define KRAs with measurable targets and deadlines
+- **Delegate Effectively**: Assign tasks with proper ownership and accountability
+- **Monitor Progress**: Real-time tracking of task completion and KRA achievement
+- **Generate Insights**: Automated weekly reports with intelligent performance scoring
+- **Maintain Security**: Role-based access control with clear permission boundaries
+
+### Key Capabilities
+
+- **KRA Management**: Create, assign, and track Key Result Areas with different cadences (daily, weekly, monthly)
+- **Task Delegation**: Assign tasks to team members with priority levels and due dates
+- **Progress Tracking**: Visual progress indicators and completion checklists
+- **Performance Scoring**: Automated scoring based on completion, timeliness, quality, and KRA alignment
+- **Team Collaboration**: Team-based task assignment and progress sharing
+- **Admin Controls**: User management, role assignment, and system configuration
+- **Real-time Reports**: Weekly performance reports with detailed breakdowns
+
+---
+
+## 🏗️ Architecture
+
+JewelMatrix follows a **modern monolithic frontend with service-oriented backend** architecture using Next.js 16 App Router.
+
+### Technology Stack
+
+| Category | Technology | Version | Purpose |
+|----------|------------|---------|---------|
+| **Frontend Framework** | Next.js | 16.0.10 | React framework with App Router |
+| **React** | React | 19.2.3 | UI library with concurrent features |
+| **Language** | TypeScript | 5.4.0 | Type-safe JavaScript |
+| **Styling** | Tailwind CSS | 3.4.0 | Utility-first CSS framework |
+| **UI Components** | shadcn/ui + Radix | Latest | Accessible component library |
+| **Database** | Firebase Firestore | 12.6.0 | NoSQL document database |
+| **Authentication** | Firebase Auth | 12.6.0 | User authentication & authorization |
+| **Storage** | Firebase Cloud Storage | 12.6.0 | File attachments & assets |
+| **Charts** | Recharts | 3.4.1 | Data visualization |
+| **Forms** | React Hook Form + Zod | Latest | Form handling & validation |
+| **Icons** | Lucide React | 0.561.0 | Icon library |
+| **Notifications** | Sonner | 2.0.7 | Toast notifications |
+
+### Architecture Patterns
+
+#### **App Router Structure**
+```
+app/
+├── (auth)/           # Authentication routes
+├── dashboard/        # Protected dashboard routes
+│   ├── admin/        # Admin-only routes
+│   ├── kras/         # KRA management
+│   ├── tasks/        # Task management
+│   └── reports/      # Reporting & analytics
+├── api/              # Serverless API routes
+└── globals.css       # Global styles
+```
+
+#### **Service Layer Architecture**
+```
+lib/
+├── authService.ts        # Firebase authentication
+├── rbacService.ts        # System role management
+├── businessRules.ts      # Business logic rules
+├── scoringService.ts     # Performance calculations
+├── taskService.ts        # Task CRUD operations
+├── kraService.ts         # KRA management
+├── userService.ts        # User administration
+├── teamService.ts        # Team management
+├── reportService.ts      # Report generation
+├── analyticsService.ts   # Dashboard analytics
+└── adminService.ts       # System administration
+```
+
+#### **Context Providers**
+- **AuthContext**: Firebase authentication state management
+- **PermissionsContext**: RBAC permission checking and caching
+
+### Data Flow Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React UI      │────│  Service Layer  │────│  Firebase       │
+│   Components    │    │  Business Logic │    │  Firestore      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Context API    │    │  API Routes     │    │  Security       │
+│  State Mgmt     │    │  Serverless     │    │  Rules          │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Deployment Architecture
+
+- **Frontend**: Firebase Hosting (static export)
+- **Backend**: Next.js API Routes (serverless functions)
+- **Database**: Firebase Firestore (global CDN)
+- **Authentication**: Firebase Auth (global service)
+- **Storage**: Firebase Cloud Storage (global CDN)
+- **Security**: Firestore Security Rules + Middleware
+
+---
+
+## 🔐 Security Model
+
+JewelMatrix implements a **dual-layer security model** that separates system access control from business logic permissions.
+
+### RBAC System (System Access Control)
+
+#### **Simplified Role Model**
+```typescript
+type UserRole = 'admin'
+```
+
+- **admin**: Full system access, user management, system configuration
+
+#### **System Permissions**
+System permissions control access to administrative features:
+- `admin.access` - Admin panel access
+- `users.manage` - User creation/modification
+- `roles.assign` - Role assignment
+- `system.config` - System configuration
+- `reports.view` - Advanced reporting
+
+### Business Rules (Data Access Control)
+
+Business rules control access to business data and operations:
+
+```typescript
+class BusinessRulesService {
+  // Can user view this task?
+  static canViewTask(context: ResourceAccessContext): boolean {
+    return Boolean(
+      resourceOwnerId === userId ||                    // Owner
+      resourceAssigneeIds?.includes(userId) ||         // Assignee
+      (resourceTeamId && resourceTeamId === userTeamId) // Team member
+    );
+  }
+
+  // Can user edit this task?
+  static canEditTask(context: ResourceAccessContext): boolean {
+    return Boolean(
+      resourceOwnerId === userId ||             // Owner
+      resourceAssigneeIds?.includes(userId)     // Assignee
+    );
+  }
+}
+```
+
+### Authentication & Authorization Flow
+
+```
+1. User Authentication (Firebase Auth)
+        ↓
+2. Token Validation (Middleware)
+        ↓
+3. RBAC Check (System Permissions)
+        ↓
+4. Business Rules Check (Data Access)
+        ↓
+5. Resource Access Granted/Denied
+```
+
+### Security Implementation
+
+#### **Middleware Protection**
+```typescript
+// middleware.ts - Route-level authentication
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('firebase-auth-token');
+
+  if (!token && isProtectedRoute(request.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+#### **Firestore Security Rules**
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/userRoles/$(userId)).data.role;
+    }
+
+    function isAdmin(userId) {
+      return getUserRole(userId) == 'admin';
+    }
+
+    // Tasks collection with business rules
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated() && (
+        resource.data.assignedBy == request.auth.uid ||     // Creator
+        request.auth.uid in resource.data.assignedTo ||     // Assignee
+        resource.data.teamId == getUserData(request.auth.uid).teamId  // Team member
+      );
+
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.assignedBy == request.auth.uid ||     // Creator
+        request.auth.uid in resource.data.assignedTo        // Assignee
+      );
+
+      allow delete: if isAuthenticated() && (
+        resource.data.assignedBy == request.auth.uid ||     // Creator
+        isAdmin(request.auth.uid)                           // Admin
+      );
+    }
+  }
+}
+```
+
+### Data Security Features
+
+- **Input Sanitization**: DOMPurify for HTML content
+- **Type Validation**: Zod schemas for runtime type checking
+- **XSS Protection**: Content Security Policy headers
+- **CSRF Protection**: Next.js built-in mitigation
+- **Secure Headers**: Security headers middleware
+
+---
+
+## 📊 Data Models & Database Schema
+
+JewelMatrix uses **Firebase Firestore** with a hybrid approach combining document collections and subcollections for optimal data organization.
+
+### Core Data Models
+
+#### **User Model**
+```typescript
+interface User {
+  id: string
+  email: string
+  displayName: string
+  role: UserRole          // System role: admin
+  teamId?: string         // Team assignment
+  avatar?: string
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+#### **Task Model** (Main Document)
+```typescript
+interface Task {
+  id: string
+  title: string
+  description: string
+  kraId?: string           // Optional KRA linkage
+  priority: Priority       // low | medium | high | critical
+  status: TaskStatus       // not_started | assigned | in_progress | blocked | completed | cancelled | on_hold
+  assignedTo: string[]     // User IDs who can work on this task
+  assignedBy: string       // User ID who assigned the task
+  teamId?: string          // Team this task belongs to
+  dueDate: Date
+  attachments?: string[]   // File URLs
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+#### **KRA Model**
+```typescript
+interface KRA {
+  id: string
+  title: string
+  description: string
+  target?: string          // e.g., "Increase sales by 20%"
+  type: KRAType           // daily | weekly | monthly
+  priority: Priority
+  assignedTo: string[]     // User IDs
+  teamIds?: string[]       // Team IDs for team-wide KRAs
+  createdBy: string
+  status: KRAStatus
+  startDate: Date
+  endDate: Date
+  attachments?: string[]
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Subcollection Data Models
+
+#### **Task Checklists** (`/tasks/{taskId}/checklist/{itemId}`)
+```typescript
+interface ChecklistItem {
+  id: string
+  taskId: string
+  text: string
+  completed: boolean
+  completedBy?: string
+  completedAt?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+#### **Task Comments** (`/tasks/{taskId}/comments/{commentId}`)
+```typescript
+interface Comment {
+  id: string
+  taskId: string
+  userId: string
+  userName: string
+  userAvatar?: string
+  text: string
+  createdAt: Date
+}
+```
+
+#### **Task Activity Log** (`/tasks/{taskId}/activityLog/{logId}`)
+```typescript
+interface ActivityLog {
+  id: string
+  taskId: string
+  userId: string
+  userName: string
+  action: string              // 'created', 'assigned', 'status_changed', 'commented'
+  details: string
+  oldValue?: any
+  newValue?: any
+  timestamp: Date
+}
+```
+
+### Database Schema Design
+
+```
+Firestore Database Structure
+├── users/{userId}                    # User profiles
+├── userRoles/{userId}               # User role assignments
+├── teams/{teamId}                   # Team definitions
+├── tasks/{taskId}                   # Task main documents
+│   ├── checklist/{itemId}          # Task checklist items
+│   ├── comments/{commentId}        # Task comments
+│   └── activityLog/{logId}         # Task activity history
+├── kras/{kraId}                    # KRA definitions
+├── weeklyReports/{reportId}        # Generated reports
+├── config/{configId}               # System configuration
+├── notifications/{notificationId}  # User notifications
+└── rolePermissions/{roleId}        # RBAC permissions
+```
+
+### Data Relationships
+
+- **Users** belong to **Teams** (optional)
+- **Tasks** can be linked to **KRAs** (optional)
+- **Tasks** belong to **Teams** (optional)
+- **KRAs** can be assigned to **Users** or **Teams**
+- **Weekly Reports** are generated for **Users**
+- **Notifications** are sent to **Users**
+
+### Indexing Strategy
+
+Firestore automatically indexes fields used in queries. Key indexed fields:
+- `tasks.assignedTo` (array membership queries)
+- `tasks.teamId` (team filtering)
+- `tasks.kraId` (KRA linkage)
+- `tasks.status` (status filtering)
+- `tasks.dueDate` (deadline sorting)
+- `kras.assignedTo` (user assignment)
+- `kras.teamIds` (team assignment)
+- `weeklyReports.userId` (user reports)
+- `weeklyReports.weekStartDate` (date filtering)
+
+---
+
+## 🔧 Service Layer
+
+JewelMatrix implements a comprehensive service layer that separates business logic from UI components and API routes.
+
+### Core Services
+
+#### **Authentication Service** (`authService.ts`)
+```typescript
+class AuthService {
+  static async signIn(email: string, password: string): Promise<User>
+  static async signUp(email: string, password: string, userData: Partial<User>): Promise<User>
+  static async signOut(): Promise<void>
+  static async getCurrentUser(): Promise<User | null>
+  static async updateProfile(userId: string, updates: Partial<User>): Promise<void>
+}
+```
+
+#### **RBAC Service** (`rbacService.ts`)
+```typescript
+class RBACService {
+  static async assignRole(userId: string, role: UserRole): Promise<void>
+  static async getUserRole(userId: string): Promise<UserRole>
+  static async hasPermission(userId: string, permission: string): Promise<boolean>
+  static async initializeDefaultRBAC(): Promise<void>
+}
+```
+
+#### **Business Rules Service** (`businessRules.ts`)
+```typescript
+class BusinessRulesService {
+  static canViewTask(context: ResourceAccessContext): boolean
+  static canEditTask(context: ResourceAccessContext): boolean
+  static canDeleteTask(context: ResourceAccessContext): boolean
+  static canAssignTask(assigner: User, assignee: User): boolean
+  static canViewTeamReport(context: ResourceAccessContext): boolean
+}
+```
+
+#### **Scoring Service** (`scoringService.ts`)
+```typescript
+class ScoringService {
+  static calculateCompletionScore(tasks: Task[]): number
+  static calculateTimelinessScore(tasks: Task[]): number
+  static calculateQualityScore(tasks: Task[]): number
+  static calculateKraAlignmentScore(tasks: Task[]): number
+  static calculateOverallScore(tasks: Task[], config: ScoringConfig): number
+  static async generateWeeklyReport(userId: string, weekStart: Date, weekEnd: Date, config: ScoringConfig): Promise<WeeklyReport>
+}
+```
+
+#### **Task Service** (`taskService.ts`)
+```typescript
+class TaskService {
+  static async createTask(taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>
+  static async getTask(taskId: string): Promise<Task>
+  static async getUserTasks(userId: string, limit?: number): Promise<Task[]>
+  static async updateTask(taskId: string, updates: Partial<Task>): Promise<void>
+  static async deleteTask(taskId: string): Promise<void>
+  static async reassignTask(taskId: string, newAssignees: string[], reassignedBy: string): Promise<void>
+}
+```
+
+#### **KRA Service** (`kraService.ts`)
+```typescript
+class KRAService {
+  static async createKRA(kraData: Omit<KRA, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>
+  static async getKRA(kraId: string): Promise<KRA>
+  static async getUserKRAs(userId: string, limit?: number): Promise<KRA[]>
+  static async updateKRA(kraId: string, updates: Partial<KRA>): Promise<void>
+  static async deleteKRA(kraId: string): Promise<void>
+}
+```
+
+#### **Report Service** (`reportService.ts`)
+```typescript
+class ReportService {
+  static async generateWeeklyReport(userId: string, userName: string, weekStart: Date, weekEnd: Date): Promise<WeeklyReport>
+  static async getUserWeeklyReports(userId: string, limit?: number): Promise<WeeklyReport[]>
+  static async getScoringConfig(): Promise<ScoringConfig>
+  static async updateScoringConfig(config: Omit<ScoringConfig, 'id'>): Promise<void>
+}
+```
+
+#### **Analytics Service** (`analyticsService.ts`)
+```typescript
+class AnalyticsService {
+  static async getDashboardStats(userId: string): Promise<DashboardStats>
+  static async getTaskAnalytics(userId: string, dateRange: DateRange): Promise<TaskAnalytics>
+  static async getTeamAnalytics(teamId: string): Promise<TeamAnalytics>
+  static async getSystemAnalytics(): Promise<SystemAnalytics>
+}
+```
+
+### Service Layer Benefits
+
+1. **Separation of Concerns**: Business logic separated from UI and API layers
+2. **Reusability**: Services can be used across multiple components and API routes
+3. **Testability**: Services can be unit tested independently
+4. **Maintainability**: Changes to business logic are centralized
+5. **Type Safety**: Full TypeScript coverage with proper interfaces
+6. **Error Handling**: Centralized error handling and logging
+
+---
+
+## 💼 Business Logic
+
+JewelMatrix implements sophisticated business rules that govern how the system operates.
+
+### Scoring Algorithm
+
+The performance scoring system uses a weighted algorithm with four key metrics:
+
+```typescript
+interface ScoringConfig {
+  completionWeight: number      // 40% - Task completion rate
+  timelinessWeight: number      // 30% - On-time delivery
+  qualityWeight: number         // 20% - Quality checklist completion
+  kraAlignmentWeight: number    // 10% - KRA alignment
+}
+
+class ScoringService {
+  static calculateOverallScore(tasks: Task[], config: ScoringConfig): number {
+    const completionScore = this.calculateCompletionScore(tasks);
+    const timelinessScore = this.calculateTimelinessScore(tasks);
+    const qualityScore = this.calculateQualityScore(tasks);
+    const kraAlignmentScore = this.calculateKraAlignmentScore(tasks);
+
+    return Math.round(
+      (completionScore * config.completionWeight / 100) +
+      (timelinessScore * config.timelinessWeight / 100) +
+      (qualityScore * config.qualityWeight / 100) +
+      (kraAlignmentScore * config.kraAlignmentWeight / 100)
+    );
+  }
+}
+```
+
+### Task Lifecycle Management
+
+Tasks follow a structured lifecycle with business rules:
+
+```typescript
+enum TaskStatus {
+  'not_started',    // Initial state
+  'assigned',       // Assigned to users
+  'in_progress',    // Work in progress
+  'blocked',        // Blocked by dependencies
+  'completed',      // Successfully completed
+  'cancelled',      // Cancelled
+  'on_hold'         // Temporarily paused
+}
+```
+
+**Business Rules:**
+- Only task creators and admins can delete tasks
+- Assignees can update task status and add comments
+- Team members can view team tasks
+- Due date changes require creator approval
+
+### KRA Management Rules
+
+KRAs have different cadences with specific business logic:
+
+```typescript
+enum KRAType {
+  'daily',    // Daily check-ins and updates
+  'weekly',   // Weekly objectives
+  'monthly'   // Monthly goals
+}
+```
+
+**Business Rules:**
+- Daily KRAs require daily progress updates
+- Weekly KRAs generate weekly reports
+- Monthly KRAs align with monthly performance reviews
+- KRA assignments can be individual or team-based
+
+### Team Collaboration Rules
+
+- **Team Tasks**: Visible to all team members
+- **Team KRAs**: Contributed to by team members
+- **Team Reports**: Aggregated team performance
+- **Admin Oversight**: Admins can view and manage all team resources
+
+### Notification System
+
+Automated notifications for key events:
+
+```typescript
+enum NotificationType {
+  'task_assigned',      // New task assignment
+  'task_updated',       // Task status changes
+  'task_overdue',       // Task past due date
+  'kra_assigned',       // New KRA assignment
+  'kra_updated',        // KRA changes
+  'kra_deadline',       // KRA approaching deadline
+  'team_update',        // Team-related updates
+  'system_alert',       // System notifications
+  'performance_alert',  // Performance warnings
+  'report_ready'        // Report generation complete
+}
+```
+
+---
+
+## 🔌 API Endpoints
+
+JewelMatrix uses Next.js API routes for serverless backend functionality.
+
+### Authentication Endpoints
+
+```
+POST /api/auth/signin          # User sign in
+POST /api/auth/signup          # User registration
+POST /api/auth/signout         # User sign out
+GET  /api/auth/me              # Current user info
+```
+
+### Task Management
+
+```
+GET    /api/tasks              # Get user tasks
+POST   /api/tasks              # Create new task
+GET    /api/tasks/[id]         # Get specific task
+PUT    /api/tasks/[id]         # Update task
+DELETE /api/tasks/[id]         # Delete task
+POST   /api/tasks/[id]/assign  # Reassign task
+```
+
+### KRA Management
+
+```
+GET    /api/kras               # Get user KRAs
+POST   /api/kras               # Create new KRA
+GET    /api/kras/[id]          # Get specific KRA
+PUT    /api/kras/[id]          # Update KRA
+DELETE /api/kras/[id]          # Delete KRA
+```
+
+### Reporting & Analytics
+
+```
+GET    /api/dashboard          # Dashboard statistics
+GET    /api/analytics          # Advanced analytics
+POST   /api/scoring/calculate  # Calculate user score
+GET    /api/reports            # Get user reports
+POST   /api/reports/generate   # Generate weekly report
+```
+
+### Administration
+
+```
+GET    /api/admin/users        # List all users
+POST   /api/admin/users        # Create user
+PUT    /api/admin/users/[id]   # Update user
+DELETE /api/admin/users/[id]   # Delete user
+
+GET    /api/admin/roles        # List roles
+POST   /api/admin/roles        # Create role
+PUT    /api/admin/roles/[id]   # Update role
+
+GET    /api/admin/teams        # List teams
+POST   /api/admin/teams        # Create team
+PUT    /api/admin/teams/[id]   # Update team
+```
+
+### Configuration
+
+```
+GET    /api/scoring/config      # Get scoring configuration
+PUT    /api/scoring/config      # Update scoring config
+
+GET    /api/admin/init-rbac     # Initialize RBAC system
+```
+
+### API Response Format
+
+All API endpoints return standardized responses:
+
+```typescript
+interface APIResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
+}
+
+// Success Response
+{
+  "success": true,
+  "data": { /* response data */ },
+  "message": "Operation completed successfully"
+}
+
+// Error Response
+{
+  "success": false,
+  "error": "VALIDATION_ERROR",
+  "message": "Invalid input parameters"
+}
+```
+
+### Error Handling
+
+- **400 Bad Request**: Validation errors, missing parameters
+- **401 Unauthorized**: Authentication required
+- **403 Forbidden**: Insufficient permissions
+- **404 Not Found**: Resource not found
+- **500 Internal Server Error**: Server errors
+
+---
+
+## ✨ Features
+
+### Core Features
+
+#### **KRA Management**
+- Create KRAs with different cadences (daily, weekly, monthly)
+- Assign KRAs to individuals or teams
+- Set measurable targets and deadlines
+- Track KRA progress over time
+- Visual progress indicators and status tracking
+
+#### **Task Delegation**
+- Create tasks with priority levels and due dates
+- Assign tasks to team members
+- Link tasks to KRAs for alignment tracking
+- Real-time status updates and progress tracking
+- Task comments and activity logging
+
+#### **Performance Scoring**
+- Automated weekly performance reports
+- Multi-factor scoring algorithm (completion, timeliness, quality, KRA alignment)
+- Configurable scoring weights
+- Historical performance tracking
+- Performance trend analysis
+
+#### **Team Collaboration**
+- Team-based task and KRA assignment
+- Shared visibility of team progress
+- Team performance aggregation
+- Admin oversight and reporting
+- Cross-team collaboration support
+
+#### **Admin Dashboard**
+- User management and role assignment
+- Team creation and management
+- System configuration and settings
+- Advanced analytics and reporting
+- Audit logs and system monitoring
+
+### Advanced Features
+
+#### **Real-time Notifications**
+- Task assignments and updates
+- KRA deadlines and progress alerts
+- Performance milestone achievements
+- System announcements and alerts
+
+#### **Progress Tracking**
+- Visual progress bars and indicators
+- Checklist-based task completion
+- Time tracking and effort logging
+- Dependency management and blocking tasks
+
+#### **Reporting & Analytics**
+- Weekly performance reports
+- Team productivity metrics
+- KRA achievement tracking
+- Custom date range reporting
+- Export capabilities (PDF, CSV)
+
+#### **Mobile-Responsive Design**
+- Fully responsive web interface
+- Mobile-optimized task management
+- Touch-friendly interactions
+- Offline capability planning
+
+---
+
+## 🛠️ Tech Stack Details
+
+### Frontend Technologies
+
+| Technology | Version | Purpose | Key Features |
+|------------|---------|---------|--------------|
+| **Next.js** | 16.0.10 | React Framework | App Router, Server Components, API Routes |
+| **React** | 19.2.3 | UI Library | Concurrent Features, Hooks, Context API |
+| **TypeScript** | 5.4.0 | Type Safety | Strict typing, IntelliSense, compile-time checks |
+| **Tailwind CSS** | 3.4.0 | Styling | Utility-first, responsive design, dark mode |
+| **shadcn/ui** | Latest | Components | Accessible, customizable, Radix-based |
+| **Recharts** | 3.4.1 | Charts | React charts, responsive, customizable |
+| **Lucide React** | 0.561.0 | Icons | Consistent iconography, React components |
+| **Sonner** | 2.0.7 | Notifications | Toast notifications, accessible |
+
+### Backend Technologies
+
+| Technology | Version | Purpose | Key Features |
+|------------|---------|--------------|--------------|
+| **Firebase Firestore** | 12.6.0 | Database | NoSQL, real-time, offline support |
+| **Firebase Auth** | 12.6.0 | Authentication | Email/password, OAuth, custom claims |
+| **Firebase Admin** | 13.6.0 | Admin SDK | Server-side operations, user management |
+| **Firebase Hosting** | Latest | Hosting | CDN, SSL, global distribution |
+
+### Development Tools
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **ESLint** | 9.0.0 | Code linting |
+| **Firebase Tools** | 15.0.0 | Firebase CLI |
+| **TypeScript Compiler** | 5.4.0 | Type checking |
+| **PostCSS** | 8.4.0 | CSS processing |
+| **Autoprefixer** | 10.4.0 | CSS vendor prefixes |
+
+### Key Dependencies Explained
+
+#### **State Management**
+- **React Context API**: Global state for authentication and permissions
+- **Custom Hooks**: Encapsulated stateful logic for components
+
+#### **Form Handling**
+- **React Hook Form**: Performant forms with validation
+- **Zod**: Runtime type validation and schema definition
+
+#### **Data Visualization**
+- **Recharts**: Composable charting library for React
+- **Responsive design**: Charts adapt to container sizes
+
+#### **Security**
+- **DOMPurify**: XSS prevention for user-generated content
+- **Firebase Security Rules**: Database-level access control
+- **Next.js Middleware**: Route-level authentication
+
+#### **Utilities**
+- **date-fns**: Modern date utility library
+- **clsx**: Conditional CSS classes
+- **tailwind-merge**: Tailwind class deduplication
+- **class-variance-authority**: Component variant management
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js**: 18.17.0 or higher
+- **npm**: 9.0.0 or higher
+- **Firebase Account**: Google account with Firebase project
+- **Git**: Version control system
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/jewelmatrix.git
+   cd jewelmatrix
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Configure your `.env.local`:
+   ```env
+   # Firebase Configuration
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+   # Admin SDK (for API routes)
+   FIREBASE_ADMIN_PRIVATE_KEY=your_private_key
+   FIREBASE_ADMIN_CLIENT_EMAIL=your_client_email
+   ```
+
+4. **Firebase Setup**
+   - Create a new Firebase project
+   - Enable Firestore Database
+   - Enable Firebase Authentication
+   - Enable Firebase Hosting
+   - Generate Admin SDK credentials
+
+5. **Initialize RBAC System**
+   ```bash
+   npm run dev
+   # Visit http://localhost:3000/api/admin/init-rbac
+   ```
+
+### Development
+
+```bash
+# Start development server
+npm run dev
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+
+# Build for production
+npm run build
+```
+
+### First User Setup
+
+1. Register as the first user at `/signup`
+2. The system automatically assigns admin role
+3. Access admin panel at `/dashboard/admin`
+4. Create additional users and assign roles
+5. Configure system settings
+
+---
+
+## 📁 Project Structure
+
+```
+jewelmatrix/
+├── app/                          # Next.js App Router
+│   ├── (auth)/                   # Authentication routes
+│   │   └── signup/
+│   ├── dashboard/                # Protected dashboard
+│   │   ├── admin/                # Admin-only routes
+│   │   │   ├── analytics/
+│   │   │   ├── notifications/
+│   │   │   ├── reports/
+│   │   │   ├── roles/
+│   │   │   ├── scoring/
+│   │   │   ├── system/
+│   │   │   ├── teams/
+│   │   │   └── users/
+│   │   ├── kras/                 # KRA management
+│   │   ├── profile/              # User profile
+│   │   ├── reports/              # Reports & analytics
+│   │   ├── settings/             # User settings
+│   │   ├── tasks/                # Task management
+│   │   ├── team/                 # Team dashboard
+│   │   └── weekly-reports/       # Performance reports
+│   ├── api/                      # API routes
+│   │   ├── admin/
+│   │   ├── analytics/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   ├── kras/
+│   │   ├── reports/
+│   │   ├── scoring/
+│   │   ├── tasks/
+│   │   └── team/
+│   ├── globals.css               # Global styles
+│   ├── layout.tsx                # Root layout
+│   └── page.tsx                  # Home page
+├── components/                   # React components
+│   ├── ui/                       # Reusable UI components
+│   ├── AdminHeader.tsx           # Admin navigation
+│   ├── DashboardHeader.tsx       # Dashboard navigation
+│   ├── Header.tsx                # Main header
+│   ├── KRA*.tsx                  # KRA-related components
+│   ├── Task*.tsx                 # Task-related components
+│   ├── UserManagement.tsx        # User admin component
+│   └── charts/                   # Chart components
+├── contexts/                     # React contexts
+│   ├── AuthContext.tsx           # Authentication state
+│   └── PermissionsContext.tsx    # Permission state
+├── lib/                          # Business logic & utilities
+│   ├── *Service.ts               # Service layer
+│   ├── firebase.ts               # Firebase client config
+│   ├── firebase-admin.ts         # Firebase admin config
+│   ├── utils.ts                  # Utility functions
+│   ├── validation.ts             # Validation schemas
+│   └── sanitize.ts               # Content sanitization
+├── types/                        # TypeScript definitions
+│   └── index.ts                  # Type definitions
+├── middleware.ts                 # Next.js middleware
+├── tailwind.config.js            # Tailwind configuration
+├── next.config.js                # Next.js configuration
+├── firestore.rules               # Firestore security rules
+├── firebase.json                 # Firebase configuration
+├── package.json                  # Dependencies
+└── README.md                     # This file
+```
+
+---
+
+## 👥 User Roles & Permissions
+
+### System Roles
+
+JewelMatrix uses a simplified RBAC model with three system roles:
+
+#### **Admin** (`admin`)
+**Full system access and control**
+- User management (create, edit, delete users)
+- Role assignment and permission management
+- Team creation and management
+- System configuration and settings
+- All reporting and analytics access
+- RBAC system initialization and maintenance
+
+#### **Admin** (`admin`)
+**Full system access and administration**
+- Complete user management across all teams
+- System configuration and settings
+- Role and permission management
+- Full access to all features and data
+- System analytics and reporting
+- Team creation and management
+
+### Business Rules Matrix
+
+| Operation | Admin | Business Rule |
+|-----------|-------|---------------|
+| Create Users | ✅ | RBAC permission |
+| Assign Roles | ✅ | RBAC permission |
+| Create Teams | ✅ | RBAC permission |
+| View All Users | ✅ | RBAC permission |
+| Create Tasks | ✅ | Business rule |
+| Edit Own Tasks | ✅ | Business rule |
+| Edit Team Tasks | ✅ | Business rule |
+| Delete Tasks | ✅ | Business rule |
+| Create KRAs | ✅ | Business rule |
+| View Team KRAs | ✅ | Business rule |
+| Generate Reports | ✅ | Business rule |
+| System Config | ✅ | RBAC permission |
+
+### Permission Resolution Flow
+
+```
+User Action Request
+        ↓
+1. Authentication Check (Firebase Auth)
+        ↓
+2. RBAC Permission Check (System Access)
+        ↓
+3. Business Rules Check (Data Access)
+        ↓
+4. Resource Ownership Check
+        ↓
+5. Grant/Deny Access
+```
+
+### Role Assignment Process
+
+1. **Self-Registration**: New users register with admin role (full access)
+2. **Admin Assignment**: Admins can manage user roles (when additional roles are created)
+3. **Automatic Assignment**: First user gets admin role automatically
+
+---
+
+## 💻 Development Guide
+
+### Code Organization
+
+#### **Component Structure**
+```typescript
+// components/TaskCard.tsx
+interface TaskCardProps {
+  task: Task
+  onEdit: (task: Task) => void
+  onDelete: (id: string) => void
+}
+
+export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+  // Component logic
+}
+```
+
+#### **Service Layer Pattern**
+```typescript
+// lib/taskService.ts
+export class TaskService {
+  static async createTask(taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    try {
+      // Business logic
+      const docRef = await addDoc(collection(db, 'tasks'), {
+        ...taskData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return docRef.id;
+    } catch (error) {
+      handleError(error, 'Failed to create task');
+      throw error;
+    }
+  }
+}
+```
+
+#### **API Route Pattern**
+```typescript
+// app/api/tasks/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createTask } from '@/lib/taskService';
+import { getUserFromRequest } from '@/lib/auth';
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getUserFromRequest(request);
+    const taskData = await request.json();
+
+    const taskId = await createTask({
+      ...taskData,
+      assignedBy: user.id
+    });
+
+    return NextResponse.json({ success: true, taskId });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Development Workflow
+
+#### **Feature Development**
+1. Create feature branch from `main`
+2. Implement component/service changes
+3. Add/update TypeScript types
+4. Update API routes if needed
+5. Add tests (when testing framework is added)
+6. Update documentation
+7. Create pull request
+
+#### **Code Quality Standards**
+- **TypeScript**: Strict type checking enabled
+- **ESLint**: Airbnb config with React rules
+- **Prettier**: Code formatting (when added)
+- **Conventional Commits**: Structured commit messages
+
+#### **Testing Strategy** (Planned)
+- **Unit Tests**: Service layer functions
+- **Integration Tests**: API routes
+- **E2E Tests**: Critical user flows
+- **Component Tests**: React component testing
+
+### Environment Management
+
+#### **Development Environment**
+```env
+NODE_ENV=development
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=dev-project
+# Development-specific settings
+```
+
+#### **Production Environment**
+```env
+NODE_ENV=production
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=prod-project
+# Production-specific settings
+```
+
+### Performance Optimization
+
+#### **Bundle Analysis**
+```bash
+npm install --save-dev @next/bundle-analyzer
+npm run build:analyze
+```
+
+#### **Image Optimization**
+- Next.js automatic image optimization
+- Firebase Cloud Storage for user uploads
+- Responsive images with `next/image`
+
+#### **Database Optimization**
+- Firestore composite indexes for complex queries
+- Pagination for large datasets
+- Real-time listeners with proper cleanup
+
+### Security Best Practices
+
+#### **Input Validation**
+```typescript
+import { z } from 'zod';
+
+const taskSchema = z.object({
+  title: z.string().min(1).max(100),
+  description: z.string().max(1000),
+  priority: z.enum(['low', 'medium', 'high', 'critical']),
+  dueDate: z.date().min(new Date())
+});
+
+export function validateTask(data: unknown) {
+  return taskSchema.parse(data);
+}
+```
+
+#### **Authentication Guards**
+```typescript
+// middleware.ts
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('firebase-auth-token');
+
+  if (!token && isProtectedRoute(request.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+#### **API Security**
+```typescript
+// API route protection
+export async function GET(request: NextRequest) {
+  const user = await getUserFromRequest(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Continue with authenticated logic
+}
+```
+
+---
+
+## 🚀 Deployment
+
+### Firebase Deployment
+
+#### **Prerequisites**
+- Firebase CLI installed: `npm install -g firebase-tools`
+- Firebase project created
+- Proper permissions for deployment
+
+#### **Initial Setup**
+```bash
+# Login to Firebase
+firebase login
+
+# Initialize Firebase project
+firebase init
+
+# Select services: Hosting, Firestore, Functions
+```
+
+#### **Build Configuration**
+```javascript
+// next.config.js
+module.exports = {
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true
+  }
+}
+```
+
+#### **Firebase Configuration**
+```json
+// firebase.json
+{
+  "hosting": {
+    "public": "out",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
+```
+
+#### **Deployment Script**
+```json
+// package.json
+{
+  "scripts": {
+    "build": "next build",
+    "export": "next build && next export",
+    "deploy": "npm run export && firebase deploy"
+  }
+}
+```
+
+#### **Environment Variables**
+```env
+# Production environment
+NEXT_PUBLIC_FIREBASE_API_KEY=your_prod_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_prod_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_prod_project_id
+```
+
+### Deployment Checklist
+
+- [ ] Environment variables configured
+- [ ] Firebase project initialized
+- [ ] Firestore security rules deployed
+- [ ] Firebase Auth configured
+- [ ] Admin SDK credentials set
+- [ ] RBAC system initialized
+- [ ] Domain configured (optional)
+- [ ] SSL certificate active
+- [ ] Monitoring and logging set up
+
+### Post-Deployment
+
+#### **RBAC Initialization**
+```bash
+# Initialize RBAC system
+curl https://your-project.web.app/api/admin/init-rbac
+```
+
+#### **First Admin Setup**
+1. Register first user (automatically gets admin role)
+2. Configure system settings
+3. Create additional users and teams
+4. Set up notification rules
+
+#### **Monitoring**
+- Firebase Console for usage metrics
+- Firestore usage and performance
+- Authentication logs
+- Error reporting
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### **Build Errors**
+```bash
+# Clear Next.js cache
+rm -rf .next
+
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Check TypeScript errors
+npm run typecheck
+```
+
+#### **Firebase Connection Issues**
+```bash
+# Check Firebase configuration
+firebase projects:list
+
+# Test Firestore connection
+firebase firestore:delete --all-collections
+
+# Check security rules
+firebase deploy --only firestore:rules
+```
+
+#### **Authentication Problems**
+```bash
+# Clear authentication state
+# In browser: localStorage.clear()
+
+# Check Firebase Auth settings
+# Firebase Console > Authentication > Settings
+```
+
+#### **Permission Errors**
+```bash
+# Reinitialize RBAC system
+curl http://localhost:3000/api/admin/init-rbac
+
+# Check user roles in Firestore
+# Firebase Console > Firestore > userRoles collection
+```
+
+### Debug Mode
+
+#### **Enable Debug Logging**
+```typescript
+// lib/utils.ts
+export const DEBUG = process.env.NODE_ENV === 'development';
+
+export function debugLog(message: string, data?: any) {
+  if (DEBUG) {
+    console.log(`[DEBUG] ${message}`, data);
+  }
+}
+```
+
+#### **API Debug Headers**
+```typescript
+// API routes
+export async function GET(request: NextRequest) {
+  const debug = request.headers.get('x-debug') === 'true';
+
+  if (debug) {
+    console.log('Debug: API called', { url: request.url, headers: request.headers });
+  }
+
+  // Continue with normal logic
+}
+```
+
+### Performance Issues
+
+#### **Slow Page Loads**
+- Check bundle size: `npm run build:analyze`
+- Optimize images: Use `next/image`
+- Implement pagination for large lists
+- Use React.memo for expensive components
+
+#### **Database Performance**
+- Add composite indexes for complex queries
+- Use pagination for large result sets
+- Implement caching for frequently accessed data
+- Monitor Firestore usage in Firebase Console
+
+#### **Memory Leaks**
+- Clean up event listeners in useEffect
+- Cancel pending API requests on component unmount
+- Use proper dependency arrays in hooks
+- Monitor with React DevTools Profiler
+
+### Support Resources
+
+- **Firebase Documentation**: https://firebase.google.com/docs
+- **Next.js Documentation**: https://nextjs.org/docs
+- **TypeScript Handbook**: https://www.typescriptlang.org/docs
+- **Tailwind CSS Docs**: https://tailwindcss.com/docs
+
+---
+
+**JewelMatrix** - Empowering teams with intelligent task management and performance tracking. Built with modern web technologies for scalable, secure, and maintainable team collaboration.
 
 ---
 
@@ -110,9 +1522,7 @@ The system implements a sophisticated **Role-Based Access Control** system with 
 #### Roles Hierarchy
 ```typescript
 enum UserRole {
-    admin = 3,    // Full system access
-    manager = 2,  // Team management
-    employee = 1  // Basic access
+    admin = 3    // Full system access
 }
 ```
 
@@ -130,7 +1540,7 @@ enum UserRole {
 
 ### RBAC Initialization
 The system includes a bootstrap process (`/api/admin/init-rbac/route.ts`) that creates:
-- Default roles (Admin, Manager, Employee)
+- Default roles (Admin)
 - System permissions (40+ granular permissions)
 - Role-permission mappings
 - Automatic assignment for first authenticated user
@@ -1302,7 +2712,7 @@ export async function migrateUserSchema(): Promise<void> {
     // Add new fields with defaults
     if (!userData.roleIds) {
       batch.update(doc.ref, {
-        roleIds: ['employee'], // Default role
+        roleIds: ['admin'], // Default role
         updatedAt: Timestamp.now()
       });
     }
@@ -1320,7 +2730,7 @@ export function normalizeUserData(userData: any): User {
     id: userData.id,
     fullName: userData.fullName || userData.name || 'Unknown User',
     email: userData.email,
-    roleIds: userData.roleIds || [userData.role || 'employee'],
+    roleIds: userData.roleIds || [userData.role || 'admin'],
     avatar: userData.avatar,
     teamId: userData.teamId,
     isActive: userData.isActive !== false, // Default to true
@@ -1922,7 +3332,7 @@ This API architecture ensures **consistency**, **performance**, **security**, an
 5. **Completion**: Task closure with activity logging
 
 #### KRA Management Workflow
-1. **Definition**: Managers define KRAs with targets and timelines
+1. **Definition**: Admins define KRAs with targets and timelines
 2. **Assignment**: KRAs assigned to users or teams
 3. **Progress Monitoring**: Regular progress updates
 4. **Task Alignment**: Tasks linked to KRAs for tracking
@@ -1963,7 +3373,7 @@ interface ScoringConfig {
 ### 🔐 **Authentication System**
 - **Email/Password Authentication** via Firebase Auth
 - **Google OAuth Integration** - One-click sign-in
-- **Role-based Registration** - Admin, Manager, Employee roles
+- **Role-based Registration** - Admin role with full access
 - **Password Toggle** - Show/hide password functionality
 - **Form Validation** - Real-time client-side validation
 - **Protected Routes** - Automatic redirection for unauthorized access
@@ -2181,7 +3591,7 @@ Total Score = (Completion × Weight₁) + (Timeliness × Weight₂) +
 
 #### Team Management
 - **Create Teams** - Organize by department/project
-- **Assign Managers** - Designate team leaders
+- **Admin Management** - Full team administration
 - **Add Members** - Build team rosters
 - **Team Analytics** - View team performance
 - **Team Reports** - Generate team-wide reports
@@ -2579,30 +3989,14 @@ JewelMatrix uses a comprehensive **Role-Based Access Control (RBAC)** system wit
 
 ### Default System Roles
 
-#### 1. **Super Admin** (System Role)
+#### **Admin** (System Role)
 - **Full System Access**: All permissions across all modules
-- **System Management**: Can modify system settings and roles
-- **User Management**: Complete control over all users
-- **Data Access**: Access to all organizational data
-- **Cannot be deleted or modified**
-
-#### 2. **Administrator** (System Role)
-- **User Management**: Create, edit, and manage users
-- **Team Management**: Full team organization control
-- **System Configuration**: Access to scoring and system settings
-- **Analytics Access**: View system-wide analytics
-- **Report Generation**: Generate all types of reports
-
-#### 3. **Manager** (System Role)
-- **Team Leadership**: Manage assigned teams and members
-- **Task Management**: Create and assign tasks within teams
-- **KRA Management**: Define KRAs for team members
-- **Performance Monitoring**: View team performance and reports
-- **Limited User Management**: Manage users within their teams
-
-#### 4. **Employee** (System Role)
-- **Personal Tasks**: Manage assigned tasks and update status
-- **KRA Viewing**: View assigned KRAs and progress
+- **System Management**: Complete control over system settings and configuration
+- **User Management**: Create, edit, and manage all users
+- **Team Management**: Full team organization and assignment control
+- **Task & KRA Management**: Create, assign, and manage all tasks and KRAs
+- **Analytics & Reporting**: Access to all system analytics and report generation
+- **Role Management**: Manage permissions and access control (for future custom roles)
 - **Self-Service**: Generate personal reports and analytics
 - **Basic Notifications**: Receive task and system notifications
 

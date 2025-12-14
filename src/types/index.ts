@@ -1,5 +1,5 @@
 // SIMPLE RBAC MODEL - ONE SOURCE OF TRUTH
-export type UserRole = 'admin' | 'manager' | 'employee'
+export type UserRole = 'admin'
 
 // COMMON TYPES
 export type Priority = 'low' | 'medium' | 'high' | 'critical'
