@@ -11,10 +11,11 @@ import {
     sendPasswordResetEmail,
     updateProfile
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { UserRole } from '@/types'
 import { handleError, timestampToDate } from './utils'
+import { assignRolesToUser } from './rbacService'
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider()
@@ -38,14 +39,25 @@ export const signUpWithEmail = async (
 
         // Create user document in Firestore
         await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
+            id: user.uid,
             email: user.email,
             fullName: fullName,
-            role: role,
-            isAdmin: false, // Default to false, must be manually set to true by developer
+            roleIds: [], // Will be assigned after RBAC initialization
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         })
+
+        // Assign default employee role if RBAC is initialized
+        try {
+            const employeeRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'Employee')));
+            if (!employeeRole.empty) {
+                const roleId = employeeRole.docs[0].id;
+                await assignRolesToUser(user.uid, [roleId], 'system');
+            }
+        } catch (error) {
+            // RBAC not initialized yet, will be assigned later
+            console.log('RBAC not initialized, user will need role assignment');
+        }
 
         return userCredential
     } catch (error: any) {
@@ -84,14 +96,26 @@ export const signInWithGoogle = async (allowCreate: boolean = false): Promise<{ 
                 return { success: false, error: 'Account already exists. Please sign in instead.' }
             } else {
                 await setDoc(doc(db, 'users', user.uid), {
-                    uid: user.uid,
+                    id: user.uid,
                     email: user.email,
                     fullName: user.displayName || 'User',
-                    role: 'employee', // Default role for Google sign-in
-                    isAdmin: false, // Default to false, must be manually set to true by developer
+                    roleIds: [], // Will be assigned after RBAC initialization
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 })
+
+                // Assign default employee role if RBAC is initialized
+                try {
+                    const employeeRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'Employee')));
+                    if (!employeeRole.empty) {
+                        const roleId = employeeRole.docs[0].id;
+                        await assignRolesToUser(user.uid, [roleId], 'system');
+                    }
+                } catch (error) {
+                    // RBAC not initialized yet, will be assigned later
+                    console.log('RBAC not initialized, user will need role assignment');
+                }
+
                 return { success: true, userCredential }
             }
         } else {

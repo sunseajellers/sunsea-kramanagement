@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { getSystemHealth, updateSystemSettings, toggleMaintenanceMode, performSystemBackup, getSystemSettings, getDatabaseStats } from '@/lib/adminService';
+import { userHasPermission } from '@/lib/rbacService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -67,10 +68,24 @@ export default function SystemAdminPage() {
         reports: number;
     } | null>(null);
 
+    const [hasAdminAccess, setHasAdminAccess] = useState<boolean | null>(null);
+
     useEffect(() => {
-        if (userData && userData.isAdmin) {
-            loadSystemData();
+        const checkPermission = async () => {
+            if (userData?.uid) {
+                try {
+                    const hasAccess = await userHasPermission(userData.uid, 'admin', 'access')
+                    setHasAdminAccess(hasAccess)
+                    if (hasAccess) {
+                        loadSystemData();
+                    }
+                } catch (error) {
+                    console.error('Error checking admin permission:', error)
+                    setHasAdminAccess(false)
+                }
+            }
         }
+        checkPermission()
     }, [userData]);
 
     const loadSystemData = async () => {
@@ -155,7 +170,7 @@ export default function SystemAdminPage() {
         }
     };
 
-    if (!userData || !userData.isAdmin) {
+    if (hasAdminAccess === false) {
         return (
             <div className="p-6">
                 <div className="text-center">

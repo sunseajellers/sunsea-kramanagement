@@ -18,9 +18,8 @@ import {
     Activity,
     Zap
 } from 'lucide-react'
-import { getDashboardStats, getTaskAnalytics, getKRAAnalytics } from '@/lib/analyticsService'
-import { getUserTasks } from '@/lib/taskService'
-import { getUserKRAs } from '@/lib/kraService'
+import { userHasPermission } from '@/lib/rbacService'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 import { getPriorityColor, getStatusColor, formatDate, calculateProgress } from '@/lib/utils'
 import { StatsSkeleton, TaskListSkeleton } from '@/components/Skeletons'
 import EmptyState from '@/components/EmptyState'
@@ -43,39 +42,50 @@ export default function DashboardPage() {
     // Redirect admin users to admin dashboard
     useEffect(() => {
         if (!redirectRef.current && !authLoading && userData) {
-            if (userData.role === 'admin' || userData.isAdmin) {
-                redirectRef.current = true
-                console.log('🚫 Admin detected on regular dashboard - redirecting to admin dashboard')
-                router.push('/dashboard/admin')
+            const checkAdminPermission = async () => {
+                try {
+                    const isAdmin = await userHasPermission(userData.uid, 'admin', 'access');
+                    if (isAdmin) {
+                        redirectRef.current = true
+                        console.log('🚫 Admin detected on regular dashboard - redirecting to admin dashboard')
+                        router.push('/dashboard/admin')
+                    }
+                } catch (error) {
+                    console.error('Error checking admin permission:', error)
+                }
             }
+            checkAdminPermission()
         }
     }, [userData, authLoading, router])
 
     useEffect(() => {
         if (!userData?.uid) return
-        // Don't load data if user is admin (will be redirected anyway)
-        if (userData.role === 'admin' || userData.isAdmin) return
-        const fetchData = async () => {
+        
+        const loadData = async () => {
+            // Check if user is admin (will be redirected anyway)
+            const isAdmin = await userHasPermission(userData.uid, 'admin', 'access');
+            if (isAdmin) return
+            
             try {
-                const [statsData, tasks, kras, taskAnalyticsData, kraAnalyticsData] = await Promise.all([
-                    getDashboardStats(userData.uid),
-                    getUserTasks(userData.uid),
-                    getUserKRAs(userData.uid),
-                    getTaskAnalytics(userData.uid),
-                    getKRAAnalytics(userData.uid),
-                ])
-                setStats(statsData)
-                setRecentTasks(tasks.slice(0, 5))
-                setActiveKRAs(kras.filter((kra: KRA) => kra.status === 'in_progress').slice(0, 3))
-                setTaskAnalytics(taskAnalyticsData)
-                setKraAnalytics(kraAnalyticsData)
+                const result = await authenticatedJsonFetch(`/api/dashboard?userId=${userData.uid}`);
+                
+                if (result.success && result.data) {
+                    const { stats, recentTasks, activeKRAs, taskAnalytics, kraAnalytics } = result.data;
+                    setStats(stats);
+                    setRecentTasks(recentTasks);
+                    setActiveKRAs(activeKRAs);
+                    setTaskAnalytics(taskAnalytics);
+                    setKraAnalytics(kraAnalytics);
+                } else {
+                    throw new Error(result.error || 'Failed to load dashboard data');
+                }
             } catch (err) {
                 console.error('Failed to load dashboard data', err)
             } finally {
                 setLoading(false)
             }
         }
-        fetchData()
+        loadData()
     }, [userData])
 
     if (loading || !stats) {

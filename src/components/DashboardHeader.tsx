@@ -64,12 +64,12 @@ export default function DashboardHeader() {
         { name: 'Control Center', href: '/dashboard/admin', roles: ['admin'] },
     ]
 
-    const filteredNav = navigation.filter(item => item.roles.includes(userData?.role || 'employee'))
+    const filteredNav = navigation // Permission checks are handled at page level with RBAC
 
     // Debug logging - remove after fixing
     console.log('🔍 Navigation Debug:')
     console.log('- userData:', userData)
-    console.log('- userData.role:', userData?.role)
+    console.log('- userData.roleIds:', userData?.roleIds)
     console.log('- filteredNav count:', filteredNav.length)
     console.log('- filteredNav items:', filteredNav.map(item => item.name))
 
@@ -175,8 +175,7 @@ export default function DashboardHeader() {
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'User'}</p>
                             <p className="text-xs text-gray-500 capitalize">
-                                {userData?.role || 'employee'} 
-                                {userData?.isAdmin && <span className="text-green-600 font-bold"> (ADMIN)</span>}
+                                Employee
                             </p>
                         </div>
                         <div className="relative" ref={userMenuRef}>
@@ -259,7 +258,7 @@ export default function DashboardHeader() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'User'}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{userData?.role || 'employee'}</p>
+                                    <p className="text-xs text-gray-500 capitalize">Employee</p>
                                 </div>
                             </div>
 

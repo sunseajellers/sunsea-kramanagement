@@ -120,7 +120,7 @@ export default function AdminHeader({
   ]
 
   const navigation = customNavigation || defaultNavigation
-  const filteredNav = navigation.filter(item => item.roles.includes(userData?.role || 'admin'))
+  const filteredNav = navigation // Permission checks handled at page level with RBAC
 
   const getThemeColors = (theme: string) => {
     switch (theme) {
@@ -321,7 +321,7 @@ export default function AdminHeader({
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'Admin'}</p>
               <p className="text-xs text-gray-500 capitalize">
-                {userData?.role || 'admin'}
+                Administrator
                 <span className="text-green-600 font-bold ml-1">ADMIN</span>
               </p>
             </div>
@@ -405,7 +405,7 @@ export default function AdminHeader({
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'Admin'}</p>
-                  <p className="text-xs text-gray-500 capitalize">{userData?.role || 'admin'}</p>
+                  <p className="text-xs text-gray-500 capitalize">Administrator</p>
                 </div>
               </div>
 

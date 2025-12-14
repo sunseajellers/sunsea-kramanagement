@@ -133,16 +133,12 @@ export async function searchUsers(query: string): Promise<User[]> {
 }
 
 /**
- * Get users by role.
+ * Get users by role. (Deprecated - use RBAC role queries instead)
  */
 export async function getUsersByRole(role: string): Promise<User[]> {
-    try {
-        const allUsers = await getAllUsers();
-        return allUsers.filter(user => user.role === role);
-    } catch (error) {
-        handleError(error, 'Failed to fetch users by role');
-        throw error;
-    }
+    // During RBAC migration, return empty array
+    // TODO: Implement RBAC-based user role queries
+    return [];
 }
 
 /**

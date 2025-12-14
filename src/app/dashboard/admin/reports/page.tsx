@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getAllTeams, getTeamWeeklyReport } from '@/lib/teamService';
 import { getAllUsers } from '@/lib/userService';
 import { generateAdminReport } from '@/lib/analyticsService';
+import { userHasPermission } from '@/lib/rbacService';
 import { Team, User } from '@/types';
 import { FileText, Download, Calendar, Users, TrendingUp, BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,10 +37,23 @@ export default function AdminReportsPage() {
     const [report, setReport] = useState<WeeklyReport | null>(null);
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [hasAdminAccess, setHasAdminAccess] = useState<boolean | null>(null);
 
     useEffect(() => {
+        const checkPermission = async () => {
+            if (userData?.uid) {
+                try {
+                    const hasAccess = await userHasPermission(userData.uid, 'admin', 'access');
+                    setHasAdminAccess(hasAccess);
+                } catch (error) {
+                    console.error('Error checking admin permission:', error);
+                    setHasAdminAccess(false);
+                }
+            }
+        };
+        checkPermission();
         loadData();
-    }, []);
+    }, [userData]);
 
     const loadData = async () => {
         try {
@@ -123,7 +137,7 @@ export default function AdminReportsPage() {
         return options;
     };
 
-    if (!userData?.isAdmin) {
+    if (hasAdminAccess === false) {
         return <div className="p-6">Access denied</div>;
     }
 

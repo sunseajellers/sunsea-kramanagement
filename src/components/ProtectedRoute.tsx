@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
+import { userHasPermission } from '@/lib/rbacService'
 
 interface ProtectedRouteProps {
     children: React.ReactNode
@@ -22,31 +23,41 @@ export default function ProtectedRoute({
     const [isAuthorized, setIsAuthorized] = useState(false)
 
     useEffect(() => {
-        if (loading) return
+        const checkAccess = async () => {
+            if (loading) return
 
-        // Not authenticated - redirect to login
-        if (!user || !userData) {
-            // Save the intended destination
-            sessionStorage.setItem('redirectAfterLogin', pathname)
-            router.push('/')
-            return
+            // Not authenticated - redirect to login
+            if (!user || !userData) {
+                // Save the intended destination
+                sessionStorage.setItem('redirectAfterLogin', pathname)
+                router.push('/')
+                return
+            }
+
+            // Check admin access
+            if (requireAdmin && userData?.uid) {
+                const hasAdminAccess = await userHasPermission(userData.uid, 'admin', 'access');
+                if (!hasAdminAccess) {
+                    router.push('/dashboard')
+                    return
+                }
+            }
+
+            // Check manager access
+            if (requireManager && userData?.uid) {
+                const hasManagerAccess = await userHasPermission(userData.uid, 'kra', 'manage');
+                if (!hasManagerAccess) {
+                    router.push('/dashboard')
+                    return
+                }
+            }
+
+            // User is authorized
+            setIsAuthorized(true)
         }
 
-        // Check admin access
-        if (requireAdmin && !userData?.isAdmin) {
-            router.push('/dashboard')
-            return
-        }
-
-        // Check manager access
-        if (requireManager && userData?.role !== 'manager' && !userData?.isAdmin) {
-            router.push('/dashboard')
-            return
-        }
-
-        // User is authorized
-        setIsAuthorized(true)
-    }, [user, userData, loading, requireAdmin, requireManager, router, pathname])
+        checkAccess()
+    }, [user, userData, loading, router, pathname, requireAdmin, requireManager])
 
     // Show loading state
     if (loading) {

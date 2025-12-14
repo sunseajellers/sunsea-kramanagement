@@ -9,8 +9,7 @@ import { TaskListSkeleton } from '@/components/Skeletons'
 import { NoKRAsEmptyState } from '@/components/EmptyState'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEffect } from 'react'
-import { fetchKRAs } from '@/lib/kraService'
-import { getAllTeams } from '@/lib/teamService'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 
 export default function KRAPage() {
     const { user } = useAuth()
@@ -28,12 +27,14 @@ export default function KRAPage() {
             if (!user) return
             setLoading(true)
             try {
-                const [kraData, teamData] = await Promise.all([
-                    fetchKRAs(user.uid),
-                    getAllTeams()
-                ])
-                setKras(kraData)
-                setTeams(teamData)
+                const result = await authenticatedJsonFetch(`/api/kras?userId=${user.uid}`);
+                
+                if (result.success && result.data) {
+                    setKras(result.data.kras);
+                    setTeams(result.data.teams);
+                } else {
+                    throw new Error(result.error || 'Failed to load KRAs');
+                }
             } catch (error) {
                 console.error('Failed to load KRAs or teams', error)
             } finally {

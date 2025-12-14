@@ -83,7 +83,7 @@ export default function Header({
   ]
 
   const navigation = headerConfig?.navigation || defaultNavigation
-  const filteredNav = navigation.filter(item => item.roles.includes(userData?.role || 'employee'))
+  const filteredNav = navigation // Permission checks handled at page level with RBAC
 
   const getThemeColors = (theme: string) => {
     switch (theme) {
@@ -221,8 +221,7 @@ export default function Header({
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'User'}</p>
               <p className="text-xs text-gray-500 capitalize">
-                {userData?.role || 'employee'}
-                {userData?.isAdmin && <span className="text-green-600 font-bold"> (ADMIN)</span>}
+                Employee
               </p>
             </div>
             <div className="relative" ref={userMenuRef}>
@@ -305,7 +304,7 @@ export default function Header({
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'User'}</p>
-                  <p className="text-xs text-gray-500 capitalize">{userData?.role || 'employee'}</p>
+                  <p className="text-xs text-gray-500 capitalize">Employee</p>
                 </div>
               </div>
 

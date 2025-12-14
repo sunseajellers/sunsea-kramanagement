@@ -462,7 +462,7 @@ export default function AdminTeamsPage() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Select manager</option>
-                                {users.filter(u => u.role === 'manager').map(manager => (
+                                {users.map(manager => (
                                     <option key={manager.id} value={manager.id}>
                                         {manager.fullName}
                                     </option>
@@ -527,7 +527,7 @@ export default function AdminTeamsPage() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Select manager</option>
-                                {users.filter(u => u.role === 'manager').map(manager => (
+                                {users.map(manager => (
                                     <option key={manager.id} value={manager.id}>
                                         {manager.fullName}
                                     </option>

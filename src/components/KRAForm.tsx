@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Loader2, X, Calendar, Target, FileText, Type } from 'lucide-react'
 import { getAllUsers } from '@/lib/userService'
 import { getAllTeams } from '@/lib/teamService'
+import { userHasPermission } from '@/lib/rbacService'
 
 interface Props {
     initialData?: KRA | null
@@ -20,6 +21,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
     const [loading, setLoading] = useState(false)
     const [users, setUsers] = useState<any[]>([])
     const [teams, setTeams] = useState<any[]>([])
+    const [hasAssignmentPermission, setHasAssignmentPermission] = useState(false)
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -35,12 +37,21 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
 
     useEffect(() => {
         // Load users and teams for assignment (admin/manager only)
-        if (userData?.role === 'admin' || userData?.role === 'manager') {
-            Promise.all([
-                getAllUsers().then(setUsers).catch(console.error),
-                getAllTeams().then(setTeams).catch(console.error)
-            ])
+        const checkPermission = async () => {
+            if (userData?.uid) {
+                const hasAdminAccess = await userHasPermission(userData.uid, 'admin', 'access');
+                const hasManagerAccess = await userHasPermission(userData.uid, 'kra', 'manage');
+                const hasPermission = hasAdminAccess || hasManagerAccess;
+                setHasAssignmentPermission(hasPermission);
+                if (hasPermission) {
+                    Promise.all([
+                        getAllUsers().then(setUsers).catch(console.error),
+                        getAllTeams().then(setTeams).catch(console.error)
+                    ])
+                }
+            }
         }
+        checkPermission()
     }, [userData])
 
     useEffect(() => {
@@ -277,7 +288,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                     </div>
 
                     {/* Assign to Users (Admin/Manager only) */}
-                    {(userData?.role === 'admin' || userData?.role === 'manager') && users.length > 0 && (
+                    {hasAssignmentPermission && users.length > 0 && (
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Assign To
@@ -299,7 +310,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                     )}
 
                     {/* Assign to Teams (Admin/Manager only) */}
-                    {(userData?.role === 'admin' || userData?.role === 'manager') && teams.length > 0 && (
+                    {hasAssignmentPermission && teams.length > 0 && (
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Assign to Teams

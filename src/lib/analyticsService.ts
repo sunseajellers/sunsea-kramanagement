@@ -211,7 +211,7 @@ export async function getAdminDashboardAnalytics() {
             return {
                 userId: user.id,
                 userName: user.fullName,
-                role: user.role,
+                role: 'Employee',
                 teamName: teams.find(t => t.id === user.teamId)?.name || 'No Team',
                 totalTasks: userTasks.length,
                 completedTasks: completedUserTasks,
@@ -320,7 +320,7 @@ export async function getTeamDetailedAnalytics(teamId: string) {
             return {
                 userId: member.id,
                 userName: member.fullName,
-                role: member.role,
+                role: 'Employee',
                 tasksAssigned: memberTasks.length,
                 tasksCompleted: memberTasks.filter(t => t.status === 'completed').length,
                 krasAssigned: memberKRAs.length,

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getScoringConfig, updateScoringConfig } from '@/lib/reportService'
 import { ScoringConfig } from '@/types'
 import { Settings, Save, Loader2, Award, Info } from 'lucide-react'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 
 export default function AdminScoringPage() {
     const { user } = useAuth()
@@ -25,14 +25,19 @@ export default function AdminScoringPage() {
     const loadConfig = async () => {
         setLoading(true)
         try {
-            const data = await getScoringConfig()
-            setConfig(data)
-            setFormData({
-                completionWeight: data.completionWeight,
-                timelinessWeight: data.timelinessWeight,
-                qualityWeight: data.qualityWeight,
-                kraAlignmentWeight: data.kraAlignmentWeight
-            })
+            const result = await authenticatedJsonFetch('/api/scoring/config')
+            if (result.success && result.data) {
+                const data = result.data
+                setConfig(data)
+                setFormData({
+                    completionWeight: data.completionWeight,
+                    timelinessWeight: data.timelinessWeight,
+                    qualityWeight: data.qualityWeight,
+                    kraAlignmentWeight: data.kraAlignmentWeight
+                })
+            } else {
+                throw new Error(result.error)
+            }
         } catch (error) {
             console.error('Failed to load scoring config', error)
         } finally {
@@ -59,16 +64,23 @@ export default function AdminScoringPage() {
 
         setSaving(true)
         try {
-            await updateScoringConfig(
-                {
-                    ...formData,
-                    updatedAt: new Date(),
-                    updatedBy: user.uid
-                },
-                user.uid
-            )
-            await loadConfig()
-            alert('Scoring configuration updated successfully!')
+            const result = await authenticatedJsonFetch('/api/scoring/config', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    config: {
+                        ...formData,
+                        updatedAt: new Date(),
+                        updatedBy: user.uid
+                    }
+                })
+            })
+
+            if (result.success) {
+                await loadConfig()
+                alert('Scoring configuration updated successfully!')
+            } else {
+                throw new Error(result.error || 'Failed to update scoring config')
+            }
         } catch (error) {
             console.error('Failed to update scoring config', error)
             alert('Failed to update scoring configuration. Please try again.')

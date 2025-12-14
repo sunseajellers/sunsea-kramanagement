@@ -2,345 +2,310 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Simplified Helper Functions (avoid circular dependencies) ---
+    // === RBAC HELPER FUNCTIONS ===
 
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
 
-    function isAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    function getUserRoles(userId) {
+      return get(/databases/$(database)/documents/userRoles/$(userId)).data;
     }
 
-    function isManager() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+    function getRolePermissions(roleId) {
+      return get(/databases/$(database)/documents/rolePermissions/$(roleId)).data.permissions;
     }
 
-    function isManagerOrAdmin() {
-      return isAdmin() || isManager();
+    function userHasPermission(userId, module, action) {
+      let userRoles = getUserRoles(userId);
+      let hasPermission = false;
+
+      if (userRoles != null && userRoles.roleIds != null) {
+        let roleIds = userRoles.roleIds;
+        let i = 0;
+        while (i < roleIds.size() && !hasPermission) {
+          let rolePermissions = getRolePermissions(roleIds[i]);
+          if (rolePermissions != null) {
+            let j = 0;
+            while (j < rolePermissions.size() && !hasPermission) {
+              let permission = rolePermissions[j];
+              if (permission.module == module && permission.action == action) {
+                hasPermission = true;
+              }
+              j = j + 1;
+            }
+          }
+          i = i + 1;
+        }
+      }
+
+      return hasPermission;
     }
 
-    function isAssigned(resource, field) {
-      return isAuthenticated() && request.auth.uid in resource.data[field];
+    function isOwner(userId, resource) {
+      return resource.data.ownerId == userId ||
+             resource.data.userId == userId ||
+             resource.data.createdBy == userId ||
+             resource.data.assignedBy == userId;
     }
 
-    function isInTeam(teamId) {
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+    function isAssignedTo(userId, resource) {
+      return userId in resource.data.assignedTo ||
+             userId in resource.data.assignedUsers ||
+             resource.data.assignedTo == userId;
     }
 
-    // --- Users Collection ---
+    function isInTeam(userId, teamId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(userId));
+      return userDoc.data.teamId == teamId;
+    }
+
+    function isTeamMember(userId, resource) {
+      return resource.data.teamId != null && isInTeam(userId, resource.data.teamId);
+    }
+
+    // === USERS COLLECTION ===
     match /users/{userId} {
       // Read: Users can read their own profile, admins can read all
       allow read: if isAuthenticated() && (
         request.auth.uid == userId ||
-        isAdmin()
+        userHasPermission(request.auth.uid, 'admin', 'access')
       );
 
-      // Create: Users can create their own profile, admins can create any
-      allow create: if isAuthenticated()
-        && request.auth.uid == userId
-        && request.resource.data.uid == userId
-        && request.resource.data.isAdmin == false; // Prevent self-promotion
+      // Create: Users can create their own profile during registration
+      allow create: if isAuthenticated() &&
+        request.auth.uid == userId &&
+        request.resource.data.uid == userId;
 
       // Update: Users can update their own basic info, admins can update everything
       allow update: if isAuthenticated() && (
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'role', 'permissions', 'uid', 'createdAt'])) ||
-        // Allow role/permission changes only if current user is admin
-        (request.auth.uid != userId && isAdmin() &&
-         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
-          (request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) &&
-           ['admin', 'manager', 'employee'].hasAny(request.resource.data.role))))
+        request.auth.uid == userId ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
       );
 
       // Delete: Only admins
-      allow delete: if isAuthenticated() && isAdmin();
+      allow delete: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
     }
-    
-    // --- KRAs Collection ---
-    match /kras/{kraId} {
-      // Read: Assigned users, owners, managers, admins
-      allow read: if isAuthenticated() && (
-        isAssigned(resource, 'assignedTo') ||
-        resource.data.ownerId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
 
-      // Create: Users can create their own KRAs, managers/admins can create any
-      allow create: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Update: Owner, assigned users (limited), or managers/admins
-      allow update: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid ||
-        (isAssigned(resource, 'assignedTo') && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedTo', 'ownerId', 'teamIds'])) ||
-        isManagerOrAdmin()
-      );
-
-      // Delete: Owner or managers/admins
-      allow delete: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid ||
-        isAdmin()
-      );
-    }
-    
-    // --- Tasks Collection ---
-    match /tasks/{taskId} {
-      // Read: Assigned users, creator, or managers/admins
-      allow read: if isAuthenticated() && (
-        isAssigned(resource, 'assignedTo') ||
-        resource.data.assignedBy == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Create: Users can create tasks, managers/admins can create any
-      allow create: if isAuthenticated() && (
-        resource.data.assignedBy == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Update: Assigned users (limited updates), creator, or managers/admins
-      allow update: if isAuthenticated() && (
-        (isAssigned(resource, 'assignedTo') && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedTo', 'assignedBy', 'dueDate'])) ||
-        resource.data.assignedBy == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Delete: Creator or managers/admins
-      allow delete: if isAuthenticated() && (
-        resource.data.assignedBy == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-    }
-    
-    // --- Teams Collection ---
-    match /teams/{teamId} {
-      // Read: Team members, managers, admins
-      allow read: if isAuthenticated() && (
-        isInTeam(teamId) ||
-        resource.data.managerId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Create: Managers or admins
-      allow create: if isManagerOrAdmin();
-
-      // Update: Team manager or admins
-      allow update: if isAuthenticated() && (
-        resource.data.managerId == request.auth.uid ||
-        isAdmin()
-      );
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
-    }
-    
-    // --- Notification Rules Collection (Admin Only) ---
-    match /notificationRules/{ruleId} {
-      // Read: Managers or admins
-      allow read: if isManagerOrAdmin();
-
-      // Create: Managers or admins
-      allow create: if isManagerOrAdmin();
-
-      // Update: Managers or admins
-      allow update: if isManagerOrAdmin();
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
-    }
-    
-    // --- Reports Collection ---
-    match /reports/{reportId} {
-      // Read: Report owner or managers/admins
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Create: System or authenticated users
-      allow create: if isAuthenticated();
-
-      // Update: Managers or admins
-      allow update: if isManagerOrAdmin();
-
-      // Delete: Managers or admins
-      allow delete: if isManagerOrAdmin();
-    }
-    
-    // --- Weekly Reports Collection ---
-    match /weeklyReports/{reportId} {
-      // Read: Report owner or managers/admins
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-
-      // Create: System or authenticated users
-      allow create: if isAuthenticated();
-
-      // Update: Managers or admins
-      allow update: if isManagerOrAdmin();
-
-      // Delete: Managers or admins
-      allow delete: if isManagerOrAdmin();
-    }
-    
-    // --- Team Weekly Reports Collection ---
-    match /teamWeeklyReports/{reportId} {
-      // Read: Team members, managers, admins
-      allow read: if isAuthenticated() && (
-        isInTeam(resource.data.teamId) ||
-        isManagerOrAdmin()
-      );
-
-      // Create: System or authenticated users
-      allow create: if isAuthenticated();
-
-      // Update: Managers or admins
-      allow update: if isManagerOrAdmin();
-
-      // Delete: Managers or admins
-      allow delete: if isManagerOrAdmin();
-    }
-    
-    // --- Scoring Configuration Collection ---
-    match /scoringConfig/{configId} {
-      // Read: All authenticated users (to get scoring rules)
-      allow read: if isAuthenticated();
-
-      // Create: Managers or admins
-      allow create: if isManagerOrAdmin();
-
-      // Update: Managers or admins
-      allow update: if isManagerOrAdmin();
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
-    }
-    
-    // --- Notifications Collection ---
-    match /notifications/{notificationId} {
-      // Read: Notification recipient or managers/admins
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-      
-      // Create: System or authenticated users
-      allow create: if isAuthenticated();
-      
-      // Update: Notification recipient (mark as read) or managers/admins
-      allow update: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-      
-      // Delete: Notification recipient or managers/admins
-      allow delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isManagerOrAdmin()
-      );
-    }
-    
-    // --- Admin Logs Collection ---
-    match /admin_logs/{logId} {
-      // Read: Managers or admins
-      allow read: if isManagerOrAdmin();
-
-      // Create: System or authenticated users
-      allow create: if isAuthenticated();
-
-      // Update: Admins only
-      allow update: if isAdmin();
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
-    }
-    
-    // --- Header Configuration Collection ---
-    match /header_config/{configId} {
-      // Read: All authenticated users (to get header settings)
-      allow read: if isAuthenticated();
-
-      // Create: Admins only
-      allow create: if isAdmin();
-
-      // Update: Admins only
-      allow update: if isAdmin();
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
-    }
-    
-    // --- RBAC Collections ---
-    
-    // Roles Collection
+    // === RBAC COLLECTIONS (Admin Only) ===
     match /roles/{roleId} {
-      // Read: All authenticated users (to check permissions)
-      allow read: if isAuthenticated();
-
-      // Create: Admins only
-      allow create: if isAdmin();
-
-      // Update: Admins only (except system roles)
-      allow update: if isAdmin() && (!resource.data.isSystem || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isSystem']));
-
-      // Delete: Admins only (system roles cannot be deleted)
-      allow delete: if isAdmin() && !resource.data.isSystem;
+      allow read, write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
     }
-    
-    // Permissions Collection
+
     match /permissions/{permissionId} {
-      // Read: All authenticated users (to check permissions)
-      allow read: if isAuthenticated();
-
-      // Create: Admins only
-      allow create: if isAdmin();
-
-      // Update: Admins only (except system permissions)
-      allow update: if isAdmin() && (!resource.data.isSystem || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isSystem']));
-
-      // Delete: Admins only (system permissions cannot be deleted)
-      allow delete: if isAdmin() && !resource.data.isSystem;
+      allow read, write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
     }
-    
-    // Role Permissions Collection
-    match /role_permissions/{rolePermissionId} {
-      // Read: All authenticated users (to check permissions)
-      allow read: if isAuthenticated();
 
-      // Create: Admins only
-      allow create: if isAdmin();
-
-      // Update: Admins only
-      allow update: if isAdmin();
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
+    match /rolePermissions/{roleId} {
+      allow read, write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
     }
-    
-    // User Roles Collection
-    match /user_roles/{userRoleId} {
-      // Read: User can read their own roles, admins can read all
+
+    match /userRoles/{userId} {
+      allow read, write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
+    }
+
+    // === TEAMS COLLECTION ===
+    match /teams/{teamId} {
+      // Read: Team members and admins
       allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isAdmin()
+        isInTeam(request.auth.uid, teamId) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
       );
 
-      // Create: Admins only
-      allow create: if isAdmin();
-
-      // Update: Admins only
-      allow update: if isAdmin();
-
-      // Delete: Admins only
-      allow delete: if isAdmin();
+      // Write: Only admins
+      allow write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
     }
-    
-    // Default deny
+
+    // === KRAS COLLECTION ===
+    match /kras/{kraId} {
+      // Read: Owner, assigned users, team members, or admins
+      allow read: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        isAssignedTo(request.auth.uid, resource) ||
+        isTeamMember(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Create: Authenticated users can create KRAs
+      allow create: if isAuthenticated() &&
+        isOwner(request.auth.uid, request.resource);
+
+      // Update: Owner, assigned users (limited fields), or admins
+      allow update: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        (isAssignedTo(request.auth.uid, resource) &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedTo', 'ownerId', 'teamId', 'createdAt', 'createdBy'])) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Delete: Owner or admins
+      allow delete: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+    }
+
+    // === TASKS COLLECTION ===
+    match /tasks/{taskId} {
+      // Read: Creator, assigned users, team members, or admins
+      allow read: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        isAssignedTo(request.auth.uid, resource) ||
+        isTeamMember(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Create: Authenticated users can create tasks
+      allow create: if isAuthenticated() &&
+        isOwner(request.auth.uid, request.resource);
+
+      // Update: Creator, assigned users (limited fields), or admins
+      allow update: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        (isAssignedTo(request.auth.uid, resource) &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedTo', 'assignedBy', 'teamId', 'createdAt', 'createdBy'])) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Delete: Creator or admins
+      allow delete: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+    }
+
+    // === REPORTS COLLECTIONS ===
+    match /weeklyReports/{reportId} {
+      // Read: Report owner or admins
+      allow read: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Create: Report owner
+      allow create: if isAuthenticated() &&
+        isOwner(request.auth.uid, request.resource);
+
+      // Update/Delete: Report owner or admins
+      allow update, delete: if isAuthenticated() && (
+        isOwner(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+    }
+
+    match /teamWeeklyReports/{reportId} {
+      // Read: Team members or admins
+      allow read: if isAuthenticated() && (
+        isTeamMember(request.auth.uid, resource) ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Write: Only admins (team reports are generated by system/admin)
+      allow write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
+    }
+
+    // === NOTIFICATIONS COLLECTION ===
+    match /notifications/{notificationId} {
+      // Read: Notification recipient or admins
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Create: System or admins
+      allow create: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
+
+      // Update: Recipient (mark as read) or admins
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Delete: Recipient or admins
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+    }
+
+    // === COMMENTS COLLECTION ===
+    match /comments/{commentId} {
+      // Read: Task/KRA participants, team members, or admins
+      allow read: if isAuthenticated() && (
+        exists(/databases/$(database)/documents/tasks/$(resource.data.taskId)) &&
+        (isOwner(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))) ||
+         isAssignedTo(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))) ||
+         isTeamMember(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))) ||
+         userHasPermission(request.auth.uid, 'admin', 'access')) ||
+        exists(/databases/$(database)/documents/kras/$(resource.data.kraId)) &&
+        (isOwner(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId))) ||
+         isAssignedTo(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId))) ||
+         isTeamMember(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId))) ||
+         userHasPermission(request.auth.uid, 'admin', 'access'))
+      );
+
+      // Create: Task/KRA participants
+      allow create: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        ((exists(/databases/$(database)/documents/tasks/$(resource.data.taskId)) &&
+          (isOwner(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))) ||
+           isAssignedTo(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))) ||
+           isTeamMember(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))))) ||
+         (exists(/databases/$(database)/documents/kras/$(resource.data.kraId)) &&
+          (isOwner(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId))) ||
+           isAssignedTo(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId))) ||
+           isTeamMember(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId)))));
+
+      // Update/Delete: Comment author or admins
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        userHasPermission(request.auth.uid, 'admin', 'access')
+      );
+    }
+
+    // === ACTIVITY LOGS COLLECTION ===
+    match /activityLogs/{logId} {
+      // Read: Related resource participants or admins
+      allow read: if isAuthenticated() && (
+        userHasPermission(request.auth.uid, 'admin', 'access') ||
+        (resource.data.userId == request.auth.uid) ||
+        (resource.data.taskId != null &&
+         (isOwner(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))) ||
+          isAssignedTo(request.auth.uid, get(/databases/$(database)/documents/tasks/$(resource.data.taskId))))) ||
+        (resource.data.kraId != null &&
+         (isOwner(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId))) ||
+          isAssignedTo(request.auth.uid, get(/databases/$(database)/documents/kras/$(resource.data.kraId)))))
+      );
+
+      // Create: System or resource participants
+      allow create: if isAuthenticated() &&
+        (userHasPermission(request.auth.uid, 'admin', 'access') ||
+         resource.data.userId == request.auth.uid);
+
+      // No updates/deletes allowed
+      allow update, delete: if false;
+    }
+
+    // === SYSTEM CONFIGURATION COLLECTIONS ===
+    match /systemConfig/{configId} {
+      allow read, write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
+    }
+
+    match /scoringConfig/{configId} {
+      allow read, write: if isAuthenticated() &&
+        userHasPermission(request.auth.uid, 'admin', 'access');
+    }
+
+    // === DEFAULT DENY ===
     match /{document=**} {
       allow read, write: if false;
     }

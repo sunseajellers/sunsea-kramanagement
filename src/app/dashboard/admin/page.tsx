@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
-import { getAdminDashboardAnalytics } from '@/lib/analyticsService';
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 import { Users, Settings, BarChart3, Award, FileText, TrendingUp, Bell, Server, Activity, Database, Shield, AlertTriangle, RefreshCw, Download, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -132,15 +132,20 @@ export default function AdminHome() {
         try {
             setLoading(true);
             setError(null);
-            const [healthData, statsData, analyticsData] = await Promise.all([
+            const [healthData, statsData, analyticsResult] = await Promise.all([
                 getSystemHealth(),
                 getDatabaseStats(),
-                getAdminDashboardAnalytics()
+                authenticatedJsonFetch('/api/analytics')
             ]);
 
             setSystemHealth(healthData);
             setDbStats(statsData);
-            setAnalytics(analyticsData);
+            
+            if (analyticsResult.success && analyticsResult.data) {
+                setAnalytics(analyticsResult.data);
+            } else {
+                throw new Error(analyticsResult.error || 'Failed to load analytics');
+            }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
             setError('Failed to load dashboard data. Please check your permissions and try again.');

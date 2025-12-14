@@ -113,7 +113,7 @@ export default function ProfilePage() {
                             <p className="text-gray-500">{userData?.email}</p>
                             <div className="mt-2">
                                 <Badge variant="secondary" className="capitalize">
-                                    {userData?.role}
+                                    Employee
                                 </Badge>
                             </div>
                         </div>
@@ -125,7 +125,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-600">
                             <Shield className="h-4 w-4" />
-                            <span>{userData?.isAdmin ? 'Administrator' : 'Team Member'}</span>
+                            <span>Team Member</span>
                         </div>
                     </CardContent>
                 </Card>

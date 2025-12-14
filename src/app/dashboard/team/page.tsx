@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAllUsers, updateUser } from '@/lib/userService'
-import { getAllTeams } from '@/lib/teamService'
 import { User, Team } from '@/types'
 import { Loader2, Users, Plus, UserMinus } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/utils'
 import Modal from '@/components/Modal'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 
 export default function TeamPage() {
     const { userData } = useAuth()
@@ -25,12 +24,14 @@ export default function TeamPage() {
     const loadData = async () => {
         setLoading(true)
         try {
-            const [usersData, teamsData] = await Promise.all([
-                getAllUsers(),
-                getAllTeams()
-            ])
-            setUsers(usersData)
-            setTeams(teamsData)
+            const result = await authenticatedJsonFetch('/api/team');
+            
+            if (result.success && result.data) {
+                setUsers(result.data.users);
+                setTeams(result.data.teams);
+            } else {
+                throw new Error(result.error || 'Failed to load team data');
+            }
         } catch (error) {
             console.error('Failed to load team data', error)
         } finally {
@@ -44,7 +45,15 @@ export default function TeamPage() {
 
     const handleAddToTeam = async (userId: string, teamId: string) => {
         try {
-            await updateUser(userId, { teamId })
+            const result = await authenticatedJsonFetch('/api/team', {
+                method: 'PUT',
+                body: JSON.stringify({ userId, teamId }),
+            });
+            
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to add user to team');
+            }
+            
             await loadData()
         } catch (error) {
             console.error('Failed to add user to team', error)
@@ -53,7 +62,15 @@ export default function TeamPage() {
 
     const handleRemoveFromTeam = async (userId: string) => {
         try {
-            await updateUser(userId, { teamId: undefined })
+            const result = await authenticatedJsonFetch('/api/team', {
+                method: 'PUT',
+                body: JSON.stringify({ userId, teamId: null }),
+            });
+            
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+            
             await loadData()
         } catch (error) {
             console.error('Failed to remove user from team', error)
@@ -62,9 +79,10 @@ export default function TeamPage() {
 
     const getTeamStats = (teamId: string) => {
         const members = getTeamMembers(teamId)
-        const admins = members.filter(m => m.role === 'admin').length
-        const managers = members.filter(m => m.role === 'manager').length
-        const employees = members.filter(m => m.role === 'employee').length
+        // Role-based stats temporarily disabled during RBAC migration
+        const admins = 0
+        const managers = 0
+        const employees = members.length
 
         return { total: members.length, admins, managers, employees }
     }
@@ -107,18 +125,7 @@ export default function TeamPage() {
                                         <p className="text-sm text-gray-500">{stats.total} members</p>
                                     </div>
                                 </div>
-                                {(userData?.role === 'admin' || userData?.role === 'manager') && (
-                                    <button
-                                        onClick={() => {
-                                            setSelectedTeam(team)
-                                            setAvailableUsers(users.filter(u => !u.teamId || u.teamId !== team.id))
-                                            setShowAddMember(true)
-                                        }}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    >
-                                        <Plus className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                )}
+                                {/* Team management buttons temporarily disabled during RBAC migration */}
                             </div>
 
                             {/* Team Stats */}
@@ -147,14 +154,7 @@ export default function TeamPage() {
                                                 <div className={`w-8 h-8 bg-gradient-to-br ${getAvatarColor(member.fullName)} rounded-full flex items-center justify-center text-white text-xs font-semibold`}>
                                                     {getInitials(member.fullName)}
                                                 </div>
-                                                {(userData?.role === 'admin' || userData?.role === 'manager') && (
-                                                    <button
-                                                        onClick={() => handleRemoveFromTeam(member.id)}
-                                                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                                    >
-                                                        <UserMinus className="w-3 h-3" />
-                                                    </button>
-                                                )}
+                                                {/* Remove member button temporarily disabled during RBAC migration */}
                                             </div>
                                         ))}
                                         {members.length > 6 && (
@@ -184,22 +184,10 @@ export default function TeamPage() {
                                 </div>
                                 <div>
                                     <p className="font-semibold text-gray-900">{user.fullName}</p>
-                                    <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                                    <p className="text-sm text-gray-500 capitalize">Employee</p>
                                 </div>
                             </div>
-                            {(userData?.role === 'admin' || userData?.role === 'manager') && (
-                                <div className="flex space-x-2">
-                                    {teams.map((team) => (
-                                        <button
-                                            key={team.id}
-                                            onClick={() => handleAddToTeam(user.id, team.id)}
-                                            className="px-3 py-1 text-xs bg-primary-100 text-primary-700 rounded-full hover:bg-primary-200 transition-colors"
-                                        >
-                                            Add to {team.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            {/* Team management buttons temporarily disabled during RBAC migration */}
                         </div>
                     ))}
                     {users.filter(user => !user.teamId).length === 0 && (
@@ -224,7 +212,7 @@ export default function TeamPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold text-gray-900">{user.fullName}</p>
-                                        <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                                        <p className="text-sm text-gray-500 capitalize">Employee</p>
                                     </div>
                                 </div>
                                 <button

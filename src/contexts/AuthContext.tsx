@@ -3,14 +3,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User } from 'firebase/auth'
 import { onAuthStateChange, getUserData, logOut } from '@/lib/authService'
-import { UserRole } from '@/types'
 
 interface UserData {
     uid: string
     email: string | null
     fullName: string
-    role: UserRole
-    isAdmin: boolean
+    roleIds: string[]
     avatar?: string
     teamId?: string
 }
@@ -61,8 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             uid: data.uid || firebaseUser.uid,
                             email: data.email || firebaseUser.email,
                             fullName: data.fullName || firebaseUser.displayName || 'User',
-                            role: data.role || 'employee',
-                            isAdmin: data.isAdmin === true, // Explicitly check for true
+                            roleIds: data.roleIds || [],
                             avatar: data.avatar || undefined,
                             teamId: data.teamId || undefined
                         }
@@ -83,8 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                         uid: firebaseUser.uid,
                         email: firebaseUser.email,
                         fullName: firebaseUser.displayName || 'User',
-                        role: 'employee',
-                        isAdmin: false,
+                        roleIds: [],
                         avatar: undefined,
                         teamId: undefined
                     })
@@ -114,12 +110,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
     const getDefaultRoute = () => {
         if (!userData) return '/dashboard'
         
-        // Admin users go to admin dashboard
-        if (userData.role === 'admin' || userData.isAdmin) {
-            return '/dashboard/admin'
-        }
-        
-        // Everyone else goes to regular dashboard
+        // All authenticated users go to regular dashboard
+        // Permission checks are handled by ProtectedRoute components
         return '/dashboard'
     }
 

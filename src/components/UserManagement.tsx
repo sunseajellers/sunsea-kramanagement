@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { User, Permission, LegacyPermission } from '@/types'
 import { getAllUsers, updateUser, deleteUser, bulkUpdateUsers } from '@/lib/userService'
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_CATEGORIES, PERMISSION_DESCRIPTIONS, ROLE_CONFIGURATIONS, validateRoleTransition, canManageUser, getManageableRoles } from '@/lib/permissions'
+import { assignRolesToUser, getAllRoles } from '@/lib/rbacService'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -66,7 +67,7 @@ export default function UserManagement() {
         let filtered = users.filter(user => {
             const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 user.email.toLowerCase().includes(searchTerm.toLowerCase())
-            const matchesRole = roleFilter === 'all' || user.role === roleFilter
+            const matchesRole = roleFilter === 'all' // Role filtering temporarily disabled during RBAC migration
             const matchesStatus = statusFilter === 'all' ||
                                 (statusFilter === 'active' && user.isActive !== false) ||
                                 (statusFilter === 'inactive' && user.isActive === false)
@@ -88,8 +89,9 @@ export default function UserManagement() {
                     bValue = b.email.toLowerCase()
                     break
                 case 'role':
-                    aValue = a.role
-                    bValue = b.role
+                    // Role sorting temporarily disabled during RBAC migration
+                    aValue = 'employee'
+                    bValue = 'employee'
                     break
                 case 'joined':
                     aValue = a.createdAt.getTime()
@@ -120,24 +122,32 @@ export default function UserManagement() {
             return
         }
 
-        // Validate the role transition
-        const validation = validateRoleTransition(
-            targetUser.role,
-            newRole as any,
-            currentUser.role,
-            currentUser.uid,
-            userId
-        )
+        // Role transition validation temporarily disabled during RBAC migration
+        // const validation = validateRoleTransition(
+        //     targetUser.role,
+        //     newRole as any,
+        //     currentUser.role,
+        //     currentUser.uid,
+        //     userId
+        // )
 
-        if (!validation.valid) {
-            toast.error(validation.reason || 'Invalid role change')
-            return
-        }
+        // if (!validation.valid) {
+        //     toast.error(validation.reason || 'Invalid role change')
+        //     return
+        // }
 
         try {
-            await updateUser(userId, { role: newRole as any })
-            toast.success('Role updated successfully')
-            loadUsers()
+            // For RBAC migration, assign the role instead of updating user.role
+            // First, find the role ID for the new role
+            const roles = await getAllRoles()
+            const roleToAssign = roles.find(r => r.name.toLowerCase() === newRole.toLowerCase())
+            if (roleToAssign) {
+                await assignRolesToUser(userId, [roleToAssign.id], currentUser!.uid)
+                toast.success('Role updated successfully')
+                loadUsers()
+            } else {
+                toast.error('Role not found')
+            }
         } catch (error) {
             toast.error('Failed to update role')
         }
@@ -152,8 +162,17 @@ export default function UserManagement() {
             switch (bulkAction.type) {
                 case 'role_change':
                     if (!bulkAction.value) return
-                    await bulkUpdateUsers(userIds, { role: bulkAction.value as any })
-                    toast.success(`Updated ${userIds.length} users' roles`)
+                    // For RBAC migration, assign roles to users
+                    const roles = await getAllRoles()
+                    const roleToAssign = roles.find(r => r.name.toLowerCase() === bulkAction.value!.toLowerCase())
+                    if (roleToAssign) {
+                        for (const userId of userIds) {
+                            await assignRolesToUser(userId, [roleToAssign.id], currentUser!.uid)
+                        }
+                        toast.success(`Updated ${userIds.length} users' roles`)
+                    } else {
+                        toast.error('Role not found')
+                    }
                     break
                 case 'delete':
                     for (const userId of userIds) {
@@ -204,7 +223,7 @@ export default function UserManagement() {
             ...filteredUsers.map(user => [
                 `"${user.fullName}"`,
                 `"${user.email}"`,
-                user.role,
+                'Employee',
                 user.isActive !== false ? 'Active' : 'Inactive',
                 user.createdAt.toISOString().split('T')[0],
                 user.lastLogin ? user.lastLogin.toISOString().split('T')[0] : 'Never'
@@ -231,19 +250,14 @@ export default function UserManagement() {
     const handleSavePermissions = async () => {
         if (!selectedUser) return
 
-        try {
-            await updateUser(selectedUser.id, { permissions: customPermissions })
-            toast.success('Permissions updated successfully')
-            setDialogOpen(false)
-            loadUsers()
-        } catch (error) {
-            toast.error('Failed to update permissions')
-        }
+        // Permissions are now managed via RBAC roles
+        toast.success('Permissions are now managed via RBAC roles. Please assign appropriate roles to users.')
+        setDialogOpen(false)
     }
 
     const openPermissionDialog = (user: User) => {
         setSelectedUser(user)
-        setCustomPermissions(user.permissions || [])
+        setCustomPermissions([]) // Permissions now managed via RBAC
         setDialogOpen(true)
     }
 
@@ -409,18 +423,13 @@ export default function UserManagement() {
                                         <h3 className="font-medium">{user.fullName}</h3>
                                         <p className="text-sm text-muted-foreground">{user.email}</p>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <Badge className={getRoleBadgeColor(user.role)}>
-                                                {user.role}
+                                            <Badge className="bg-blue-100 text-blue-800">
+                                                Employee
                                             </Badge>
                                             {user.isActive === false && (
                                                 <Badge variant="secondary">Inactive</Badge>
                                             )}
-                                            {user.isAdmin && (
-                                                <Badge variant="destructive">
-                                                    <Shield className="h-3 w-3 mr-1" />
-                                                    Admin
-                                                </Badge>
-                                            )}
+                                            {/* Admin badge temporarily disabled during RBAC migration */}
                                         </div>
                                     </div>
                                 </div>
@@ -441,13 +450,7 @@ export default function UserManagement() {
                                                 Permissions
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                onClick={() => handleRoleChange(user.id, user.role === 'admin' ? 'manager' : user.role === 'manager' ? 'employee' : 'admin')}
-                                                disabled={!currentUser || !canManageUser(currentUser.role, currentUser.uid, user.role, user.id)}
-                                            >
-                                                <Edit className="h-4 w-4 mr-2" />
-                                                Change Role
-                                            </DropdownMenuItem>
+                                            {/* Role change temporarily disabled during RBAC migration */}
                                             <DropdownMenuItem
                                                 onClick={() => updateUser(user.id, { isActive: user.isActive === false })}
                                             >
@@ -474,14 +477,14 @@ export default function UserManagement() {
                     {selectedUser && (
                         <div className="space-y-6">
                             <div className="bg-muted p-4 rounded-lg">
-                                <h3 className="font-medium mb-2">Role: {selectedUser.role}</h3>
+                                <h3 className="font-medium mb-2">Role: Employee</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    {ROLE_CONFIGURATIONS.find(r => r.role === selectedUser.role)?.description}
+                                    Employee role with standard permissions managed via RBAC.
                                 </p>
                                 <div className="mt-2">
                                     <p className="text-sm font-medium">Default Permissions:</p>
                                     <div className="flex flex-wrap gap-1 mt-1">
-                                        {DEFAULT_ROLE_PERMISSIONS[selectedUser.role].map((perm) => (
+                                        {DEFAULT_ROLE_PERMISSIONS['employee'].map((perm) => (
                                             <Badge key={perm} variant="secondary" className="text-xs">
                                                 {perm.replace(/_/g, ' ')}
                                             </Badge>

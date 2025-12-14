@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getUserTasks, getTaskStats } from '@/lib/taskService'
 import { Task, TaskView } from '@/types'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 import TaskList from '@/components/TaskList'
 import TaskBoardView from '@/components/TaskBoardView'
 import TaskCalendarView from '@/components/TaskCalendarView'
@@ -34,12 +34,14 @@ export default function TasksPage() {
             setLoadingStats(true)
             setLoadingTasks(true)
             try {
-                const [statsData, tasksData] = await Promise.all([
-                    getTaskStats(user.uid),
-                    getUserTasks(user.uid)
-                ])
-                setStats(statsData)
-                setTasks(tasksData)
+                const result = await authenticatedJsonFetch(`/api/tasks?userId=${user.uid}`);
+                
+                if (result.success && result.data) {
+                    setStats(result.data.stats);
+                    setTasks(result.data.tasks);
+                } else {
+                    throw new Error(result.error || 'Failed to load tasks');
+                }
             } catch (error) {
                 console.error('Failed to load data', error)
             } finally {

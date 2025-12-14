@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAdminDashboardAnalytics, getTeamDetailedAnalytics, generateAdminReport } from '@/lib/analyticsService'
+import { getAdminDashboardAnalytics, getTeamDetailedAnalytics } from '@/lib/analyticsService'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
+import { userHasPermission } from '@/lib/rbacService'
 import { BarChart3, Users, Target, TrendingUp, Download, FileText, PieChart, Activity } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Area, AreaChart, Pie } from 'recharts'
 
@@ -13,18 +15,38 @@ export default function AdminAnalyticsPage() {
     const [teamDetails, setTeamDetails] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'users' | 'reports'>('overview')
+    const [hasAdminAccess, setHasAdminAccess] = useState<boolean | null>(null)
 
     useEffect(() => {
-        if (userData?.role === 'admin') {
-            loadAnalytics()
+        const checkPermission = async () => {
+            if (userData?.uid) {
+                try {
+                    const hasAccess = await userHasPermission(userData.uid, 'admin', 'access')
+                    setHasAdminAccess(hasAccess)
+                    if (hasAccess) {
+                        loadAnalytics()
+                    } else {
+                        setLoading(false)
+                    }
+                } catch (error) {
+                    console.error('Error checking admin permission:', error)
+                    setHasAdminAccess(false)
+                    setLoading(false)
+                }
+            }
         }
+        checkPermission()
     }, [userData])
 
     const loadAnalytics = async () => {
         try {
             setLoading(true)
-            const data = await getAdminDashboardAnalytics()
-            setAnalytics(data)
+            const result = await authenticatedJsonFetch('/api/analytics')
+            if (result.success && result.data) {
+                setAnalytics(result.data)
+            } else {
+                throw new Error(result.error || 'Failed to load analytics')
+            }
         } catch (error) {
             console.error('Failed to load analytics', error)
         } finally {
@@ -34,9 +56,13 @@ export default function AdminAnalyticsPage() {
 
     const loadTeamDetails = async (teamId: string) => {
         try {
-            const data = await getTeamDetailedAnalytics(teamId)
-            setTeamDetails(data)
-            setSelectedTeam(teamId)
+            const result = await authenticatedJsonFetch(`/api/analytics?type=team&teamId=${teamId}`)
+            if (result.success && result.data) {
+                setTeamDetails(result.data)
+                setSelectedTeam(teamId)
+            } else {
+                throw new Error(result.error || 'Failed to load team details')
+            }
         } catch (error) {
             console.error('Failed to load team details', error)
         }
@@ -44,23 +70,30 @@ export default function AdminAnalyticsPage() {
 
     const exportReport = async (reportType: string) => {
         try {
-            const report = await generateAdminReport(reportType as any)
-            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `${reportType}-report-${new Date().toISOString().split('T')[0]}.json`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            URL.revokeObjectURL(url)
+            const result = await authenticatedJsonFetch('/api/analytics/reports', {
+                method: 'POST',
+                body: JSON.stringify({ reportType }),
+            });
+            if (result.success && result.data) {
+                const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${reportType}-report-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                throw new Error(result.error || 'Failed to export report');
+            }
         } catch (error) {
-            console.error('Failed to export report', error)
+            console.error('Failed to export report', error);
         }
     }
 
     // Restrict access to admins only
-    if (!userData || userData.role !== 'admin') {
+    if (hasAdminAccess === false) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">

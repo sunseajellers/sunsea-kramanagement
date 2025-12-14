@@ -25,18 +25,8 @@ export default function DashboardLayout({
             return
         }
         
-        // Redirect admin users to admin dashboard if they're on the main dashboard
-        if (!redirectRef.current && !loading && userData) {
-            const currentPath = window.location.pathname
-            const isOnRegularDashboard = currentPath === '/dashboard'
-            const isAdmin = userData.role === 'admin' || userData.isAdmin
-            
-            if (isOnRegularDashboard && isAdmin) {
-                redirectRef.current = true
-                console.log('🚫 Admin user blocked from /dashboard - redirecting to /dashboard/admin')
-                router.replace('/dashboard/admin')
-            }
-        }
+        // Admin routing is now handled by individual admin pages with RBAC checks
+        // All users can access the main dashboard
     }, [user, userData, loading, router])
 
     if (loading) {

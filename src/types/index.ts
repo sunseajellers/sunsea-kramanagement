@@ -108,10 +108,7 @@ export interface User {
     id: string
     fullName: string
     email: string
-    role: UserRole
-    permissions?: LegacyPermission[] // Custom permissions override role defaults
-    roleIds?: string[] // New RBAC role IDs
-    isAdmin: boolean // Manually set by developer in database
+    roleIds: string[] // RBAC role IDs
     avatar?: string
     teamId?: string
     isActive?: boolean // Whether user account is active

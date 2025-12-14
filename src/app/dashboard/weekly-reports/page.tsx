@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-    getUserWeeklyReports,
-    generateWeeklyReport,
-    exportReportAsJSON,
-    getScoringConfig
+    exportReportAsJSON
 } from '@/lib/reportService'
+import { authenticatedJsonFetch } from '@/lib/apiClient'
 import { WeeklyReport, ScoringConfig } from '@/types'
 import {
     FileText,
@@ -37,12 +35,22 @@ export default function WeeklyReportsPage() {
         if (!user) return
         setLoading(true)
         try {
-            const [reportsData, configData] = await Promise.all([
-                getUserWeeklyReports(user.uid, 10),
-                getScoringConfig()
+            const [reportsResult, configResult] = await Promise.all([
+                authenticatedJsonFetch(`/api/reports?userId=${user.uid}&limit=10`),
+                authenticatedJsonFetch('/api/scoring/config')
             ])
-            setReports(reportsData)
-            setScoringConfig(configData)
+            
+            if (reportsResult.success && reportsResult.data) {
+                setReports(reportsResult.data.reports)
+            } else {
+                throw new Error(reportsResult.error || 'Failed to load reports')
+            }
+            
+            if (configResult.success && configResult.data) {
+                setScoringConfig(configResult.data.config)
+            } else {
+                throw new Error(configResult.error || 'Failed to load scoring config')
+            }
         } catch (error) {
             console.error('Failed to load reports', error)
         } finally {
@@ -65,7 +73,20 @@ export default function WeeklyReportsPage() {
             weekEnd.setDate(weekStart.getDate() + 6)
             weekEnd.setHours(23, 59, 59, 999)
 
-            await generateWeeklyReport(user.uid, user.displayName || user.email || 'User', weekStart, weekEnd)
+            const result = await authenticatedJsonFetch('/api/reports', {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId: user.uid,
+                    userName: user.displayName || user.email || 'User',
+                    weekStart: weekStart.toISOString(),
+                    weekEnd: weekEnd.toISOString(),
+                }),
+            });
+            
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to generate report');
+            }
+            
             await loadData()
         } catch (error) {
             console.error('Failed to generate report', error)

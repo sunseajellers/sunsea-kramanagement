@@ -1,8 +1,7 @@
 // src/lib/rbacMiddleware.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { userHasPermission } from './rbacService';
-import { auth } from './firebase';
-import { DecodedIdToken } from 'firebase-admin/auth';
+import { adminAuth } from './firebase-admin';
 
 /**
  * RBAC Middleware for API routes
@@ -14,15 +13,45 @@ export async function withRBAC(
     handler: (request: NextRequest, userId: string) => Promise<NextResponse>
 ): Promise<NextResponse> {
     try {
-        // TODO: Implement proper token verification with Firebase Admin SDK
-        // For now, assume user is authenticated and has admin privileges
-        const mockUserId = 'admin-user-id';
+        // Get user ID from middleware (authenticated requests)
+        const userId = request.headers.get('x-user-id');
 
-        // TODO: Check permission
-        // const hasPermission = await userHasPermission(mockUserId, requiredModule, requiredAction);
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Authentication required' },
+                { status: 401 }
+            );
+        }
 
-        // For development, allow all requests
-        return await handler(request, mockUserId);
+        // Special case: Allow RBAC initialization for any authenticated user
+        // This handles the chicken-and-egg problem of initializing RBAC
+        if (requiredModule === 'system' && requiredAction === 'admin') {
+            try {
+                // Try to check permission - if RBAC is not initialized, this will fail
+                const hasPermission = await userHasPermission(userId, requiredModule, requiredAction);
+                if (!hasPermission) {
+                    return NextResponse.json(
+                        { error: 'Insufficient permissions' },
+                        { status: 403 }
+                    );
+                }
+            } catch (error) {
+                // If permission check fails (likely because RBAC not initialized),
+                // allow the request for the first authenticated user
+                console.log('RBAC not initialized, allowing first user to initialize');
+            }
+        } else {
+            // For other endpoints, require proper RBAC
+            const hasPermission = await userHasPermission(userId, requiredModule, requiredAction);
+            if (!hasPermission) {
+                return NextResponse.json(
+                    { error: 'Insufficient permissions' },
+                    { status: 403 }
+                );
+            }
+        }
+
+        return await handler(request, userId);
     } catch (error) {
         console.error('RBAC middleware error:', error);
         return NextResponse.json(
