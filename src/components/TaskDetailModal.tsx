@@ -113,9 +113,8 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
     }
 
     const getChecklistProgress = () => {
-        if (!localTask.checklist || localTask.checklist.length === 0) return 0
-        const completed = localTask.checklist.filter(item => item.completed).length
-        return Math.round((completed / localTask.checklist.length) * 100)
+        // TODO: Fetch checklist from subcollection
+        return 0
     }
 
     const formatDate = (date: Date) => {
@@ -233,15 +232,14 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                     <CheckSquare className="w-5 h-5 mr-2 text-primary-600" />
                                     Checklist
                                 </h3>
-                                {localTask.checklist && localTask.checklist.length > 0 && (
-                                    <span className="text-sm font-medium text-gray-600">
-                                        {getChecklistProgress()}% Complete
-                                    </span>
-                                )}
+                                {/* TODO: Show checklist progress when subcollection fetching is implemented */}
+                                <span className="text-sm font-medium text-gray-600">
+                                    Feature coming soon
+                                </span>
                             </div>
 
-                            {/* Progress Bar */}
-                            {localTask.checklist && localTask.checklist.length > 0 && (
+                            {/* Progress Bar - Hidden until checklist subcollection fetching is implemented */}
+                            {false && (
                                 <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                                     <div
                                         className="bg-primary-600 h-2 rounded-full transition-all"
@@ -250,34 +248,13 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                 </div>
                             )}
 
-                            {/* Checklist Items */}
+                            {/* Checklist Items - Hidden until subcollection fetching is implemented */}
                             <div className="space-y-2 mb-4">
-                                {localTask.checklist && localTask.checklist.map(item => (
-                                    <div
-                                        key={item.id}
-                                        className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={item.completed}
-                                            onChange={(e) => handleChecklistToggle(item.id, e.target.checked)}
-                                            className="mt-1 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                                        />
-                                        <div className="flex-1">
-                                            <p className={`text-sm ${item.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                                                {item.text}
-                                            </p>
-                                            {item.completed && item.completedAt && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Completed {formatDateTime(item.completedAt)}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                {/* TODO: Implement checklist subcollection fetching */}
                             </div>
 
-                            {/* Add Checklist Item */}
+                            {/* Add Checklist Item - Hidden until subcollection fetching is implemented */}
+                            {false && (
                             <div className="flex space-x-2">
                                 <input
                                     type="text"
@@ -294,27 +271,18 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                     <Plus className="w-4 h-4" />
                                 </button>
                             </div>
+                            )}
                         </div>
 
-                        {/* Activity Log */}
-                        {localTask.activityLog && localTask.activityLog.length > 0 && (
+                        {/* Activity Log - Hidden until subcollection fetching is implemented */}
+                        {false && (
                             <div className="border-t border-gray-200 pt-6">
                                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                                     <History className="w-5 h-5 mr-2 text-primary-600" />
                                     Activity History
                                 </h3>
                                 <div className="space-y-3 max-h-64 overflow-y-auto">
-                                    {localTask.activityLog.map(log => (
-                                        <div key={log.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                                            <Clock className="w-4 h-4 text-gray-500 mt-0.5" />
-                                            <div className="flex-1">
-                                                <p className="text-sm text-gray-900">{log.details}</p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {formatDateTime(log.timestamp)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    {/* TODO: Implement activity log subcollection fetching */}
                                 </div>
                             </div>
                         )}

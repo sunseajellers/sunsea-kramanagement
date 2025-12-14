@@ -141,6 +141,931 @@ The system includes a bootstrap process (`/api/admin/init-rbac/route.ts`) that c
 - **CSRF Protection**: Next.js built-in CSRF mitigation
 - **Data Validation**: Zod schemas for type safety
 
+### RBAC Security Implementation
+
+#### **Permission Checking Architecture**
+```typescript
+// Hierarchical permission evaluation
+enum PermissionLevel {
+  DENY = 0,      // Explicit deny
+  ALLOW = 1,     // Explicit allow
+  INHERIT = 2    // Check parent/roles
+}
+
+// Multi-level permission resolution
+export async function evaluatePermission(
+  userId: string,
+  resource: string,
+  action: string,
+  context?: PermissionContext
+): Promise<boolean> {
+  // 1. Check user-specific permissions (highest priority)
+  const userPermission = await checkUserSpecificPermission(userId, resource, action);
+  if (userPermission !== PermissionLevel.INHERIT) {
+    return userPermission === PermissionLevel.ALLOW;
+  }
+
+  // 2. Check role-based permissions
+  const rolePermission = await checkRolePermissions(userId, resource, action);
+  if (rolePermission !== PermissionLevel.INHERIT) {
+    return rolePermission === PermissionLevel.ALLOW;
+  }
+
+  // 3. Check resource ownership
+  const isOwner = await checkResourceOwnership(userId, resource, context);
+  if (isOwner) {
+    return true; // Owners have implicit permissions
+  }
+
+  // 4. Check team membership
+  const isTeamMember = await checkTeamMembership(userId, resource, context);
+  if (isTeamMember) {
+    return true; // Team members have access to team resources
+  }
+
+  // 5. Default deny
+  return false;
+}
+```
+
+#### **Firestore Security Rules Deep Dive**
+```javascript
+// Advanced security rules with business logic
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // === HELPER FUNCTIONS ===
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function getUserRoles(userId) {
+      return getUserData(userId).roleIds || [];
+    }
+
+    function hasRole(userId, requiredRole) {
+      let userRoles = getUserRoles(userId);
+      let rolesRef = /databases/$(database)/documents/roles;
+      let hasRequiredRole = false;
+
+      // Check if user has the required role
+      let i = 0;
+      while (i < userRoles.size() && !hasRequiredRole) {
+        let roleDoc = get(rolesRef/$(userRoles[i]));
+        if (roleDoc.data != null && roleDoc.data.name == requiredRole) {
+          hasRequiredRole = true;
+        }
+        i = i + 1;
+      }
+
+      return hasRequiredRole;
+    }
+
+    function hasPermission(userId, module, action) {
+      let userRoles = getUserRoles(userId);
+      let hasPerm = false;
+
+      // Check permissions through roles
+      let i = 0;
+      while (i < userRoles.size() && !hasPerm) {
+        let rolePermsRef = /databases/$(database)/documents/rolePermissions/$(userRoles[i]);
+        let rolePerms = get(rolePermsRef);
+        if (rolePerms.data != null) {
+          let permissions = rolePerms.data.permissions || [];
+          let j = 0;
+          while (j < permissions.size() && !hasPerm) {
+            let perm = permissions[j];
+            if (perm.module == module && perm.action == action) {
+              hasPerm = true;
+            }
+            j = j + 1;
+          }
+        }
+        i = i + 1;
+      }
+
+      return hasPerm;
+    }
+
+    // === RESOURCE OWNERSHIP CHECKS ===
+    function isResourceOwner(userId, resource) {
+      return resource.data.createdBy == userId ||
+             resource.data.userId == userId ||
+             resource.data.ownerId == userId;
+    }
+
+    function isAssignedToTask(userId, resource) {
+      return userId in resource.data.assignedTo;
+    }
+
+    function isInTeam(userId, resource) {
+      let userData = getUserData(userId);
+      return userData.teamId != null && userData.teamId == resource.data.teamId;
+    }
+
+    // === TASKS COLLECTION ===
+    match /tasks/{taskId} {
+      // Read permissions: Owner, assignee, team member, or admin
+      allow read: if isAuthenticated() && (
+        isResourceOwner(request.auth.uid, resource) ||
+        isAssignedToTask(request.auth.uid, resource) ||
+        isInTeam(request.auth.uid, resource) ||
+        hasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Create permissions: Authenticated users
+      allow create: if isAuthenticated() &&
+        isResourceOwner(request.auth.uid, request.resource);
+
+      // Update permissions: Owner, assignee (limited), or admin
+      allow update: if isAuthenticated() && (
+        isResourceOwner(request.auth.uid, resource) ||
+        (isAssignedToTask(request.auth.uid, resource) &&
+         // Limited fields for assignees
+         !request.resource.data.diff(resource.data).affectedKeys()
+           .hasAny(['assignedTo', 'assignedBy', 'createdAt', 'createdBy'])) ||
+        hasPermission(request.auth.uid, 'admin', 'access')
+      );
+
+      // Delete permissions: Owner or admin
+      allow delete: if isAuthenticated() && (
+        isResourceOwner(request.auth.uid, resource) ||
+        hasPermission(request.auth.uid, 'admin', 'access')
+      );
+    }
+
+    // === RBAC COLLECTIONS (Admin Only) ===
+    match /roles/{roleId} {
+      allow read, write: if isAuthenticated() &&
+        hasPermission(request.auth.uid, 'admin', 'access');
+    }
+
+    match /permissions/{permissionId} {
+      allow read, write: if isAuthenticated() &&
+        hasPermission(request.auth.uid, 'admin', 'access');
+    }
+
+    // === PREVENT LEGACY FIELDS ===
+    match /users/{userId} {
+      allow create: if isAuthenticated() &&
+        request.auth.uid == userId &&
+        // Prevent legacy permission fields
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'isAdmin', 'permissions']);
+
+      allow update: if isAuthenticated() &&
+        // Prevent legacy permission fields
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'isAdmin', 'permissions']);
+    }
+
+    // === DEFAULT DENY ===
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+#### **Authentication Flow Security**
+```typescript
+// Secure authentication with Firebase
+export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
+  try {
+    // 1. Validate input
+    const validatedEmail = emailSchema.parse(email);
+    const validatedPassword = passwordSchema.parse(password);
+
+    // 2. Attempt authentication
+    const userCredential = await signInWithEmailAndPassword(auth, validatedEmail, validatedPassword);
+
+    // 3. Get user data from Firestore
+    const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+    if (!userDoc.exists()) {
+      throw new Error('User profile not found');
+    }
+
+    const userData = userDoc.data() as User;
+
+    // 4. Check if user is active
+    if (!userData.isActive) {
+      await signOut(auth);
+      throw new Error('Account is deactivated');
+    }
+
+    // 5. Update last login
+    await updateDoc(doc(db, 'users', userCredential.user.uid), {
+      lastLogin: new Date()
+    });
+
+    // 6. Set up session claims (for server-side verification)
+    await userCredential.user.getIdToken(true); // Force refresh
+
+    return {
+      success: true,
+      user: userCredential.user,
+      userData
+    };
+
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return {
+      success: false,
+      error: getAuthErrorMessage(error)
+    };
+  }
+}
+```
+
+#### **Session Management**
+```typescript
+// Secure session handling
+export class SessionManager {
+  private static instance: SessionManager;
+  private authStateListener: (() => void) | null = null;
+
+  static getInstance(): SessionManager {
+    if (!SessionManager.instance) {
+      SessionManager.instance = new SessionManager();
+    }
+    return SessionManager.instance;
+  }
+
+  initialize(): void {
+    // Set up auth state listener
+    this.authStateListener = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Validate session on state change
+        const idToken = await user.getIdToken();
+        const decodedToken = await auth.verifyIdToken(idToken);
+
+        // Check token expiration
+        if (decodedToken.exp * 1000 < Date.now()) {
+          await signOut(auth);
+          return;
+        }
+
+        // Update user data in context
+        this.updateUserContext(user);
+      } else {
+        // Clear user context
+        this.clearUserContext();
+      }
+    });
+  }
+
+  private async updateUserContext(user: User): Promise<void> {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as User;
+        // Update global context
+        setUserData(userData);
+      }
+    } catch (error) {
+      console.error('Failed to update user context:', error);
+      await signOut(auth);
+    }
+  }
+
+  destroy(): void {
+    if (this.authStateListener) {
+      this.authStateListener();
+      this.authStateListener = null;
+    }
+  }
+}
+```
+
+#### **Input Validation & Sanitization**
+```typescript
+// Comprehensive input validation
+import { z } from 'zod';
+import DOMPurify from 'isomorphic-dompurify';
+
+// Input schemas
+export const userInputSchema = z.object({
+  fullName: z.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be less than 100 characters')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Name contains invalid characters'),
+
+  email: z.string()
+    .email('Invalid email format')
+    .max(254, 'Email is too long'),
+
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password is too long')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number')
+});
+
+// Content sanitization
+export function sanitizeUserInput(input: string): string {
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [], // No HTML tags allowed
+    ALLOWED_ATTR: [],
+    ALLOW_DATA_ATTR: false
+  }).trim();
+}
+
+// SQL injection prevention (though using Firestore)
+export function escapeFirestoreInput(input: string): string {
+  // Firestore handles this automatically, but we can add custom escaping
+  return input.replace(/[<>'"&]/g, (char) => {
+    const escapeChars: Record<string, string> = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '&': '&amp;'
+    };
+    return escapeChars[char] || char;
+  });
+}
+```
+
+#### **Rate Limiting Implementation**
+```typescript
+// API rate limiting (future implementation)
+interface RateLimitConfig {
+  windowMs: number;    // Time window in milliseconds
+  maxRequests: number; // Maximum requests per window
+  skipSuccessfulRequests?: boolean;
+  skipFailedRequests?: boolean;
+}
+
+export class RateLimiter {
+  private requests = new Map<string, number[]>();
+
+  isAllowed(identifier: string, config: RateLimitConfig): boolean {
+    const now = Date.now();
+    const windowStart = now - config.windowMs;
+
+    // Get existing requests for this identifier
+    let userRequests = this.requests.get(identifier) || [];
+
+    // Remove old requests outside the window
+    userRequests = userRequests.filter(timestamp => timestamp > windowStart);
+
+    // Check if under limit
+    if (userRequests.length < config.maxRequests) {
+      userRequests.push(now);
+      this.requests.set(identifier, userRequests);
+      return true;
+    }
+
+    return false;
+  }
+
+  cleanup(): void {
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
+
+    // Remove entries older than 1 hour
+    for (const [key, timestamps] of this.requests.entries()) {
+      const recentTimestamps = timestamps.filter(t => t > oneHourAgo);
+      if (recentTimestamps.length === 0) {
+        this.requests.delete(key);
+      } else {
+        this.requests.set(key, recentTimestamps);
+      }
+    }
+  }
+}
+```
+
+#### **Audit Logging**
+```typescript
+// Comprehensive audit logging
+interface AuditLogEntry {
+  id: string;
+  userId: string;
+  action: string;
+  resource: string;
+  resourceId: string;
+  details: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: Date;
+  success: boolean;
+  errorMessage?: string;
+}
+
+export class AuditLogger {
+  private static instance: AuditLogger;
+  private logQueue: AuditLogEntry[] = [];
+  private flushInterval: NodeJS.Timeout | null = null;
+
+  static getInstance(): AuditLogger {
+    if (!AuditLogger.instance) {
+      AuditLogger.instance = new AuditLogger();
+    }
+    return AuditLogger.instance;
+  }
+
+  log(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): void {
+    const auditEntry: AuditLogEntry = {
+      ...entry,
+      id: generateId(),
+      timestamp: new Date()
+    };
+
+    this.logQueue.push(auditEntry);
+
+    // Flush if queue is getting large
+    if (this.logQueue.length >= 100) {
+      this.flush();
+    }
+  }
+
+  private async flush(): Promise<void> {
+    if (this.logQueue.length === 0) return;
+
+    const batch = writeBatch(db);
+    const entries = [...this.logQueue];
+    this.logQueue = [];
+
+    entries.forEach(entry => {
+      const docRef = doc(collection(db, 'auditLogs'));
+      batch.set(docRef, entry);
+    });
+
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.error('Failed to flush audit logs:', error);
+      // Re-queue failed entries
+      this.logQueue.unshift(...entries);
+    }
+  }
+
+  startPeriodicFlush(): void {
+    this.flushInterval = setInterval(() => this.flush(), 30000); // 30 seconds
+  }
+
+  stopPeriodicFlush(): void {
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+      this.flushInterval = null;
+    }
+  }
+}
+
+// Usage in API routes
+export async function auditApiCall(
+  userId: string,
+  action: string,
+  resource: string,
+  resourceId: string,
+  success: boolean,
+  details?: Record<string, any>
+): Promise<void> {
+  AuditLogger.getInstance().log({
+    userId,
+    action,
+    resource,
+    resourceId,
+    details: details || {},
+    success,
+    errorMessage: success ? undefined : 'Operation failed'
+  });
+}
+```
+
+This security implementation provides **defense in depth** with multiple layers of protection, ensuring data integrity and preventing unauthorized access.
+
+---
+
+## 🏗️ Architecture Deep Dive
+
+### System Architecture Overview
+
+JewelMatrix implements a **modern monolithic frontend with microservices-style backend organization** using Next.js 16's App Router. The architecture emphasizes:
+
+- **Separation of Concerns**: Clear boundaries between UI, business logic, and data access
+- **Modular Design**: Independent services that can be maintained and scaled separately
+- **Type Safety**: Comprehensive TypeScript coverage for reliability
+- **Security First**: RBAC enforcement at multiple layers
+
+### Data Flow Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React UI      │────│  Service Layer  │────│   Firestore     │
+│   Components    │    │  (Business      │    │   Database      │
+│                 │    │   Logic)        │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Context API     │    │   API Routes    │    │ Security Rules  │
+│ (State Mgmt)    │────│   (Serverless   │────│ (Data Access    │
+│                 │    │   Functions)    │    │   Control)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Component Architecture Patterns
+
+#### **Atomic Design Pattern**
+```
+Atoms (UI) → Molecules (Form Controls) → Organisms (Feature Components) → Templates (Page Layouts) → Pages
+```
+
+- **Atoms**: `Button`, `Input`, `Badge` (shadcn/ui components)
+- **Molecules**: `TaskCard`, `KRAForm`, `Chart` components
+- **Organisms**: `TaskBoardView`, `DashboardHeader`, `UserManagement`
+- **Templates**: Dashboard layout, Admin layout
+- **Pages**: Route-specific page components
+
+#### **Container/Presentational Pattern**
+```typescript
+// Container Component (Business Logic)
+function TaskListContainer() {
+  const { tasks, loading } = useTasks();
+  const { hasPermission } = usePermissions();
+
+  return <TaskList tasks={tasks} loading={loading} canCreate={hasPermission('tasks', 'create')} />;
+}
+
+// Presentational Component (UI Only)
+function TaskList({ tasks, loading, canCreate }: TaskListProps) {
+  // Pure UI rendering logic
+}
+```
+
+### State Management Strategy
+
+#### **Context API with Selective State**
+- **AuthContext**: Global authentication state with Firebase integration
+- **PermissionsContext**: Computed RBAC permissions with caching
+- **Local State**: Component-level state for UI interactions
+- **Server State**: API responses cached via React's built-in caching
+
+#### **State Update Patterns**
+```typescript
+// Optimistic Updates
+const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
+  // Update UI immediately
+  setTasks(prev => prev.map(t => t.id === taskId ? {...t, status: newStatus} : t));
+
+  try {
+    await taskService.updateTask(taskId, { status: newStatus });
+  } catch (error) {
+    // Revert on failure
+    setTasks(prev => prev.map(t => t.id === taskId ? {...t, status: originalStatus} : t));
+  }
+};
+```
+
+### Service Layer Design
+
+#### **Dependency Injection Pattern**
+```typescript
+// Service interfaces for testability
+interface ITaskService {
+  getUserTasks(userId: string): Promise<Task[]>;
+  createTask(task: TaskInput): Promise<string>;
+  updateTask(id: string, updates: Partial<Task>): Promise<void>;
+}
+
+// Implementation with Firebase
+export class FirebaseTaskService implements ITaskService {
+  async getUserTasks(userId: string): Promise<Task[]> {
+    // Firebase implementation
+  }
+}
+```
+
+#### **Repository Pattern for Data Access**
+```typescript
+class TaskRepository {
+  private db = getFirestore();
+
+  async findByUserId(userId: string): Promise<Task[]> {
+    const q = query(
+      collection(this.db, 'tasks'),
+      where('assignedTo', 'array-contains', userId)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+}
+```
+
+### API Architecture
+
+#### **RESTful Route Organization**
+```
+/api/
+├── auth/              # Authentication endpoints
+│   ├── login/         # POST /api/auth/login
+│   ├── register/      # POST /api/auth/register
+│   └── logout/        # POST /api/auth/logout
+├── dashboard/         # Dashboard data
+├── tasks/             # Task CRUD operations
+├── kras/              # KRA management
+├── reports/           # Report generation
+├── admin/             # Administrative functions
+│   ├── init-rbac/     # RBAC system initialization
+│   ├── users/         # User management
+│   └── teams/         # Team management
+└── analytics/         # Analytics data
+```
+
+#### **Middleware Chain Pattern**
+```typescript
+// API route with multiple middleware layers
+export async function GET(request: NextRequest) {
+  // 1. Authentication middleware
+  const userId = await authenticateRequest(request);
+
+  // 2. RBAC authorization middleware
+  await authorizeRequest(userId, 'tasks', 'view');
+
+  // 3. Input validation middleware
+  const { searchParams } = validateQueryParams(request.url, taskQuerySchema);
+
+  // 4. Business logic
+  const tasks = await taskService.getUserTasks(userId, searchParams);
+
+  return NextResponse.json({ success: true, data: tasks });
+}
+```
+
+### Database Design Principles
+
+#### **Firestore Schema Design**
+```typescript
+// Denormalized for read performance
+interface Task {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  assignedTo: string[];        // Array for multi-assignment
+  assignedBy: string;          // Single assigner
+  teamId?: string;             // For team queries
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  // Embedded data for performance
+  assigneeNames: string[];     // Cached names to avoid joins
+  assigneeAvatars: string[];   // Cached avatars
+}
+```
+
+#### **Indexing Strategy**
+```javascript
+// firestore.indexes.json
+{
+  "indexes": [
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "assignedTo", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    }
+  ]
+}
+```
+
+### Security Architecture Layers
+
+#### **Defense in Depth**
+1. **Client-Side Validation**: Zod schemas prevent invalid data submission
+2. **API Route Protection**: RBAC middleware validates permissions server-side
+3. **Firestore Security Rules**: Database-level access control
+4. **Input Sanitization**: DOMPurify prevents XSS attacks
+5. **Type Safety**: TypeScript prevents runtime type errors
+
+#### **RBAC Implementation Details**
+```typescript
+// Permission checking with caching
+const permissionCache = new Map<string, { result: boolean; expiry: number }>();
+
+export async function userHasPermission(
+  userId: string,
+  module: string,
+  action: string
+): Promise<boolean> {
+  const cacheKey = `${userId}:${module}:${action}`;
+
+  // Check cache first
+  const cached = permissionCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiry) {
+    return cached.result;
+  }
+
+  // Compute permission
+  const result = await computePermission(userId, module, action);
+
+  // Cache result for 5 minutes
+  permissionCache.set(cacheKey, {
+    result,
+    expiry: Date.now() + 5 * 60 * 1000
+  });
+
+  return result;
+}
+```
+
+### Performance Optimization Strategies
+
+#### **Frontend Performance**
+- **Code Splitting**: Route-based and component-based splitting
+- **Image Optimization**: Next.js Image component with lazy loading
+- **Bundle Analysis**: Webpack bundle analyzer for optimization
+- **Memoization**: React.memo for expensive components
+- **Virtual Scrolling**: For large lists (future enhancement)
+
+#### **Database Performance**
+- **Compound Queries**: Efficient Firestore compound queries
+- **Pagination**: Cursor-based pagination for large datasets
+- **Batch Operations**: Firestore batch writes for bulk operations
+- **Caching Strategy**: Client-side caching with invalidation
+
+#### **API Performance**
+- **Edge Runtime**: Next.js edge functions for global distribution
+- **Response Compression**: Automatic gzip compression
+- **Caching Headers**: Appropriate cache-control headers
+- **Connection Pooling**: Firebase connection reuse
+
+### Error Handling & Monitoring
+
+#### **Error Boundary Hierarchy**
+```typescript
+// Application-level error boundary
+class AppErrorBoundary extends Component {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Log to error reporting service
+    logError(error, errorInfo);
+    // Show user-friendly error page
+    this.setState({ hasError: true });
+  }
+}
+
+// Component-level error handling
+function TaskList() {
+  const [error, setError] = useState<Error | null>(null);
+
+  if (error) {
+    return <ErrorFallback error={error} onRetry={() => setError(null)} />;
+  }
+
+  return <TaskListContent onError={setError} />;
+}
+```
+
+#### **Logging Strategy**
+```typescript
+// Structured logging with context
+const logger = {
+  info: (message: string, context?: any) => {
+    console.log(JSON.stringify({
+      level: 'info',
+      message,
+      timestamp: new Date().toISOString(),
+      context,
+      userId: getCurrentUserId(),
+      sessionId: getSessionId()
+    }));
+  },
+
+  error: (error: Error, context?: any) => {
+    console.error(JSON.stringify({
+      level: 'error',
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      context,
+      userId: getCurrentUserId()
+    }));
+  }
+};
+```
+
+### Scalability Considerations
+
+#### **Horizontal Scaling**
+- **Stateless Design**: No server-side session state
+- **CDN Distribution**: Firebase Hosting global CDN
+- **Database Sharding**: Firestore automatic sharding
+- **API Rate Limiting**: Future implementation for abuse prevention
+
+#### **Data Scaling**
+- **Read Optimization**: Denormalized data structures
+- **Write Optimization**: Batch operations for bulk updates
+- **Archive Strategy**: Move old data to cheaper storage
+- **Backup Strategy**: Automated Firestore backups
+
+#### **User Scaling**
+- **Lazy Loading**: Components load on demand
+- **Progressive Enhancement**: Core functionality works without JavaScript
+- **Offline Support**: Service worker for offline capabilities (future)
+
+### Testing Strategy
+
+#### **Testing Pyramid**
+```
+End-to-End Tests (E2E)     ┌─────────┐
+Integration Tests         │   Few   │
+Unit Tests               ┌─────────┐
+                        │  Many   │
+                        └─────────┘
+```
+
+#### **Unit Testing Example**
+```typescript
+// Service layer testing
+describe('TaskService', () => {
+  let mockDb: MockFirestore;
+  let taskService: TaskService;
+
+  beforeEach(() => {
+    mockDb = new MockFirestore();
+    taskService = new TaskService(mockDb);
+  });
+
+  it('should create task with valid data', async () => {
+    const taskData = { title: 'Test Task', assignedTo: ['user1'] };
+    const taskId = await taskService.createTask(taskData);
+
+    expect(taskId).toBeDefined();
+    const task = await taskService.getTask(taskId);
+    expect(task.title).toBe('Test Task');
+  });
+});
+```
+
+#### **Integration Testing**
+```typescript
+// API route testing
+describe('/api/tasks', () => {
+  it('should return user tasks with authentication', async () => {
+    const response = await fetch('/api/tasks', {
+      headers: { 'x-user-id': 'user1' }
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
+  });
+});
+```
+
+### Deployment & DevOps
+
+#### **CI/CD Pipeline**
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Firebase
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: firebase deploy --only hosting
+```
+
+#### **Environment Management**
+```typescript
+// Environment-specific configuration
+const config = {
+  development: {
+    firebase: devFirebaseConfig,
+    apiUrl: 'http://localhost:3000',
+    logLevel: 'debug'
+  },
+  production: {
+    firebase: prodFirebaseConfig,
+    apiUrl: 'https://jewelmatrix.com',
+    logLevel: 'error'
+  }
+};
+
+export const getConfig = () => config[process.env.NODE_ENV || 'development'];
+```
+
+This architecture ensures JewelMatrix is **maintainable**, **scalable**, **secure**, and **performant** while providing an excellent developer and user experience.
+
 ---
 
 ## 📊 Data Models & Database Schema
@@ -196,6 +1121,340 @@ interface Task {
 - **weeklyReports**: Performance reports
 - **notifications**: System notifications
 
+### Firestore Data Modeling Principles
+
+#### **Document Structure Design**
+Firestore documents are designed for optimal read performance with denormalized data:
+
+```typescript
+// User document with embedded team data for performance
+interface UserDocument {
+  id: string;
+  fullName: string;
+  email: string;
+  roleIds: string[];
+  avatar?: string;
+
+  // Denormalized data for read performance
+  teamId?: string;
+  teamName?: string;        // Cached from teams collection
+  roleNames: string[];      // Cached from roles collection
+
+  // Metadata
+  isActive: boolean;
+  lastLogin?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+#### **Collection Organization**
+```
+firestore/
+├── users/                          # User profiles
+│   └── {userId}/
+│       ├── profile data
+│       └── denormalized team/role info
+├── teams/                          # Team structures
+│   └── {teamId}/
+│       ├── team data
+│       └── member references
+├── tasks/                          # Task documents
+│   └── {taskId}/
+│       ├── task data
+│       ├── assignedTo: string[]    # Multi-assignment support
+│       ├── checklist: subcollection
+│       └── activityLog: subcollection
+├── kras/                          # KRA documents
+│   └── {kraId}/
+│       ├── kra data
+│       └── progress tracking
+├── rbac/                          # RBAC system
+│   ├── roles/
+│   ├── permissions/
+│   ├── rolePermissions/
+│   └── userRoles/
+└── reports/                       # Generated reports
+    ├── weeklyReports/
+    └── teamReports/
+```
+
+#### **Subcollections for Hierarchical Data**
+```typescript
+// Task with subcollections for related data
+/tasks/{taskId}/
+├── main document (task data)
+├── checklist/          # Checklist items
+│   └── {itemId}/
+├── comments/           # Task comments
+│   └── {commentId}/
+└── activityLog/        # Activity history
+    └── {logId}/
+```
+
+### Indexing Strategy
+
+#### **Automatic Indexes**
+Firestore automatically creates indexes for:
+- Single field queries
+- Composite queries up to 3 fields
+
+#### **Custom Composite Indexes**
+```json
+// firestore.indexes.json
+{
+  "indexes": [
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "assignedTo", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "teamId", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "dueDate", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "weeklyReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "userId", "order": "ASCENDING"},
+        {"fieldPath": "weekStartDate", "order": "DESCENDING"}
+      ]
+    }
+  ]
+}
+```
+
+### Data Consistency & Transactions
+
+#### **Atomic Operations**
+```typescript
+// Task reassignment with consistency
+export async function reassignTask(
+  taskId: string,
+  newAssigneeId: string,
+  reason: string
+): Promise<void> {
+  await runTransaction(db, async (transaction) => {
+    // 1. Get current task
+    const taskRef = doc(db, 'tasks', taskId);
+    const taskSnap = await transaction.get(taskRef);
+
+    if (!taskSnap.exists()) {
+      throw new Error('Task not found');
+    }
+
+    const task = taskSnap.data() as Task;
+
+    // 2. Update task assignment
+    transaction.update(taskRef, {
+      assignedTo: [newAssigneeId],
+      updatedAt: Timestamp.now()
+    });
+
+    // 3. Log activity
+    const activityRef = doc(collection(db, 'activityLogs'));
+    transaction.set(activityRef, {
+      taskId,
+      action: 'reassigned',
+      details: `Reassigned from ${task.assignedTo.join(', ')} to ${newAssigneeId}`,
+      reason,
+      timestamp: Timestamp.now()
+    });
+
+    // 4. Create notification
+    const notificationRef = doc(collection(db, 'notifications'));
+    transaction.set(notificationRef, {
+      userId: newAssigneeId,
+      type: 'task_assigned',
+      title: 'Task Reassigned',
+      message: `Task "${task.title}" has been assigned to you`,
+      read: false,
+      createdAt: Timestamp.now()
+    });
+  });
+}
+```
+
+### Data Migration & Versioning
+
+#### **Schema Evolution**
+```typescript
+// Migration utility for schema changes
+export async function migrateUserSchema(): Promise<void> {
+  const usersRef = collection(db, 'users');
+  const snapshot = await getDocs(usersRef);
+
+  const batch = writeBatch(db);
+
+  snapshot.docs.forEach((doc) => {
+    const userData = doc.data();
+
+    // Add new fields with defaults
+    if (!userData.roleIds) {
+      batch.update(doc.ref, {
+        roleIds: ['employee'], // Default role
+        updatedAt: Timestamp.now()
+      });
+    }
+  });
+
+  await batch.commit();
+}
+```
+
+#### **Backward Compatibility**
+```typescript
+// Handle legacy data structures
+export function normalizeUserData(userData: any): User {
+  return {
+    id: userData.id,
+    fullName: userData.fullName || userData.name || 'Unknown User',
+    email: userData.email,
+    roleIds: userData.roleIds || [userData.role || 'employee'],
+    avatar: userData.avatar,
+    teamId: userData.teamId,
+    isActive: userData.isActive !== false, // Default to true
+    lastLogin: userData.lastLogin?.toDate(),
+    createdAt: userData.createdAt?.toDate() || new Date(),
+    updatedAt: userData.updatedAt?.toDate() || new Date()
+  };
+}
+```
+
+### Query Optimization Patterns
+
+#### **Efficient Filtering**
+```typescript
+// Optimized query with proper field ordering
+export async function getFilteredTasks(
+  userId: string,
+  filters: TaskFilters
+): Promise<Task[]> {
+  let queryRef = collection(db, 'tasks')
+    .where('assignedTo', 'array-contains', userId);
+
+  // Apply filters in Firestore-recommended order
+  if (filters.status) {
+    queryRef = queryRef.where('status', '==', filters.status);
+  }
+
+  if (filters.priority) {
+    queryRef = queryRef.where('priority', '==', filters.priority);
+  }
+
+  // Date range queries
+  if (filters.dateRange) {
+    queryRef = queryRef
+      .where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.start))
+      .where('createdAt', '<=', Timestamp.fromDate(filters.dateRange.end));
+  }
+
+  // Ordering and pagination
+  queryRef = queryRef
+    .orderBy('createdAt', 'desc')
+    .limit(filters.limit || 50);
+
+  const snapshot = await getDocs(queryRef);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  })) as Task[];
+}
+```
+
+#### **Aggregation Queries**
+```typescript
+// Dashboard statistics aggregation
+export async function getDashboardStats(userId: string): Promise<DashboardStats> {
+  const tasksRef = collection(db, 'tasks');
+  const q = query(
+    tasksRef,
+    where('assignedTo', 'array-contains', userId)
+  );
+
+  const snapshot = await getDocs(q);
+  const tasks = snapshot.docs.map(doc => doc.data() as Task);
+
+  // Client-side aggregation (consider Cloud Functions for large datasets)
+  const stats = tasks.reduce(
+    (acc, task) => {
+      acc.totalTasks++;
+      if (task.status === 'completed') acc.completedTasks++;
+      // ... other aggregations
+      return acc;
+    },
+    { totalTasks: 0, completedTasks: 0, /* ... */ }
+  );
+
+  return stats;
+}
+```
+
+### Data Archiving Strategy
+
+#### **Automatic Archiving**
+```typescript
+// Archive old completed tasks
+export async function archiveOldTasks(olderThanDays: number = 365): Promise<void> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+
+  const oldTasksQuery = query(
+    collection(db, 'tasks'),
+    where('status', '==', 'completed'),
+    where('updatedAt', '<', Timestamp.fromDate(cutoffDate))
+  );
+
+  const snapshot = await getDocs(oldTasksQuery);
+  const batch = writeBatch(db);
+
+  snapshot.docs.forEach((doc) => {
+    // Move to archive collection
+    const archiveRef = doc(collection(db, 'archivedTasks'), doc.id);
+    batch.set(archiveRef, {
+      ...doc.data(),
+      archivedAt: Timestamp.now(),
+      archiveReason: 'auto_archive'
+    });
+
+    // Delete from main collection
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+```
+
+### Backup & Recovery
+
+#### **Automated Backups**
+```typescript
+// Firebase scheduled function for backups
+export const scheduledBackup = functions.pubsub
+  .schedule('0 2 * * *') // Daily at 2 AM
+  .timeZone('America/New_York')
+  .onRun(async (context) => {
+    // Export Firestore data to Cloud Storage
+    await firestoreAdmin.exportDocuments({
+      name: `projects/${projectId}/databases/(default)`,
+      outputUriPrefix: `gs://${bucketName}/backups/${new Date().toISOString()}`,
+      collectionIds: ['users', 'tasks', 'kras'] // Selective backup
+    });
+  });
+```
+
+This database design ensures **scalability**, **performance**, and **data integrity** while supporting complex queries and relationships.
+
 ---
 
 ## 🚀 Performance Considerations
@@ -247,6 +1506,407 @@ All APIs follow REST conventions with JSON responses and proper HTTP status code
 #### Administration APIs
 - `/api/admin/init-rbac` - Initialize RBAC system
 - `/api/admin/users` - Get users and teams
+
+### API Implementation Patterns
+
+#### **Request/Response Format**
+All API endpoints follow consistent patterns:
+
+```typescript
+// Success Response
+{
+  success: true,
+  data: T,           // Generic data payload
+  message?: string   // Optional success message
+}
+
+// Error Response
+{
+  success: false,
+  error: string,     // Error message
+  code?: string      // Error code for programmatic handling
+}
+```
+
+#### **Authentication Headers**
+```typescript
+// Client sends user ID in header (set by middleware)
+headers: {
+  'x-user-id': 'firebase-user-uid',
+  'content-type': 'application/json'
+}
+```
+
+#### **CRUD Operations Pattern**
+```typescript
+// GET /api/tasks - List with filtering
+export async function GET(request: NextRequest) {
+  const userId = request.headers.get('x-user-id');
+  const { searchParams } = new URL(request.url);
+
+  const filters = {
+    status: searchParams.get('status'),
+    priority: searchParams.get('priority'),
+    assignedTo: searchParams.get('assignedTo'),
+    limit: parseInt(searchParams.get('limit') || '50')
+  };
+
+  const tasks = await taskService.getFilteredTasks(userId, filters);
+  return NextResponse.json({ success: true, data: tasks });
+}
+
+// POST /api/tasks - Create
+export async function POST(request: NextRequest) {
+  return withRBAC(request, 'tasks', 'create', async (request, userId) => {
+    const body = await request.json();
+    const validatedData = taskCreateSchema.parse(body);
+
+    const taskId = await taskService.createTask({
+      ...validatedData,
+      createdBy: userId
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: { id: taskId },
+      message: 'Task created successfully'
+    });
+  });
+}
+
+// PUT /api/tasks/[id] - Update
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withRBAC(request, 'tasks', 'edit', async (request, userId) => {
+    const body = await request.json();
+    const validatedData = taskUpdateSchema.parse(body);
+
+    await taskService.updateTask(params.id, validatedData);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Task updated successfully'
+    });
+  });
+}
+```
+
+#### **Pagination Implementation**
+```typescript
+// Cursor-based pagination for large datasets
+interface PaginatedResponse<T> {
+  data: T[];
+  nextCursor?: string;
+  hasMore: boolean;
+  total?: number;
+}
+
+// Implementation
+export async function getPaginatedTasks(
+  userId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<PaginatedResponse<Task>> {
+  let query = collection(db, 'tasks')
+    .where('assignedTo', 'array-contains', userId)
+    .orderBy('createdAt', 'desc')
+    .limit(limit + 1); // +1 to check if there are more
+
+  if (cursor) {
+    const cursorDoc = await getDoc(doc(db, 'tasks', cursor));
+    query = query.startAfter(cursorDoc);
+  }
+
+  const snapshot = await getDocs(query);
+  const tasks = snapshot.docs.slice(0, limit);
+  const hasMore = snapshot.docs.length > limit;
+
+  return {
+    data: tasks.map(doc => ({ id: doc.id, ...doc.data() })),
+    nextCursor: hasMore ? tasks[tasks.length - 1].id : undefined,
+    hasMore
+  };
+}
+```
+
+#### **Error Handling Pattern**
+```typescript
+// Centralized error handling
+export async function handleApiError(error: unknown): Promise<NextResponse> {
+  console.error('API Error:', error);
+
+  if (error instanceof ZodError) {
+    return NextResponse.json({
+      success: false,
+      error: 'Validation failed',
+      details: error.errors
+    }, { status: 400 });
+  }
+
+  if (error instanceof FirebaseError) {
+    switch (error.code) {
+      case 'permission-denied':
+        return NextResponse.json({
+          success: false,
+          error: 'Insufficient permissions'
+        }, { status: 403 });
+
+      case 'not-found':
+        return NextResponse.json({
+          success: false,
+          error: 'Resource not found'
+        }, { status: 404 });
+
+      default:
+        return NextResponse.json({
+          success: false,
+          error: 'Database error'
+        }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({
+    success: false,
+    error: 'Internal server error'
+  }, { status: 500 });
+}
+```
+
+#### **Rate Limiting (Future Implementation)**
+```typescript
+// Redis-based rate limiting for API endpoints
+const rateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(100, '1 h'), // 100 requests per hour
+  analytics: true
+});
+
+export async function withRateLimit(
+  request: NextRequest,
+  handler: (request: NextRequest) => Promise<NextResponse>
+): Promise<NextResponse> {
+  const ip = request.ip ?? '127.0.0.1';
+  const { success } = await rateLimit.limit(ip);
+
+  if (!success) {
+    return NextResponse.json({
+      success: false,
+      error: 'Rate limit exceeded'
+    }, { status: 429 });
+  }
+
+  return handler(request);
+}
+```
+
+### Service Layer Architecture
+
+#### **Business Logic Separation**
+```typescript
+// Service interfaces for dependency injection
+interface ITaskService {
+  createTask(data: TaskCreateInput): Promise<string>;
+  getUserTasks(userId: string): Promise<Task[]>;
+  updateTask(id: string, updates: Partial<Task>): Promise<void>;
+  deleteTask(id: string): Promise<void>;
+  reassignTask(id: string, newAssignee: string, reason: string): Promise<void>;
+}
+
+// Implementation with Firebase
+export class FirebaseTaskService implements ITaskService {
+  private db = getFirestore();
+
+  async createTask(data: TaskCreateInput): Promise<string> {
+    const docRef = doc(collection(this.db, 'tasks'));
+    const task: Task = {
+      id: docRef.id,
+      ...data,
+      status: 'assigned',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await setDoc(docRef, task);
+    return docRef.id;
+  }
+}
+```
+
+#### **Transaction Management**
+```typescript
+// Atomic operations for complex business logic
+export async function reassignTask(
+  taskId: string,
+  newAssigneeId: string,
+  reason: string,
+  reassignedBy: string
+): Promise<void> {
+  const taskRef = doc(db, 'tasks', taskId);
+
+  await runTransaction(db, async (transaction) => {
+    const taskDoc = await transaction.get(taskRef);
+    if (!taskDoc.exists()) {
+      throw new Error('Task not found');
+    }
+
+    const task = taskDoc.data() as Task;
+
+    // Update task assignment
+    transaction.update(taskRef, {
+      assignedTo: [newAssigneeId],
+      updatedAt: new Date()
+    });
+
+    // Add activity log
+    const activityRef = doc(collection(db, 'activityLogs'));
+    transaction.set(activityRef, {
+      taskId,
+      userId: reassignedBy,
+      action: 'reassigned',
+      details: `Reassigned to user ${newAssigneeId}. Reason: ${reason}`,
+      timestamp: new Date()
+    });
+
+    // Create notification
+    const notificationRef = doc(collection(db, 'notifications'));
+    transaction.set(notificationRef, {
+      userId: newAssigneeId,
+      type: 'task_assigned',
+      title: 'Task Reassigned',
+      message: `Task "${task.title}" has been reassigned to you`,
+      read: false,
+      createdAt: new Date()
+    });
+  });
+}
+```
+
+### Data Validation & Sanitization
+
+#### **Input Validation with Zod**
+```typescript
+// Comprehensive validation schemas
+export const taskCreateSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'critical']),
+  assignedTo: z.array(z.string()).min(1).max(10),
+  dueDate: z.string().datetime(),
+  kraId: z.string().optional(),
+  checklist: z.array(z.object({
+    text: z.string().min(1).max(500),
+    completed: z.boolean().default(false)
+  })).default([])
+});
+
+export const userProfileSchema = z.object({
+  fullName: z.string().min(2).max(100),
+  email: z.string().email(),
+  avatar: z.string().url().optional(),
+  teamId: z.string().optional()
+});
+```
+
+#### **Content Sanitization**
+```typescript
+// HTML sanitization for rich text content
+export function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: []
+  });
+}
+
+// Input sanitization middleware
+export async function sanitizeInput(input: any): Promise<any> {
+  if (typeof input === 'string') {
+    return sanitizeHtml(input);
+  }
+
+  if (Array.isArray(input)) {
+    return input.map(sanitizeInput);
+  }
+
+  if (typeof input === 'object' && input !== null) {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(input)) {
+      sanitized[key] = await sanitizeInput(value);
+    }
+    return sanitized;
+  }
+
+  return input;
+}
+```
+
+### API Performance Optimizations
+
+#### **Response Caching Strategy**
+```typescript
+// Cache-Control headers for different endpoints
+export const cacheConfig = {
+  // Static data - cache for 5 minutes
+  '/api/scoring/config': 'public, max-age=300',
+
+  // User-specific data - cache for 1 minute
+  '/api/dashboard': 'private, max-age=60',
+
+  // Dynamic data - no cache
+  '/api/tasks': 'private, no-cache',
+
+  // Analytics - cache for 10 minutes
+  '/api/analytics': 'private, max-age=600'
+};
+
+// Apply caching headers
+export function applyCacheHeaders(response: NextResponse, endpoint: string): NextResponse {
+  const cacheControl = cacheConfig[endpoint];
+  if (cacheControl) {
+    response.headers.set('Cache-Control', cacheControl);
+  }
+  return response;
+}
+```
+
+#### **Database Query Optimization**
+```typescript
+// Efficient compound queries with proper indexing
+export async function getTasksWithFilters(
+  userId: string,
+  filters: TaskFilters
+): Promise<Task[]> {
+  let queryRef = collection(db, 'tasks')
+    .where('assignedTo', 'array-contains', userId);
+
+  // Apply filters in optimal order
+  if (filters.status) {
+    queryRef = queryRef.where('status', '==', filters.status);
+  }
+
+  if (filters.priority) {
+    queryRef = queryRef.where('priority', '==', filters.priority);
+  }
+
+  // Date range filtering
+  if (filters.dateRange) {
+    queryRef = queryRef
+      .where('createdAt', '>=', filters.dateRange.start)
+      .where('createdAt', '<=', filters.dateRange.end);
+  }
+
+  // Apply ordering and limit
+  queryRef = queryRef
+    .orderBy('createdAt', 'desc')
+    .limit(filters.limit || 50);
+
+  const snapshot = await getDocs(queryRef);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+```
+
+This API architecture ensures **consistency**, **performance**, **security**, and **maintainability** across all endpoints.
 
 ---
 

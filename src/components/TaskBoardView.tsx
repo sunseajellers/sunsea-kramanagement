@@ -28,18 +28,24 @@ const priorityColors: Record<string, string> = {
 export default function TaskBoardView({ tasks, onTaskClick, onRefresh }: Props) {
     const [draggedTask, setDraggedTask] = useState<Task | null>(null)
     const [tasksByStatus, setTasksByStatus] = useState<Record<TaskStatus, Task[]>>({
+        not_started: [],
         assigned: [],
         in_progress: [],
         blocked: [],
-        completed: []
+        completed: [],
+        cancelled: [],
+        on_hold: []
     })
 
     useEffect(() => {
         const grouped: Record<TaskStatus, Task[]> = {
+            not_started: [],
             assigned: [],
             in_progress: [],
             blocked: [],
-            completed: []
+            completed: [],
+            cancelled: [],
+            on_hold: []
         }
 
         tasks.forEach(task => {
@@ -73,14 +79,6 @@ export default function TaskBoardView({ tasks, onTaskClick, onRefresh }: Props) 
         }
     }
 
-    const getChecklistProgress = (task: Task) => {
-        if (!task.checklist || task.checklist.length === 0) return null
-        const completed = task.checklist.filter(item => item.completed).length
-        const total = task.checklist.length
-        const percentage = Math.round((completed / total) * 100)
-        return { completed, total, percentage }
-    }
-
     const formatDate = (date: Date) => {
         const d = new Date(date)
         const today = new Date()
@@ -111,7 +109,6 @@ export default function TaskBoardView({ tasks, onTaskClick, onRefresh }: Props) 
 
                     <div className="space-y-3">
                         {tasksByStatus[column.status].map(task => {
-                            const progress = getChecklistProgress(task)
                             const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
 
                             return (
@@ -143,25 +140,6 @@ export default function TaskBoardView({ tasks, onTaskClick, onRefresh }: Props) 
                                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                                         {task.description}
                                     </p>
-
-                                    {/* Checklist Progress */}
-                                    {progress && (
-                                        <div className="mb-3">
-                                            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                                                <span className="flex items-center">
-                                                    <CheckSquare className="w-3 h-3 mr-1" />
-                                                    Checklist
-                                                </span>
-                                                <span>{progress.completed}/{progress.total}</span>
-                                            </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                                <div
-                                                    className="bg-primary-600 h-1.5 rounded-full transition-all"
-                                                    style={{ width: `${progress.percentage}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Due Date */}
                                     <div className={`flex items-center text-xs ${isOverdue ? 'text-red-600' : 'text-gray-500'} mb-2`}>

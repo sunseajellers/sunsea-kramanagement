@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Shield, Users, Settings, Eye, PlusCircle, Edit3, Trash } from 'lucide-react';
 import { getAllRoles, createRole, updateRole, deleteRole, getRolePermissions, assignPermissionsToRole, getPermissionsByModule, initializeDefaultRBAC } from '@/lib/rbacService';
-import { Role, Permission } from '@/types';
+import { Role, Permission, UserRole } from '@/types';
 import { toast } from 'sonner';
 
 export default function RolesPage() {
@@ -55,8 +55,9 @@ export default function RolesPage() {
     const handleCreateRole = async () => {
         try {
             const roleId = await createRole({
-                name: formData.name,
+                name: formData.name as UserRole,
                 description: formData.description,
+                isSystem: true,
                 isActive: formData.isActive
             });
 
@@ -80,7 +81,7 @@ export default function RolesPage() {
 
         try {
             await updateRole(editingRole.id, {
-                name: formData.name,
+                name: formData.name as UserRole,
                 description: formData.description,
                 isActive: formData.isActive
             });

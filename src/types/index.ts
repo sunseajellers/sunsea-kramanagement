@@ -1,44 +1,35 @@
-// Type definitions for JewelMatrix (KRA Management System)
-
+// SIMPLE RBAC MODEL - ONE SOURCE OF TRUTH
 export type UserRole = 'admin' | 'manager' | 'employee'
 
+// COMMON TYPES
 export type Priority = 'low' | 'medium' | 'high' | 'critical'
+export type TaskStatus = 'not_started' | 'assigned' | 'in_progress' | 'blocked' | 'completed' | 'cancelled' | 'on_hold'
+export type KRAStatus = 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold'
 
+// KRA Types
 export type KRAType = 'daily' | 'weekly' | 'monthly'
 
-export type KRAStatus = 'not_started' | 'in_progress' | 'completed'
-
-export type TaskStatus = 'assigned' | 'in_progress' | 'blocked' | 'completed'
-
+// NOTIFICATION TYPES
 export type NotificationType =
     | 'task_assigned'
     | 'task_updated'
-    | 'comment_added'
-    | 'due_date_reminder'
-    | 'overdue'
-    | 'report_ready'
-    | 'reassignment'
+    | 'task_overdue'
+    | 'kra_assigned'
+    | 'kra_updated'
+    | 'kra_deadline'
+    | 'team_update'
+    | 'system_alert'
+    | 'performance_alert'
+    | 'report_ready';
 
-// Header Configuration Types
-export interface HeaderNavigationItem {
-    name: string
-    href: string
-    roles: UserRole[]
-}
+export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
 
-export interface HeaderConfig {
-    logo: string
-    title: string
-    navigation: HeaderNavigationItem[]
-    theme: 'default' | 'indian' | 'corporate'
-}
-
-// RBAC Types
+// RBAC Types - System roles only
 export interface Role {
     id: string
-    name: string
+    name: UserRole  // Only system roles
     description: string
-    isSystem?: boolean // System roles cannot be deleted
+    isSystem: true  // Always true for system roles
     isActive: boolean
     createdAt: Date
     updatedAt: Date
@@ -46,11 +37,11 @@ export interface Role {
 
 export interface Permission {
     id: string
-    name: string
+    name: string  // e.g., 'admin.access', 'tasks.create'
     description: string
-    module: string // e.g., 'dashboard', 'users', 'tasks'
-    action: string // e.g., 'view', 'create', 'edit', 'delete'
-    isSystem?: boolean // System permissions cannot be deleted
+    module: string // e.g., 'admin', 'tasks', 'kras'
+    action: string // e.g., 'access', 'create', 'edit', 'delete'
+    isSystem: boolean
     createdAt: Date
     updatedAt: Date
 }
@@ -70,38 +61,13 @@ export interface UserRoleAssignment {
     assignedAt: Date
 }
 
-// Legacy Permission Types (REMOVED - use RBAC permissions instead)
-// export type LegacyPermission =
-//     | 'view_dashboard'
-//     | 'view_tasks'
-//     | 'create_tasks'
-//     | 'update_tasks'
-//     | 'delete_tasks'
-//     | 'assign_tasks'
-//     | 'view_kras'
-//     | 'create_kras'
-//     | 'update_kras'
-//     | 'delete_kras'
-//     | 'assign_kras'
-//     | 'view_teams'
-//     | 'manage_teams'
-//     | 'view_reports'
-//     | 'generate_reports'
-//     | 'view_analytics'
-//     | 'manage_analytics'
-//     | 'view_notifications'
-//     | 'manage_notifications'
-//     | 'manage_users'
-//     | 'manage_roles'
-//     | 'manage_scoring'
-//     | 'system_admin'
-
-// Role Permissions Configuration (REMOVED - use RBAC instead)
-// export interface RolePermissions {
-//     role: UserRole
-//     permissions: LegacyPermission[]
-//     description: string
-// }
+// BUSINESS RULES (separate from RBAC)
+// These are NOT RBAC permissions - they're business logic
+export type BusinessRule =
+    | 'owner_can_edit'
+    | 'assignee_can_update'
+    | 'team_member_can_view'
+    | 'manager_can_assign'
 
 // User Interface
 export interface User {
@@ -149,7 +115,7 @@ export interface KRA {
     updatedAt: Date
 }
 
-// Task Interface
+// Task Interface - STANDARDIZED DATA MODEL
 export interface Task {
     id: string
     title: string
@@ -157,29 +123,32 @@ export interface Task {
     kraId?: string // Optional link to KRA
     priority: Priority
     status: TaskStatus
-    assignedTo: string[]
-    assignedBy: string
+    assignedTo: string[] // User IDs who can work on this task
+    assignedBy: string   // User ID who assigned the task
+    teamId?: string      // Team this task belongs to
     dueDate: Date
-    attachments?: string[]
-    checklist: ChecklistItem[]
-    comments: Comment[]
-    activityLog: ActivityLog[]
+    attachments?: string[] // File URLs
     createdAt: Date
     updatedAt: Date
 }
 
-// Checklist Item Interface
+// Task-related data stored in SUBCOLLECTIONS (not embedded)
+// /tasks/{taskId}/checklist/{itemId}
 export interface ChecklistItem {
     id: string
+    taskId: string
     text: string
     completed: boolean
     completedBy?: string
     completedAt?: Date
+    createdAt: Date
+    updatedAt: Date
 }
 
-// Comment Interface
+// /tasks/{taskId}/comments/{commentId}
 export interface Comment {
     id: string
+    taskId: string
     userId: string
     userName: string
     userAvatar?: string
@@ -187,13 +156,16 @@ export interface Comment {
     createdAt: Date
 }
 
-// Activity Log Interface
+// /tasks/{taskId}/activityLog/{logId}
 export interface ActivityLog {
     id: string
+    taskId: string
     userId: string
     userName: string
-    action: string
+    action: string // 'created', 'assigned', 'status_changed', 'commented'
     details: string
+    oldValue?: any
+    newValue?: any
     timestamp: Date
 }
 
@@ -329,4 +301,20 @@ export interface TeamWeeklyReport {
         onTimePercentage: number
     }
     generatedAt: Date
+}
+
+// HEADER CONFIGURATION
+export interface NavigationItem {
+    name: string
+    href: string
+    roles: UserRole[]
+}
+
+export type HeaderTheme = 'default' | 'indian' | 'corporate'
+
+export interface HeaderConfig {
+    logo: string
+    title: string
+    navigation: NavigationItem[]
+    theme: HeaderTheme
 }

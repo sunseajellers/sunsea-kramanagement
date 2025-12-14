@@ -104,10 +104,10 @@ export async function reassignTask(
         }
 
         const task = taskSnap.data() as Task;
-        const activityLog = task.activityLog || [];
 
-        activityLog.push({
-            id: `${Date.now()}`,
+        // Add activity log entry to subcollection
+        const activityLogRef = collection(db, 'tasks', taskId, 'activityLog');
+        await addDoc(activityLogRef, {
             userId: reassignedBy,
             userName: 'User', // Should fetch from user service
             action: 'reassigned',
@@ -117,7 +117,6 @@ export async function reassignTask(
 
         await updateDoc(taskRef, {
             assignedTo: newAssignees,
-            activityLog,
             updatedAt: new Date()
         });
     } catch (error) {
@@ -135,50 +134,8 @@ export async function updateChecklistItem(
     completed: boolean,
     userId: string
 ): Promise<void> {
-    try {
-        const taskRef = doc(db, 'tasks', taskId);
-        const taskSnap = await getDoc(taskRef);
-
-        if (!taskSnap.exists()) {
-            throw new Error('Task not found');
-        }
-
-        const task = taskSnap.data() as Task;
-        const checklist = task.checklist.map(item => {
-            if (item.id === checklistItemId) {
-                return {
-                    ...item,
-                    completed,
-                    completedBy: completed ? userId : undefined,
-                    completedAt: completed ? new Date() : undefined
-                };
-            }
-            return item;
-        });
-
-        const activityLog = task.activityLog || [];
-        const checklistItem = task.checklist.find(item => item.id === checklistItemId);
-
-        if (checklistItem) {
-            activityLog.push({
-                id: `${Date.now()}`,
-                userId,
-                userName: 'User',
-                action: completed ? 'completed_checklist_item' : 'uncompleted_checklist_item',
-                details: `${completed ? 'Completed' : 'Uncompleted'} checklist item: ${checklistItem.text}`,
-                timestamp: new Date()
-            });
-        }
-
-        await updateDoc(taskRef, {
-            checklist,
-            activityLog,
-            updatedAt: new Date()
-        });
-    } catch (error) {
-        handleError(error, 'Failed to update checklist item');
-        throw error;
-    }
+    // TODO: Implement checklist functionality with subcollections
+    throw new Error('Checklist functionality not yet implemented');
 }
 
 /**
@@ -189,42 +146,8 @@ export async function addChecklistItem(
     text: string,
     userId: string
 ): Promise<void> {
-    try {
-        const taskRef = doc(db, 'tasks', taskId);
-        const taskSnap = await getDoc(taskRef);
-
-        if (!taskSnap.exists()) {
-            throw new Error('Task not found');
-        }
-
-        const task = taskSnap.data() as Task;
-        const newItem = {
-            id: `${Date.now()}`,
-            text,
-            completed: false
-        };
-
-        const checklist = [...(task.checklist || []), newItem];
-        const activityLog = task.activityLog || [];
-
-        activityLog.push({
-            id: `${Date.now()}`,
-            userId,
-            userName: 'User',
-            action: 'added_checklist_item',
-            details: `Added checklist item: ${text}`,
-            timestamp: new Date()
-        });
-
-        await updateDoc(taskRef, {
-            checklist,
-            activityLog,
-            updatedAt: new Date()
-        });
-    } catch (error) {
-        handleError(error, 'Failed to add checklist item');
-        throw error;
-    }
+    // TODO: Implement checklist functionality with subcollections
+    throw new Error('Checklist functionality not yet implemented');
 }
 
 /**

@@ -503,21 +503,21 @@ export async function initializeDefaultRBAC(): Promise<void> {
 
         // Create default roles
         const adminRoleId = await createRole({
-            name: 'Administrator',
+            name: 'admin',
             description: 'Full system access',
             isSystem: true,
             isActive: true
         });
 
         const managerRoleId = await createRole({
-            name: 'Manager',
+            name: 'manager',
             description: 'Team management and oversight',
             isSystem: true,
             isActive: true
         });
 
         const employeeRoleId = await createRole({
-            name: 'Employee',
+            name: 'employee',
             description: 'Basic employee access',
             isSystem: true,
             isActive: true

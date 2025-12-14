@@ -208,10 +208,7 @@ export default function DashboardPage() {
                     ) : (
                         <div className="divide-y divide-gray-100/50">
                             {recentTasks.map((task, index) => {
-                                const progress = calculateProgress(
-                                    task.checklist.filter(item => item.completed).length,
-                                    task.checklist.length
-                                )
+                                const progress = 0; // TODO: Calculate progress from checklist subcollection
                                 return (
                                     <Link
                                         key={task.id}

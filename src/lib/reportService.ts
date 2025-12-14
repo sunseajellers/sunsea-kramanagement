@@ -16,6 +16,7 @@ import { WeeklyReport, ScoringConfig, TeamWeeklyReport } from '@/types';
 import { timestampToDate, handleError } from './utils';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';
+import { ScoringService } from './scoringService';
 
 /**
  * Get the default scoring configuration
@@ -94,51 +95,8 @@ export async function calculateUserScore(
             return taskDate >= weekStart && taskDate <= weekEnd;
         });
 
-        if (weekTasks.length === 0) return 0;
-
-        // Calculate completion score
-        const completedTasks = weekTasks.filter(t => t.status === 'completed').length;
-        const completionScore = (completedTasks / weekTasks.length) * 100;
-
-        // Calculate timeliness score
-        const onTimeTasks = weekTasks.filter(t => {
-            if (t.status !== 'completed') return false;
-            const dueDate = new Date(t.dueDate);
-            const completedDate = t.activityLog.find(log =>
-                log.action.includes('completed')
-            )?.timestamp;
-            return completedDate && new Date(completedDate) <= dueDate;
-        }).length;
-        const timelinessScore = completedTasks > 0
-            ? (onTimeTasks / completedTasks) * 100
-            : 0;
-
-        // Calculate quality score (based on checklist completion)
-        let qualityScore = 0;
-        const tasksWithChecklists = weekTasks.filter(t => t.checklist.length > 0);
-        if (tasksWithChecklists.length > 0) {
-            const avgChecklistCompletion = tasksWithChecklists.reduce((acc, task) => {
-                const completed = task.checklist.filter(item => item.completed).length;
-                return acc + (completed / task.checklist.length);
-            }, 0) / tasksWithChecklists.length;
-            qualityScore = avgChecklistCompletion * 100;
-        } else {
-            qualityScore = completionScore; // Default to completion score
-        }
-
-        // Calculate KRA alignment score
-        const tasksWithKRA = weekTasks.filter(t => t.kraId).length;
-        const kraAlignmentScore = (tasksWithKRA / weekTasks.length) * 100;
-
-        // Calculate weighted total
-        const totalScore = (
-            (completionScore * config.completionWeight / 100) +
-            (timelinessScore * config.timelinessWeight / 100) +
-            (qualityScore * config.qualityWeight / 100) +
-            (kraAlignmentScore * config.kraAlignmentWeight / 100)
-        );
-
-        return Math.round(totalScore);
+        // Use ScoringService for all calculations
+        return ScoringService.calculateOverallScore(weekTasks, config);
     } catch (error) {
         handleError(error, 'Failed to calculate user score');
         return 0;
@@ -155,84 +113,18 @@ export async function generateWeeklyReport(
     weekEnd: Date
 ): Promise<WeeklyReport> {
     try {
-        const tasks = await getUserTasks(userId, 1000);
-        const kras = await getUserKRAs(userId, 1000);
-
-        // Filter tasks for the week
-        const weekTasks = tasks.filter(task => {
-            const taskDate = new Date(task.createdAt);
-            return taskDate >= weekStart && taskDate <= weekEnd;
-        });
-
-        const tasksAssigned = weekTasks.length;
-        const tasksCompleted = weekTasks.filter(t => t.status === 'completed').length;
-
-        // Calculate on-time completion
-        const onTimeCompletion = weekTasks.filter(t => {
-            if (t.status !== 'completed') return false;
-            const dueDate = new Date(t.dueDate);
-            const completedDate = t.activityLog.find(log =>
-                log.action.includes('completed')
-            )?.timestamp;
-            return completedDate && new Date(completedDate) <= dueDate;
-        }).length;
-
-        const onTimePercentage = tasksCompleted > 0
-            ? Math.round((onTimeCompletion / tasksCompleted) * 100)
-            : 0;
-
-        // Get KRAs covered
-        const krasCovered = [...new Set(weekTasks
-            .filter(t => t.kraId)
-            .map(t => t.kraId!)
-        )];
-
-        // Calculate delays
-        const taskDelays = weekTasks.filter(t => {
-            if (t.status !== 'completed') return false;
-            const dueDate = new Date(t.dueDate);
-            const completedDate = t.activityLog.find(log =>
-                log.action.includes('completed')
-            )?.timestamp;
-            return completedDate && new Date(completedDate) > dueDate;
-        }).length;
-
-        // Calculate score
-        const score = await calculateUserScore(userId, weekStart, weekEnd);
         const config = await getScoringConfig();
 
-        // Calculate breakdown
-        const completionScore = tasksAssigned > 0
-            ? Math.round((tasksCompleted / tasksAssigned) * 100 * config.completionWeight / 100)
-            : 0;
-        const timelinessScore = Math.round(onTimePercentage * config.timelinessWeight / 100);
-        const qualityScore = Math.round(score * config.qualityWeight / 100);
-        const kraAlignmentScore = Math.round((krasCovered.length / Math.max(kras.length, 1)) * 100 * config.kraAlignmentWeight / 100);
-
-        const report: WeeklyReport = {
-            id: `${userId}_${weekStart.getTime()}`,
-            weekStartDate: weekStart,
-            weekEndDate: weekEnd,
+        // Use ScoringService to generate the report
+        const report = await ScoringService.generateWeeklyReport(
             userId,
-            userName,
-            tasksAssigned,
-            tasksCompleted,
-            onTimeCompletion,
-            onTimePercentage,
-            krasCovered,
-            taskDelays,
-            score,
-            breakdown: {
-                completionScore,
-                timelinessScore,
-                qualityScore,
-                kraAlignmentScore,
-                totalScore: score
-            },
-            generatedAt: new Date()
-        };
+            weekStart,
+            weekEnd,
+            config
+        );
 
-        // Save to Firestore
+        // Add user name and save to Firestore
+        report.userName = userName;
         await addDoc(collection(db, 'weeklyReports'), report);
 
         return report;
