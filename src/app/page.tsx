@@ -10,14 +10,19 @@ import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
     const router = useRouter()
-    const { user, userData, loading } = useAuth()
+    const { user, userData, loading, getDefaultRoute } = useAuth()
     const [loginLoading, setLoginLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    // Redirect logged-in users to dashboard
+    // Redirect logged-in users to appropriate dashboard
     useEffect(() => {
-        // Removed automatic redirect - users stay on login page
-    }, [user, userData, loading, router])
+        if (!loading && user && userData) {
+            const defaultRoute = getDefaultRoute()
+            console.log('🎯 Login redirect - userData:', userData)
+            console.log('🎯 Login redirect - defaultRoute:', defaultRoute)
+            router.push(defaultRoute)
+        }
+    }, [user, userData, loading, router, getDefaultRoute])
 
     const handleGoogleLogin = async () => {
         setLoginLoading(true)
@@ -29,7 +34,7 @@ export default function LoginPage() {
                 toast.success('Welcome! Signed in with Google successfully.', {
                     icon: '🎉',
                 })
-                router.push('/dashboard')
+                // The useEffect above will handle the redirect based on role
             } else {
                 toast.error(result.error!)
                 if (result.error === 'Account not found. Please sign up first.') {

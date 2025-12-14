@@ -62,6 +62,8 @@ export interface User {
     isAdmin: boolean // Manually set by developer in database
     avatar?: string
     teamId?: string
+    isActive?: boolean // Whether user account is active
+    lastLogin?: Date // Last login timestamp
     createdAt: Date
     updatedAt: Date
 }
@@ -73,6 +75,8 @@ export interface Team {
     description?: string
     managerId: string
     memberIds: string[]
+    parentId?: string // For hierarchical team structure
+    isActive?: boolean // Whether team is active
     createdAt: Date
     updatedAt: Date
 }

@@ -12,15 +12,30 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     // Sidebar removed — using top navbar instead
-    const { user, userData, loading } = useAuth()
+    const { user, userData, loading, getDefaultRoute } = useAuth()
     const router = useRouter()
 
     const redirectRef = useRef(false)
 
     useEffect(() => {
+        // Redirect if not logged in
         if (!redirectRef.current && !loading && (!user || !userData)) {
             redirectRef.current = true
             router.push('/')
+            return
+        }
+        
+        // Redirect admin users to admin dashboard if they're on the main dashboard
+        if (!redirectRef.current && !loading && userData) {
+            const currentPath = window.location.pathname
+            const isOnRegularDashboard = currentPath === '/dashboard'
+            const isAdmin = userData.role === 'admin' || userData.isAdmin
+            
+            if (isOnRegularDashboard && isAdmin) {
+                redirectRef.current = true
+                console.log('🚫 Admin user blocked from /dashboard - redirecting to /dashboard/admin')
+                router.replace('/dashboard/admin')
+            }
         }
     }, [user, userData, loading, router])
 

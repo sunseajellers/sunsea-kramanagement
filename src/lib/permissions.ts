@@ -2,6 +2,33 @@
 import { UserRole, Permission, RolePermissions } from '@/types';
 
 /**
+ * Role hierarchy definition
+ * Higher numbers = more permissions
+ */
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+    employee: 1,
+    manager: 2,
+    admin: 3
+};
+
+/**
+ * Check if a role can perform actions of another role
+ */
+export function canRolePerformAs(role: UserRole, targetRole: UserRole): boolean {
+    return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[targetRole];
+}
+
+/**
+ * Get all roles that a given role can manage
+ */
+export function getManageableRoles(role: UserRole): UserRole[] {
+    const currentLevel = ROLE_HIERARCHY[role];
+    return Object.entries(ROLE_HIERARCHY)
+        .filter(([_, level]) => level <= currentLevel)
+        .map(([roleName]) => roleName as UserRole);
+}
+
+/**
  * Default permissions for each role
  * These can be overridden by custom permissions on individual users
  */
@@ -60,38 +87,171 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 };
 
 /**
- * Get permissions for a user, combining role defaults with custom permissions
+ * Check if a user has a specific permission
+ * Handles custom permissions override role defaults
+ * Includes race condition protection and edge case handling
  */
-export function getUserPermissions(user: { role: UserRole; permissions?: Permission[] }): Permission[] {
-    const rolePermissions = DEFAULT_ROLE_PERMISSIONS[user.role] || [];
-    const customPermissions = user.permissions || [];
+export function hasPermission(
+    userRole: UserRole | null | undefined,
+    customPermissions: Permission[] | null | undefined,
+    requiredPermission: Permission
+): boolean {
+    // Edge case: No user role provided
+    if (!userRole) {
+        return false;
+    }
+
+    // Edge case: Invalid role
+    if (!(userRole in DEFAULT_ROLE_PERMISSIONS)) {
+        console.warn(`Invalid user role: ${userRole}`);
+        return false;
+    }
 
     // Custom permissions override role defaults
-    return [...new Set([...rolePermissions, ...customPermissions])];
+    if (customPermissions && Array.isArray(customPermissions)) {
+        // If custom permissions explicitly include or exclude the permission
+        if (customPermissions.includes(requiredPermission)) {
+            return true;
+        }
+        // If custom permissions are set but don't include the required permission,
+        // check if it's a restrictive override (permissions starting with '!')
+        if (customPermissions.some(p => p === `!${requiredPermission}`)) {
+            return false;
+        }
+    }
+
+    // Fall back to role-based permissions
+    return DEFAULT_ROLE_PERMISSIONS[userRole].includes(requiredPermission);
 }
 
 /**
- * Check if user has a specific permission
+ * Check if a user can perform an action on another user
+ * Includes hierarchy validation and edge case handling
  */
-export function hasPermission(user: { role: UserRole; permissions?: Permission[] }, permission: Permission): boolean {
-    const userPermissions = getUserPermissions(user);
-    return userPermissions.includes(permission);
+export function canManageUser(
+    currentUserRole: UserRole | null | undefined,
+    currentUserId: string | null | undefined,
+    targetUserRole: UserRole | null | undefined,
+    targetUserId: string | null | undefined
+): boolean {
+    // Edge cases: Missing data
+    if (!currentUserRole || !currentUserId || !targetUserRole || !targetUserId) {
+        return false;
+    }
+
+    // Users cannot manage themselves for role changes
+    if (currentUserId === targetUserId) {
+        return false;
+    }
+
+    // Only admins can manage other admins
+    if (targetUserRole === 'admin' && currentUserRole !== 'admin') {
+        return false;
+    }
+
+    // Role hierarchy check: can only manage users with equal or lower hierarchy
+    return canRolePerformAs(currentUserRole, targetUserRole);
+}
+
+/**
+ * Validate role transition
+ * Prevents invalid role changes and race conditions
+ */
+export function validateRoleTransition(
+    currentRole: UserRole,
+    newRole: UserRole,
+    changerRole: UserRole,
+    changerId: string,
+    targetUserId: string
+): { valid: boolean; reason?: string } {
+    // Cannot change own role (prevents privilege escalation)
+    if (changerId === targetUserId) {
+        return { valid: false, reason: 'Users cannot change their own role' };
+    }
+
+    // Only admins can change roles to admin
+    if (newRole === 'admin' && changerRole !== 'admin') {
+        return { valid: false, reason: 'Only admins can assign admin role' };
+    }
+
+    // Cannot escalate beyond own level
+    if (!canRolePerformAs(changerRole, newRole)) {
+        return { valid: false, reason: 'Cannot assign role higher than your own' };
+    }
+
+    // Cannot demote above own level
+    if (canRolePerformAs(currentRole, changerRole) && currentRole !== changerRole) {
+        return { valid: false, reason: 'Cannot modify users with higher or equal role' };
+    }
+
+    return { valid: true };
+}
+
+/**
+ * Get effective permissions for a user
+ * Merges role permissions with custom permissions
+ * Handles edge cases and race conditions
+ */
+export function getEffectivePermissions(
+    userRole: UserRole | null | undefined,
+    customPermissions: Permission[] | null | undefined
+): Permission[] {
+    if (!userRole || !(userRole in DEFAULT_ROLE_PERMISSIONS)) {
+        return [];
+    }
+
+    const rolePermissions = DEFAULT_ROLE_PERMISSIONS[userRole];
+    const effectivePermissions = new Set(rolePermissions);
+
+    // Apply custom permissions
+    if (customPermissions && Array.isArray(customPermissions)) {
+        customPermissions.forEach(permission => {
+            if (permission.startsWith('!')) {
+                // Remove permission
+                effectivePermissions.delete(permission.slice(1) as Permission);
+            } else {
+                // Add permission
+                effectivePermissions.add(permission);
+            }
+        });
+    }
+
+    return Array.from(effectivePermissions);
+}
+
+/**
+ * Check multiple permissions at once
+ * Optimized for bulk permission checking
+ */
+export function hasAllPermissions(
+    userRole: UserRole | null | undefined,
+    customPermissions: Permission[] | null | undefined,
+    requiredPermissions: Permission[]
+): boolean {
+    return requiredPermissions.every(permission =>
+        hasPermission(userRole, customPermissions, permission)
+    );
 }
 
 /**
  * Check if user has any of the specified permissions
  */
-export function hasAnyPermission(user: { role: UserRole; permissions?: Permission[] }, permissions: Permission[]): boolean {
-    const userPermissions = getUserPermissions(user);
-    return permissions.some(permission => userPermissions.includes(permission));
+export function hasAnyPermission(
+    userRole: UserRole | null | undefined,
+    customPermissions: Permission[] | null | undefined,
+    permissions: Permission[]
+): boolean {
+    return permissions.some(permission =>
+        hasPermission(userRole, customPermissions, permission)
+    );
 }
 
 /**
- * Check if user has all of the specified permissions
+ * Get permissions for a user, combining role defaults with custom permissions
+ * Legacy function for backward compatibility
  */
-export function hasAllPermissions(user: { role: UserRole; permissions?: Permission[] }, permissions: Permission[]): boolean {
-    const userPermissions = getUserPermissions(user);
-    return permissions.every(permission => userPermissions.includes(permission));
+export function getUserPermissions(user: { role: UserRole; permissions?: Permission[] }): Permission[] {
+    return getEffectivePermissions(user.role, user.permissions);
 }
 
 /**

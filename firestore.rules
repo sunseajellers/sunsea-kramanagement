@@ -2,61 +2,39 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // --- Simplified Helper Functions (avoid circular dependencies) ---
 
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Safe user data access - read user data for permission checks
-    function getCurrentUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function hasPermission(permission) {
-      let userData = getCurrentUserData();
-      return isAuthenticated() && (
-        userData.role == 'admin' ||
-        userData.isAdmin == true ||
-        (userData.permissions && permission in userData.permissions)
-      );
-    }
-
     function isAdmin() {
-      let userData = getCurrentUserData();
-      return isAuthenticated() && (userData.role == 'admin' || userData.isAdmin == true);
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     function isManager() {
-      let userData = getCurrentUserData();
-      return isAuthenticated() && userData.role == 'manager';
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
     }
 
     function isManagerOrAdmin() {
-      return isManager() || isAdmin();
+      return isAdmin() || isManager();
     }
 
-    // Check if user is assigned to a task/KRA
     function isAssigned(resource, field) {
       return isAuthenticated() && request.auth.uid in resource.data[field];
     }
 
-    // Check if user is in a team
     function isInTeam(teamId) {
-      let userData = getCurrentUserData();
-      return isAuthenticated() && userData.teamId == teamId;
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
     }
 
     // --- Users Collection ---
     match /users/{userId} {
-      // Read: Authenticated users can read their own profile and other users for team management
+      // Read: Users can read their own profile, admins can read all
       allow read: if isAuthenticated() && (
-        request.auth.uid == userId || // Own profile
-        isAuthenticated() // Allow reading other users for team/assignee lists
+        request.auth.uid == userId ||
+        isAdmin()
       );
 
       // Create: Users can create their own profile, admins can create any
@@ -68,173 +46,164 @@ service cloud.firestore {
       // Update: Users can update their own basic info, admins can update everything
       allow update: if isAuthenticated() && (
         (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'role', 'permissions', 'uid', 'createdAt'])) ||
-        (isAuthenticated() && getCurrentUserData().isAdmin == true) // Allow admins to update
+        // Allow role/permission changes only if current user is admin
+        (request.auth.uid != userId && isAdmin() &&
+         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+          (request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) &&
+           ['admin', 'manager', 'employee'].hasAny(request.resource.data.role))))
       );
 
       // Delete: Only admins
-      allow delete: if isAuthenticated() && getCurrentUserData().isAdmin == true;
+      allow delete: if isAuthenticated() && isAdmin();
     }
     
     // --- KRAs Collection ---
     match /kras/{kraId} {
-      // Read: Assigned users, owners, managers, admins, or users with view_kras permission
+      // Read: Assigned users, owners, managers, admins
       allow read: if isAuthenticated() && (
         isAssigned(resource, 'assignedTo') ||
         resource.data.ownerId == request.auth.uid ||
-        hasPermission('view_kras') ||
         isManagerOrAdmin()
       );
 
-      // Create: Users with create_kras permission or managers/admins
+      // Create: Users can create their own KRAs, managers/admins can create any
       allow create: if isAuthenticated() && (
-        hasPermission('create_kras') ||
+        resource.data.ownerId == request.auth.uid ||
         isManagerOrAdmin()
-      ) && request.resource.data.ownerId == request.auth.uid;
+      );
 
-      // Update: Owner, assigned users (limited), or users with update_kras permission
+      // Update: Owner, assigned users (limited), or managers/admins
       allow update: if isAuthenticated() && (
         resource.data.ownerId == request.auth.uid ||
         (isAssigned(resource, 'assignedTo') && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedTo', 'ownerId', 'teamIds'])) ||
-        hasPermission('update_kras') ||
         isManagerOrAdmin()
       );
 
-      // Delete: Owner or users with delete_kras permission
+      // Delete: Owner or managers/admins
       allow delete: if isAuthenticated() && (
         resource.data.ownerId == request.auth.uid ||
-        hasPermission('delete_kras') ||
         isAdmin()
       );
     }
     
     // --- Tasks Collection ---
     match /tasks/{taskId} {
-      // Read: Assigned users, creator, or users with view_tasks permission
+      // Read: Assigned users, creator, or managers/admins
       allow read: if isAuthenticated() && (
         isAssigned(resource, 'assignedTo') ||
         resource.data.assignedBy == request.auth.uid ||
-        hasPermission('view_tasks') ||
         isManagerOrAdmin()
       );
 
-      // Create: Users with create_tasks permission or managers/admins
+      // Create: Users can create tasks, managers/admins can create any
       allow create: if isAuthenticated() && (
-        hasPermission('create_tasks') ||
+        resource.data.assignedBy == request.auth.uid ||
         isManagerOrAdmin()
-      ) && request.resource.data.assignedBy == request.auth.uid;
+      );
 
-      // Update: Assigned users (limited updates), creator, or users with update_tasks permission
+      // Update: Assigned users (limited updates), creator, or managers/admins
       allow update: if isAuthenticated() && (
         (isAssigned(resource, 'assignedTo') && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedTo', 'assignedBy', 'dueDate'])) ||
         resource.data.assignedBy == request.auth.uid ||
-        hasPermission('update_tasks') ||
         isManagerOrAdmin()
       );
 
-      // Delete: Creator or users with delete_tasks permission
+      // Delete: Creator or managers/admins
       allow delete: if isAuthenticated() && (
         resource.data.assignedBy == request.auth.uid ||
-        hasPermission('delete_tasks') ||
         isManagerOrAdmin()
       );
     }
     
     // --- Teams Collection ---
     match /teams/{teamId} {
-      // Read: Team members, managers, or users with view_teams permission
+      // Read: Team members, managers, admins
       allow read: if isAuthenticated() && (
         isInTeam(teamId) ||
         resource.data.managerId == request.auth.uid ||
-        hasPermission('view_teams') ||
         isManagerOrAdmin()
       );
 
-      // Create: Users with manage_teams permission or admins
-      allow create: if hasPermission('manage_teams') || isAdmin();
+      // Create: Managers or admins
+      allow create: if isManagerOrAdmin();
 
-      // Update: Team manager or users with manage_teams permission
+      // Update: Team manager or admins
       allow update: if isAuthenticated() && (
         resource.data.managerId == request.auth.uid ||
-        hasPermission('manage_teams') ||
         isAdmin()
       );
 
-      // Delete: Users with manage_teams permission or admins
-      allow delete: if hasPermission('manage_teams') || isAdmin();
+      // Delete: Admins only
+      allow delete: if isAdmin();
     }
     
     // --- Notification Rules Collection (Admin Only) ---
     match /notificationRules/{ruleId} {
-      // Read: Users with manage_notifications permission or admins
-      allow read: if hasPermission('manage_notifications') || isAdmin();
+      // Read: Managers or admins
+      allow read: if isManagerOrAdmin();
 
-      // Create: Users with manage_notifications permission or admins
-      allow create: if hasPermission('manage_notifications') || isAdmin();
+      // Create: Managers or admins
+      allow create: if isManagerOrAdmin();
 
-      // Update: Users with manage_notifications permission or admins
-      allow update: if hasPermission('manage_notifications') || isAdmin();
+      // Update: Managers or admins
+      allow update: if isManagerOrAdmin();
 
-      // Delete: Users with manage_notifications permission or admins
-      allow delete: if hasPermission('manage_notifications') || isAdmin();
+      // Delete: Admins only
+      allow delete: if isAdmin();
     }
     
     // --- Reports Collection ---
     match /reports/{reportId} {
-      // Read: Report owner or users with view_reports/generate_reports permission
+      // Read: Report owner or managers/admins
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        hasPermission('view_reports') ||
-        hasPermission('generate_reports') ||
         isManagerOrAdmin()
       );
 
-      // Create: System or users with generate_reports permission
-      allow create: if isAuthenticated() || hasPermission('generate_reports');
+      // Create: System or authenticated users
+      allow create: if isAuthenticated();
 
-      // Update: Users with generate_reports permission or admins
-      allow update: if hasPermission('generate_reports') || isAdmin();
+      // Update: Managers or admins
+      allow update: if isManagerOrAdmin();
 
-      // Delete: Users with generate_reports permission or admins
-      allow delete: if hasPermission('generate_reports') || isAdmin();
+      // Delete: Managers or admins
+      allow delete: if isManagerOrAdmin();
     }
     
     // --- Weekly Reports Collection ---
     match /weeklyReports/{reportId} {
-      // Read: Report owner or users with view_reports/generate_reports permission
+      // Read: Report owner or managers/admins
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        hasPermission('view_reports') ||
-        hasPermission('generate_reports') ||
         isManagerOrAdmin()
       );
 
-      // Create: System or users with generate_reports permission
-      allow create: if isAuthenticated() || hasPermission('generate_reports');
+      // Create: System or authenticated users
+      allow create: if isAuthenticated();
 
-      // Update: Users with generate_reports permission or admins
-      allow update: if hasPermission('generate_reports') || isAdmin();
+      // Update: Managers or admins
+      allow update: if isManagerOrAdmin();
 
-      // Delete: Users with generate_reports permission or admins
-      allow delete: if hasPermission('generate_reports') || isAdmin();
+      // Delete: Managers or admins
+      allow delete: if isManagerOrAdmin();
     }
     
     // --- Team Weekly Reports Collection ---
     match /teamWeeklyReports/{reportId} {
-      // Read: Team members, managers, or users with generate_reports permission
+      // Read: Team members, managers, admins
       allow read: if isAuthenticated() && (
         isInTeam(resource.data.teamId) ||
-        hasPermission('generate_reports') ||
         isManagerOrAdmin()
       );
 
-      // Create: System or users with generate_reports permission
-      allow create: if isAuthenticated() || hasPermission('generate_reports');
+      // Create: System or authenticated users
+      allow create: if isAuthenticated();
 
-      // Update: Users with generate_reports permission or admins
-      allow update: if hasPermission('generate_reports') || isAdmin();
+      // Update: Managers or admins
+      allow update: if isManagerOrAdmin();
 
-      // Delete: Users with generate_reports permission or admins
-      allow delete: if hasPermission('generate_reports') || isAdmin();
+      // Delete: Managers or admins
+      allow delete: if isManagerOrAdmin();
     }
     
     // --- Scoring Configuration Collection ---
@@ -242,41 +211,53 @@ service cloud.firestore {
       // Read: All authenticated users (to get scoring rules)
       allow read: if isAuthenticated();
 
-      // Create: Users with manage_scoring permission or admins
-      allow create: if hasPermission('manage_scoring') || isAdmin();
+      // Create: Managers or admins
+      allow create: if isManagerOrAdmin();
 
-      // Update: Users with manage_scoring permission or admins
-      allow update: if hasPermission('manage_scoring') || isAdmin();
+      // Update: Managers or admins
+      allow update: if isManagerOrAdmin();
 
-      // Delete: Users with manage_scoring permission or admins
-      allow delete: if hasPermission('manage_scoring') || isAdmin();
+      // Delete: Admins only
+      allow delete: if isAdmin();
     }
     
     // --- Notifications Collection ---
     match /notifications/{notificationId} {
-      // Read: Notification recipient or users with view_notifications permission
+      // Read: Notification recipient or managers/admins
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        hasPermission('view_notifications') ||
         isManagerOrAdmin()
       );
       
-      // Create: System or users with manage_notifications permission
-      allow create: if isAuthenticated() || hasPermission('manage_notifications');
+      // Create: System or authenticated users
+      allow create: if isAuthenticated();
       
-      // Update: Notification recipient (mark as read) or users with manage_notifications permission
+      // Update: Notification recipient (mark as read) or managers/admins
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        hasPermission('manage_notifications') ||
         isManagerOrAdmin()
       );
       
-      // Delete: Notification recipient or users with manage_notifications permission
+      // Delete: Notification recipient or managers/admins
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        hasPermission('manage_notifications') ||
         isManagerOrAdmin()
       );
+    }
+    
+    // --- Admin Logs Collection ---
+    match /admin_logs/{logId} {
+      // Read: Managers or admins
+      allow read: if isManagerOrAdmin();
+
+      // Create: System or authenticated users
+      allow create: if isAuthenticated();
+
+      // Update: Admins only
+      allow update: if isAdmin();
+
+      // Delete: Admins only
+      allow delete: if isAdmin();
     }
     
     // Default deny

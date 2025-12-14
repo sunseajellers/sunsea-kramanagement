@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Bell, Search, Menu, X, ChevronDown, LogOut, User, Settings } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getInitials, getAvatarColor, cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserNotifications } from '@/lib/notificationService'
@@ -17,6 +17,8 @@ export default function DashboardHeader() {
     const [notifications, setNotifications] = useState<any[]>([])
     const pathname = usePathname()
     const router = useRouter()
+    const notificationRef = useRef<HTMLDivElement>(null)
+    const userMenuRef = useRef<HTMLDivElement>(null)
 
     // Load notifications for the logged‑in user
     useEffect(() => {
@@ -24,6 +26,23 @@ export default function DashboardHeader() {
             getUserNotifications(userData.uid).then(setNotifications).catch(console.error)
         }
     }, [userData])
+
+    // Handle click outside to close dropdowns
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+                setShowNotifications(false)
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [])
 
     const handleLogout = async () => {
         try {
@@ -46,6 +65,13 @@ export default function DashboardHeader() {
     ]
 
     const filteredNav = navigation.filter(item => item.roles.includes(userData?.role || 'employee'))
+
+    // Debug logging - remove after fixing
+    console.log('🔍 Navigation Debug:')
+    console.log('- userData:', userData)
+    console.log('- userData.role:', userData?.role)
+    console.log('- filteredNav count:', filteredNav.length)
+    console.log('- filteredNav items:', filteredNav.map(item => item.name))
 
     if (loading) {
         return (
@@ -105,7 +131,7 @@ export default function DashboardHeader() {
 
                 {/* Right: Notifications & User */}
                 <div className="flex items-center space-x-4">
-                    <div className="relative">
+                    <div className="relative" ref={notificationRef}>
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
                             className="relative p-3 hover:bg-gradient-to-r hover:from-primary-50 hover:to-secondary-50 rounded-xl transition-all duration-200 group"
@@ -148,9 +174,12 @@ export default function DashboardHeader() {
                     <div className="flex items-center space-x-3">
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-semibold text-gray-900">{userData?.fullName || 'User'}</p>
-                            <p className="text-xs text-gray-500 capitalize">{userData?.role || 'employee'}</p>
+                            <p className="text-xs text-gray-500 capitalize">
+                                {userData?.role || 'employee'} 
+                                {userData?.isAdmin && <span className="text-green-600 font-bold"> (ADMIN)</span>}
+                            </p>
                         </div>
-                        <div className="relative">
+                        <div className="relative" ref={userMenuRef}>
                             <button
                                 onClick={() => setShowUserMenu(!showUserMenu)}
                                 className="flex items-center space-x-2 hover:bg-gradient-to-r hover:from-primary-50 hover:to-secondary-50 rounded-xl p-2 transition-all duration-200 group"
@@ -169,26 +198,22 @@ export default function DashboardHeader() {
                                         <p className="text-xs text-gray-500">{userData?.email}</p>
                                     </div>
                                     <div className="py-2">
-                                        <button
-                                            onClick={() => {
-                                                setShowUserMenu(false)
-                                                // Could add profile/settings page later
-                                            }}
+                                        <Link
+                                            href="/dashboard/profile"
+                                            onClick={() => setShowUserMenu(false)}
                                             className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-primary-50/50 hover:to-secondary-50/50 transition-all duration-200 rounded-lg mx-2"
                                         >
                                             <User className="w-4 h-4" />
                                             <span>Profile</span>
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setShowUserMenu(false)
-                                                // Could add settings page later
-                                            }}
+                                        </Link>
+                                        <Link
+                                            href="/dashboard/settings"
+                                            onClick={() => setShowUserMenu(false)}
                                             className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-primary-50/50 hover:to-secondary-50/50 transition-all duration-200 rounded-lg mx-2"
                                         >
                                             <Settings className="w-4 h-4" />
                                             <span>Settings</span>
-                                        </button>
+                                        </Link>
                                     </div>
                                     <div className="border-t border-gray-200/50 rounded-b-2xl bg-gradient-to-r from-gray-50/50 to-white/50">
                                         <button

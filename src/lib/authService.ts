@@ -139,15 +139,21 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
 // Get user data from Firestore
 export const getUserData = async (uid: string) => {
     try {
+        console.log('🔍 getUserData called for UID:', uid)
         const userDoc = await getDoc(doc(db, 'users', uid))
+        console.log('🔍 getUserData - doc exists:', userDoc.exists())
         if (userDoc.exists()) {
             const data = userDoc.data() as any;
-            return {
+            console.log('🔍 getUserData - raw doc data:', data)
+            const processedData = {
                 ...data,
                 createdAt: data.createdAt ? timestampToDate(data.createdAt) : undefined,
                 updatedAt: data.updatedAt ? timestampToDate(data.updatedAt) : undefined
             };
+            console.log('🔍 getUserData - processed data:', processedData)
+            return processedData;
         }
+        console.log('🔍 getUserData - document does not exist')
         return null
     } catch (error: any) {
         handleError(error, 'Failed to get user data')

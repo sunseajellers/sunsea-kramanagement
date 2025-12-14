@@ -5,12 +5,14 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, ShieldAlert, BarChart3, Users, Bell, Settings, UserCheck } from 'lucide-react';
+import { hasPermission } from '@/lib/permissions';
+import { Loader2, ShieldAlert, BarChart3, Users, Bell, Settings, UserCheck, Server, FileText } from 'lucide-react';
 
 const adminNavItems = [
     { href: '/dashboard/admin/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/dashboard/admin/users', label: 'Users', icon: UserCheck },
     { href: '/dashboard/admin/teams', label: 'Teams', icon: Users },
+    { href: '/dashboard/admin/reports', label: 'Reports', icon: FileText },
     { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell },
     { href: '/dashboard/admin/scoring', label: 'Scoring', icon: Settings },
 ];
@@ -110,6 +112,20 @@ export default function AdminLayout({
                                     </Link>
                                 );
                             })}
+                            {/* System Admin - only for users with system_admin permission */}
+                            {userData && userData.isAdmin && (
+                                <Link
+                                    href="/dashboard/admin/system"
+                                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                                        pathname === '/dashboard/admin/system'
+                                            ? 'border-red-500 text-red-900'
+                                            : 'border-transparent text-red-500 hover:border-red-300 hover:text-red-700'
+                                    }`}
+                                >
+                                    <Server className="h-4 w-4 mr-2" />
+                                    System
+                                </Link>
+                            )}
                         </div>
                         <div className="flex items-center">
                             <Link

@@ -1,5 +1,5 @@
 // src/lib/userService.ts
-import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, getDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { User } from '@/types';
 import { timestampToDate, handleError } from './utils';
@@ -16,7 +16,8 @@ export async function getAllUsers(): Promise<User[]> {
                 id: doc.id,
                 ...data,
                 createdAt: timestampToDate(data.createdAt),
-                updatedAt: timestampToDate(data.updatedAt)
+                updatedAt: timestampToDate(data.updatedAt),
+                lastLogin: data.lastLogin ? timestampToDate(data.lastLogin) : undefined
             } as User;
         });
     } catch (error) {
@@ -39,7 +40,8 @@ export async function getUserById(uid: string): Promise<User | null> {
                 id: docSnap.id,
                 ...data,
                 createdAt: timestampToDate(data.createdAt),
-                updatedAt: timestampToDate(data.updatedAt)
+                updatedAt: timestampToDate(data.updatedAt),
+                lastLogin: data.lastLogin ? timestampToDate(data.lastLogin) : undefined
             } as User;
         }
         return null;
@@ -58,6 +60,100 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
         await setDoc(doc(db, 'users', uid), data, { merge: true });
     } catch (error) {
         handleError(error, 'Failed to update user');
+        throw error;
+    }
+}
+
+/**
+ * Delete a user document.
+ */
+export async function deleteUser(uid: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, 'users', uid));
+    } catch (error) {
+        handleError(error, 'Failed to delete user');
+        throw error;
+    }
+}
+
+/**
+ * Bulk update multiple users with the same data.
+ */
+export async function bulkUpdateUsers(userIds: string[], data: Partial<User>): Promise<void> {
+    try {
+        const batch = writeBatch(db);
+
+        userIds.forEach(userId => {
+            const userRef = doc(db, 'users', userId);
+            batch.set(userRef, data, { merge: true });
+        });
+
+        await batch.commit();
+    } catch (error) {
+        handleError(error, 'Failed to bulk update users');
+        throw error;
+    }
+}
+
+/**
+ * Bulk delete multiple users.
+ */
+export async function bulkDeleteUsers(userIds: string[]): Promise<void> {
+    try {
+        const batch = writeBatch(db);
+
+        userIds.forEach(userId => {
+            const userRef = doc(db, 'users', userId);
+            batch.delete(userRef);
+        });
+
+        await batch.commit();
+    } catch (error) {
+        handleError(error, 'Failed to bulk delete users');
+        throw error;
+    }
+}
+
+/**
+ * Search users by name or email.
+ */
+export async function searchUsers(query: string): Promise<User[]> {
+    try {
+        const allUsers = await getAllUsers();
+        const lowerQuery = query.toLowerCase();
+
+        return allUsers.filter(user =>
+            user.fullName.toLowerCase().includes(lowerQuery) ||
+            user.email.toLowerCase().includes(lowerQuery)
+        );
+    } catch (error) {
+        handleError(error, 'Failed to search users');
+        throw error;
+    }
+}
+
+/**
+ * Get users by role.
+ */
+export async function getUsersByRole(role: string): Promise<User[]> {
+    try {
+        const allUsers = await getAllUsers();
+        return allUsers.filter(user => user.role === role);
+    } catch (error) {
+        handleError(error, 'Failed to fetch users by role');
+        throw error;
+    }
+}
+
+/**
+ * Get active users (not deactivated).
+ */
+export async function getActiveUsers(): Promise<User[]> {
+    try {
+        const allUsers = await getAllUsers();
+        return allUsers.filter(user => user.isActive !== false);
+    } catch (error) {
+        handleError(error, 'Failed to fetch active users');
         throw error;
     }
 }

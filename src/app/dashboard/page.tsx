@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { DashboardStats, Task, KRA } from '@/types'
 import {
     TrendingUp,
@@ -29,7 +30,9 @@ import TaskTrendChart from '@/components/charts/TaskTrendChart'
 import KRAProgressChart from '@/components/charts/KRAProgressChart'
 
 export default function DashboardPage() {
-    const { userData } = useAuth()
+    const { userData, loading: authLoading } = useAuth()
+    const router = useRouter()
+    const redirectRef = useRef(false)
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [recentTasks, setRecentTasks] = useState<Task[]>([])
     const [activeKRAs, setActiveKRAs] = useState<KRA[]>([])
@@ -37,8 +40,21 @@ export default function DashboardPage() {
     const [kraAnalytics, setKraAnalytics] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
+    // Redirect admin users to admin dashboard
+    useEffect(() => {
+        if (!redirectRef.current && !authLoading && userData) {
+            if (userData.role === 'admin' || userData.isAdmin) {
+                redirectRef.current = true
+                console.log('🚫 Admin detected on regular dashboard - redirecting to admin dashboard')
+                router.push('/dashboard/admin')
+            }
+        }
+    }, [userData, authLoading, router])
+
     useEffect(() => {
         if (!userData?.uid) return
+        // Don't load data if user is admin (will be redirected anyway)
+        if (userData.role === 'admin' || userData.isAdmin) return
         const fetchData = async () => {
             try {
                 const [statsData, tasks, kras, taskAnalyticsData, kraAnalyticsData] = await Promise.all([

@@ -21,6 +21,7 @@ interface AuthContextType {
     loading: boolean
     error: string | null
     logout: () => Promise<void>
+    getDefaultRoute: () => string
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,7 +29,8 @@ const AuthContext = createContext<AuthContextType>({
     userData: null,
     loading: true,
     error: null,
-    logout: async () => {}
+    logout: async () => {},
+    getDefaultRoute: () => '/dashboard'
 })
 
 export const useAuth = () => {
@@ -53,8 +55,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                 try {
                     // Fetch user data from Firestore
                     const data = await getUserData(firebaseUser.uid)
+                    console.log('🔍 AuthContext Debug - Raw Firestore data:', data)
                     if (data) {
-                        setUserData({
+                        const processedUserData = {
                             uid: data.uid || firebaseUser.uid,
                             email: data.email || firebaseUser.email,
                             fullName: data.fullName || firebaseUser.displayName || 'User',
@@ -62,7 +65,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             isAdmin: data.isAdmin === true, // Explicitly check for true
                             avatar: data.avatar || undefined,
                             teamId: data.teamId || undefined
-                        })
+                        }
+                        console.log('🔍 AuthContext Debug - Processed userData:', processedUserData)
+                        setUserData(processedUserData)
                     } else {
                         // If no Firestore document exists, don't allow access
                         console.warn('No Firestore document found for user')
@@ -106,12 +111,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         }
     }
 
+    const getDefaultRoute = () => {
+        if (!userData) return '/dashboard'
+        
+        // Admin users go to admin dashboard
+        if (userData.role === 'admin' || userData.isAdmin) {
+            return '/dashboard/admin'
+        }
+        
+        // Everyone else goes to regular dashboard
+        return '/dashboard'
+    }
+
     const value = {
         user,
         userData,
         loading,
         error,
-        logout
+        logout,
+        getDefaultRoute
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
