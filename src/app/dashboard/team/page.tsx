@@ -79,7 +79,6 @@ export default function TeamPage() {
 
     const getTeamStats = (teamId: string) => {
         const members = getTeamMembers(teamId)
-        // Role-based stats temporarily disabled during RBAC migration
         const admins = 0
         const managers = 0
         const employees = members.length
@@ -125,7 +124,6 @@ export default function TeamPage() {
                                         <p className="text-sm text-gray-500">{stats.total} members</p>
                                     </div>
                                 </div>
-                                {/* Team management buttons temporarily disabled during RBAC migration */}
                             </div>
 
                             {/* Team Stats */}
@@ -154,7 +152,6 @@ export default function TeamPage() {
                                                 <div className={`w-8 h-8 bg-gradient-to-br ${getAvatarColor(member.fullName)} rounded-full flex items-center justify-center text-white text-xs font-semibold`}>
                                                     {getInitials(member.fullName)}
                                                 </div>
-                                                {/* Remove member button temporarily disabled during RBAC migration */}
                                             </div>
                                         ))}
                                         {members.length > 6 && (
@@ -187,7 +184,6 @@ export default function TeamPage() {
                                     <p className="text-sm text-gray-500 capitalize">Employee</p>
                                 </div>
                             </div>
-                            {/* Team management buttons temporarily disabled during RBAC migration */}
                         </div>
                     ))}
                     {users.filter(user => !user.teamId).length === 0 && (

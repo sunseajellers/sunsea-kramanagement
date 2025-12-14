@@ -70,38 +70,38 @@ export interface UserRoleAssignment {
     assignedAt: Date
 }
 
-// Legacy Permission Types (for backward compatibility)
-export type LegacyPermission =
-    | 'view_dashboard'
-    | 'view_tasks'
-    | 'create_tasks'
-    | 'update_tasks'
-    | 'delete_tasks'
-    | 'assign_tasks'
-    | 'view_kras'
-    | 'create_kras'
-    | 'update_kras'
-    | 'delete_kras'
-    | 'assign_kras'
-    | 'view_teams'
-    | 'manage_teams'
-    | 'view_reports'
-    | 'generate_reports'
-    | 'view_analytics'
-    | 'manage_analytics'
-    | 'view_notifications'
-    | 'manage_notifications'
-    | 'manage_users'
-    | 'manage_roles'
-    | 'manage_scoring'
-    | 'system_admin'
+// Legacy Permission Types (REMOVED - use RBAC permissions instead)
+// export type LegacyPermission =
+//     | 'view_dashboard'
+//     | 'view_tasks'
+//     | 'create_tasks'
+//     | 'update_tasks'
+//     | 'delete_tasks'
+//     | 'assign_tasks'
+//     | 'view_kras'
+//     | 'create_kras'
+//     | 'update_kras'
+//     | 'delete_kras'
+//     | 'assign_kras'
+//     | 'view_teams'
+//     | 'manage_teams'
+//     | 'view_reports'
+//     | 'generate_reports'
+//     | 'view_analytics'
+//     | 'manage_analytics'
+//     | 'view_notifications'
+//     | 'manage_notifications'
+//     | 'manage_users'
+//     | 'manage_roles'
+//     | 'manage_scoring'
+//     | 'system_admin'
 
-// Role Permissions Configuration (Legacy)
-export interface RolePermissions {
-    role: UserRole
-    permissions: LegacyPermission[]
-    description: string
-}
+// Role Permissions Configuration (REMOVED - use RBAC instead)
+// export interface RolePermissions {
+//     role: UserRole
+//     permissions: LegacyPermission[]
+//     description: string
+// }
 
 // User Interface
 export interface User {

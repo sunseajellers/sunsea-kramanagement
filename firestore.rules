@@ -73,15 +73,19 @@ service cloud.firestore {
       );
 
       // Create: Users can create their own profile during registration
+      // Prevent legacy fields from being written
       allow create: if isAuthenticated() &&
         request.auth.uid == userId &&
-        request.resource.data.uid == userId;
+        request.resource.data.uid == userId &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin', 'permissions']);
 
       // Update: Users can update their own basic info, admins can update everything
+      // Prevent legacy fields from being written
       allow update: if isAuthenticated() && (
         request.auth.uid == userId ||
         userHasPermission(request.auth.uid, 'admin', 'access')
-      );
+      ) &&
+      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin', 'permissions']);
 
       // Delete: Only admins
       allow delete: if isAuthenticated() &&

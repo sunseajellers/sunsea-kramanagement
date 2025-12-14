@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { hasPermission } from '@/lib/permissions';
 import { userHasPermission } from '@/lib/rbacService';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';

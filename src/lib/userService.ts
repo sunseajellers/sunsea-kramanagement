@@ -133,15 +133,6 @@ export async function searchUsers(query: string): Promise<User[]> {
 }
 
 /**
- * Get users by role. (Deprecated - use RBAC role queries instead)
- */
-export async function getUsersByRole(role: string): Promise<User[]> {
-    // During RBAC migration, return empty array
-    // TODO: Implement RBAC-based user role queries
-    return [];
-}
-
-/**
  * Get active users (not deactivated).
  */
 export async function getActiveUsers(): Promise<User[]> {

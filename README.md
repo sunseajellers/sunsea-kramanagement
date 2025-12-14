@@ -15,6 +15,12 @@ A powerful web-based platform that helps organizations set Key Result Areas (KRA
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
+- [Architecture](#️-architecture)
+- [Security & RBAC System](#-security--rbac-system)
+- [Data Models & Database Schema](#-data-models--database-schema)
+- [Performance Considerations](#-performance-considerations)
+- [API Endpoints & Services](#-api-endpoints--services)
+- [Business Logic & Workflows](#-business-logic--workflows)
 - [Features](#-features)
 - [Tech Stack](#️-tech-stack)
 - [Getting Started](#-getting-started)
@@ -33,19 +39,257 @@ A powerful web-based platform that helps organizations set Key Result Areas (KRA
 
 ---
 
-## 🌟 Overview
+## �️ Architecture
 
-JewelMatrix is a modern, full-stack KRA (Key Result Area) management system designed to streamline task delegation, performance tracking, and team productivity. Built with Next.js 16, TypeScript, and Firebase, it provides a comprehensive solution for organizations to manage their workforce effectively.
+JewelMatrix is a modern, full-stack KRA (Key Result Area) management and task delegation platform built with a robust, scalable architecture. The system follows a **monolithic frontend with microservices-style backend organization** pattern using Next.js 16.
 
-### Key Capabilities:
-- 📊 **KRA Management** - Define and track key result areas
-- ✅ **Task Delegation** - Assign and manage tasks with multiple views
-- 📈 **Performance Tracking** - Automated weekly reports with intelligent scoring
-- 👥 **Team Management** - Organize teams and manage permissions
-- 📱 **Responsive Design** - Works seamlessly on all devices
-- 🔔 **Real-time Updates** - Instant notifications and updates
+### Technology Stack
+- **Frontend Framework**: Next.js 16 (React 19, TypeScript 5.4)
+- **Styling**: Tailwind CSS 3.4 with shadcn/ui component library
+- **Database**: Firebase Firestore (NoSQL document database)
+- **Authentication**: Firebase Authentication
+- **Storage**: Firebase Cloud Storage
+- **State Management**: React Context API with custom hooks
+- **Charts/Data Visualization**: Recharts library
+- **Form Handling**: Native React state with Zod validation
+- **Icons**: Lucide React
+- **Notifications**: React Hot Toast
+
+### Architecture Patterns
+- **App Router**: Next.js 13+ app directory structure
+- **Server Components**: For static content and initial data loading
+- **Client Components**: For interactive features and state management
+- **API Routes**: Serverless functions for backend logic
+- **Context Providers**: Global state management for authentication and permissions
+- **Service Layer**: Modular business logic separation
+- **Component Library**: Reusable UI components with consistent design
+
+### Deployment Architecture
+- **Hosting**: Firebase Hosting (configured for static export)
+- **Database**: Firebase Firestore with security rules
+- **Authentication**: Firebase Auth with custom claims
+- **Storage**: Firebase Cloud Storage for file attachments
+
+### Core Components
+- **Header Components**: `AdminHeader.tsx`, `DashboardHeader.tsx` - Navigation and user controls
+- **Authentication**: `ProtectedRoute.tsx` - Route-level access control
+- **Task Management**: `TaskBoardView.tsx`, `TaskCalendarView.tsx`, `TaskCard.tsx` - Task CRUD operations
+- **KRA Management**: `KRAForm.tsx`, `KRAList.tsx`, `KRACalendar.tsx` - KRA lifecycle management
+- **User Management**: `UserManagement.tsx` - Admin user administration
+- **Charts**: `KRAProgressChart.tsx`, `TaskPriorityChart.tsx` - Data visualization
+- **Forms**: `TaskForm.tsx`, `KRAForm.tsx` - Data entry interfaces
+
+### Context Providers
+- **AuthContext**: Manages Firebase authentication state and user data
+- **PermissionsContext**: Handles RBAC permission checking and caching
+
+### Service Layer
+- **`authService.ts`**: Firebase authentication operations
+- **`rbacService.ts`**: Role-based access control management
+- **`taskService.ts`**: Task CRUD operations
+- **`kraService.ts`**: KRA management
+- **`userService.ts`**: User administration
+- **`teamService.ts`**: Team management
+- **`reportService.ts`**: Report generation and scoring
+- **`analyticsService.ts`**: Dashboard analytics and metrics
+- **`adminService.ts`**: System administration functions
 
 ---
+
+## 🔐 Security & RBAC System
+
+### Authentication Layer
+- **Firebase Auth**: Email/password and Google OAuth integration
+- **Session Management**: Automatic token refresh and state persistence
+- **User Registration**: Self-service signup with role assignment
+- **Profile Management**: User profile updates and avatar handling
+
+### RBAC Implementation
+The system implements a sophisticated **Role-Based Access Control** system with three layers:
+
+#### Roles Hierarchy
+```typescript
+enum UserRole {
+    admin = 3,    // Full system access
+    manager = 2,  // Team management
+    employee = 1  // Basic access
+}
+```
+
+#### Permission System
+- **Granular Permissions**: Module-action based permissions (e.g., `tasks.create`, `users.manage`)
+- **Role Assignment**: Users can have multiple roles
+- **Permission Inheritance**: Roles define default permissions
+- **Custom Permissions**: User-specific permission overrides
+
+#### Security Implementation
+- **Firestore Rules**: Database-level access control
+- **Middleware Protection**: Route-level authentication checks
+- **API Guards**: Server-side permission validation
+- **Component Guards**: Client-side UI element visibility control
+
+### RBAC Initialization
+The system includes a bootstrap process (`/api/admin/init-rbac/route.ts`) that creates:
+- Default roles (Admin, Manager, Employee)
+- System permissions (40+ granular permissions)
+- Role-permission mappings
+- Automatic assignment for first authenticated user
+
+### Data Security
+- **Input Sanitization**: DOMPurify for HTML content
+- **XSS Protection**: Content Security Policy headers
+- **CSRF Protection**: Next.js built-in CSRF mitigation
+- **Data Validation**: Zod schemas for type safety
+
+---
+
+## 📊 Data Models & Database Schema
+
+### Core Entities
+
+#### User Model
+```typescript
+interface User {
+    id: string
+    fullName: string
+    email: string
+    roleIds: string[]        // RBAC role IDs
+    avatar?: string
+    teamId?: string
+    isActive?: boolean
+    lastLogin?: Date
+    createdAt: Date
+    updatedAt: Date
+}
+```
+
+#### Task Model
+```typescript
+interface Task {
+    id: string
+    title: string
+    description: string
+    kraId?: string          // Optional KRA linkage
+    priority: Priority
+    status: TaskStatus
+    assignedTo: string[]
+    assignedBy: string
+    dueDate: Date
+    attachments?: string[]
+    checklist: ChecklistItem[]
+    comments: Comment[]
+    activityLog: ActivityLog[]
+    createdAt: Date
+    updatedAt: Date
+}
+```
+
+### Database Schema (Firestore Collections)
+- **users**: User profiles and authentication data
+- **teams**: Team structures and memberships
+- **kras**: Key Result Area definitions
+- **tasks**: Task assignments and tracking
+- **roles**: RBAC role definitions
+- **permissions**: System permissions
+- **role_permissions**: Role-permission relationships
+- **user_roles**: User-role assignments
+- **weeklyReports**: Performance reports
+- **notifications**: System notifications
+
+---
+
+## 🚀 Performance Considerations
+
+### Frontend Performance
+- **Code Splitting**: Next.js automatic code splitting
+- **Lazy Loading**: Component and route lazy loading
+- **Image Optimization**: Next.js Image component
+- **Bundle Analysis**: Webpack bundle analyzer integration
+
+### Database Performance
+- **Firestore Indexing**: Optimized queries with proper indexes
+- **Pagination**: Large dataset handling with cursor-based pagination
+- **Caching**: Client-side data caching with React Query
+- **Batch Operations**: Efficient bulk data operations
+
+### API Performance
+- **Edge Computing**: Next.js API routes with edge runtime
+- **Response Caching**: HTTP caching headers
+- **Database Optimization**: Efficient query patterns
+- **Connection Pooling**: Firebase connection management
+
+---
+
+## 🔧 API Endpoints & Services
+
+### RESTful API Structure
+All APIs follow REST conventions with JSON responses and proper HTTP status codes.
+
+#### Authentication APIs
+- `/api/auth/login` - User authentication
+- `/api/auth/register` - User registration
+- `/api/auth/logout` - Session termination
+
+#### Task Management APIs
+- `/api/tasks` - Fetch user tasks
+- `/api/tasks` (POST) - Create new task
+- `/api/tasks/[id]` - Update/delete task
+
+#### KRA Management APIs
+- `/api/kras` - Fetch user KRAs
+- `/api/kras` (POST) - Create new KRA
+- `/api/kras/[id]` - Update/delete KRA
+
+#### Reporting APIs
+- `/api/reports/weekly` - Generate weekly report
+- `/api/scoring/config` - Get/update scoring configuration
+
+#### Administration APIs
+- `/api/admin/init-rbac` - Initialize RBAC system
+- `/api/admin/users` - Get users and teams
+
+---
+
+## 📈 Business Logic & Workflows
+
+### Core Workflows
+
+#### Task Management Workflow
+1. **Creation**: Users create tasks with assignments and due dates
+2. **Assignment**: Tasks can be assigned to individuals or teams
+3. **Progress Tracking**: Status updates through workflow states
+4. **Collaboration**: Comments and checklist items
+5. **Completion**: Task closure with activity logging
+
+#### KRA Management Workflow
+1. **Definition**: Managers define KRAs with targets and timelines
+2. **Assignment**: KRAs assigned to users or teams
+3. **Progress Monitoring**: Regular progress updates
+4. **Task Alignment**: Tasks linked to KRAs for tracking
+5. **Performance Evaluation**: KRA completion assessment
+
+#### Reporting Workflow
+1. **Data Collection**: Weekly task and KRA data aggregation
+2. **Score Calculation**: Weighted scoring algorithm
+3. **Report Generation**: Automated PDF/HTML reports
+4. **Distribution**: Email delivery to stakeholders
+5. **Analytics**: Historical performance tracking
+
+### Scoring Algorithm
+The system uses a configurable weighted scoring system:
+
+```typescript
+interface ScoringConfig {
+    completionWeight: number    // Task completion (40%)
+    timelinessWeight: number   // On-time delivery (30%)
+    qualityWeight: number      // Quality metrics (20%)
+    kraAlignmentWeight: number // KRA alignment (10%)
+}
+```
+
+---
+
+## 🌟 Overview
 
 ## ✨ Features
 

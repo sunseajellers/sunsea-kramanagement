@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { User, Permission, LegacyPermission } from '@/types'
+import { User, Permission } from '@/types'
 import { getAllUsers, updateUser, deleteUser, bulkUpdateUsers } from '@/lib/userService'
-import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_CATEGORIES, PERMISSION_DESCRIPTIONS, ROLE_CONFIGURATIONS, validateRoleTransition, canManageUser, getManageableRoles } from '@/lib/permissions'
-import { assignRolesToUser, getAllRoles } from '@/lib/rbacService'
+import { assignRolesToUser, getAllRoles, getUserPermissions } from '@/lib/rbacService'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +33,6 @@ export default function UserManagement() {
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
-    const [customPermissions, setCustomPermissions] = useState<LegacyPermission[]>([])
     const [dialogOpen, setDialogOpen] = useState(false)
     const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
@@ -67,7 +65,7 @@ export default function UserManagement() {
         let filtered = users.filter(user => {
             const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 user.email.toLowerCase().includes(searchTerm.toLowerCase())
-            const matchesRole = roleFilter === 'all' // Role filtering temporarily disabled during RBAC migration
+            const matchesRole = roleFilter === 'all'
             const matchesStatus = statusFilter === 'all' ||
                                 (statusFilter === 'active' && user.isActive !== false) ||
                                 (statusFilter === 'inactive' && user.isActive === false)
@@ -89,7 +87,6 @@ export default function UserManagement() {
                     bValue = b.email.toLowerCase()
                     break
                 case 'role':
-                    // Role sorting temporarily disabled during RBAC migration
                     aValue = 'employee'
                     bValue = 'employee'
                     break
@@ -122,22 +119,7 @@ export default function UserManagement() {
             return
         }
 
-        // Role transition validation temporarily disabled during RBAC migration
-        // const validation = validateRoleTransition(
-        //     targetUser.role,
-        //     newRole as any,
-        //     currentUser.role,
-        //     currentUser.uid,
-        //     userId
-        // )
-
-        // if (!validation.valid) {
-        //     toast.error(validation.reason || 'Invalid role change')
-        //     return
-        // }
-
         try {
-            // For RBAC migration, assign the role instead of updating user.role
             // First, find the role ID for the new role
             const roles = await getAllRoles()
             const roleToAssign = roles.find(r => r.name.toLowerCase() === newRole.toLowerCase())
@@ -162,7 +144,6 @@ export default function UserManagement() {
             switch (bulkAction.type) {
                 case 'role_change':
                     if (!bulkAction.value) return
-                    // For RBAC migration, assign roles to users
                     const roles = await getAllRoles()
                     const roleToAssign = roles.find(r => r.name.toLowerCase() === bulkAction.value!.toLowerCase())
                     if (roleToAssign) {
@@ -239,14 +220,6 @@ export default function UserManagement() {
         window.URL.revokeObjectURL(url)
     }
 
-    const handlePermissionToggle = (permission: LegacyPermission, checked: boolean) => {
-        if (checked) {
-            setCustomPermissions(prev => [...prev, permission])
-        } else {
-            setCustomPermissions(prev => prev.filter(p => p !== permission))
-        }
-    }
-
     const handleSavePermissions = async () => {
         if (!selectedUser) return
 
@@ -257,7 +230,6 @@ export default function UserManagement() {
 
     const openPermissionDialog = (user: User) => {
         setSelectedUser(user)
-        setCustomPermissions([]) // Permissions now managed via RBAC
         setDialogOpen(true)
     }
 
@@ -429,7 +401,6 @@ export default function UserManagement() {
                                             {user.isActive === false && (
                                                 <Badge variant="secondary">Inactive</Badge>
                                             )}
-                                            {/* Admin badge temporarily disabled during RBAC migration */}
                                         </div>
                                     </div>
                                 </div>
@@ -450,7 +421,6 @@ export default function UserManagement() {
                                                 Permissions
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            {/* Role change temporarily disabled during RBAC migration */}
                                             <DropdownMenuItem
                                                 onClick={() => updateUser(user.id, { isActive: user.isActive === false })}
                                             >
@@ -482,47 +452,23 @@ export default function UserManagement() {
                                     Employee role with standard permissions managed via RBAC.
                                 </p>
                                 <div className="mt-2">
-                                    <p className="text-sm font-medium">Default Permissions:</p>
+                                    <p className="text-sm font-medium">Current Permissions:</p>
                                     <div className="flex flex-wrap gap-1 mt-1">
-                                        {DEFAULT_ROLE_PERMISSIONS['employee'].map((perm) => (
-                                            <Badge key={perm} variant="secondary" className="text-xs">
-                                                {perm.replace(/_/g, ' ')}
-                                            </Badge>
-                                        ))}
+                                        {selectedUser && (
+                                            <UserPermissionsDisplay userId={selectedUser.id} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                {Object.entries(PERMISSION_CATEGORIES).map(([category, permissions]) => (
-                                    <div key={category} className="border rounded-lg p-4">
-                                        <h4 className="font-medium mb-3">{category}</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {permissions.map((permission) => (
-                                                <div key={permission} className="flex items-start space-x-2">
-                                                    <Checkbox
-                                                        id={permission}
-                                                        checked={customPermissions.includes(permission)}
-                                                        onCheckedChange={(checked) =>
-                                                            handlePermissionToggle(permission, checked as boolean)
-                                                        }
-                                                    />
-                                                    <div className="grid gap-1.5 leading-none">
-                                                        <label
-                                                            htmlFor={permission}
-                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                        >
-                                                            {permission.replace(/_/g, ' ')}
-                                                        </label>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {PERMISSION_DESCRIPTIONS[permission]}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
+                                <div className="border rounded-lg p-4">
+                                    <h4 className="font-medium mb-3">Role Assignment</h4>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        Assign RBAC roles to this user. Permissions are determined by assigned roles.
+                                    </p>
+                                    <RoleAssignment userId={selectedUser?.id || ''} onRoleChange={loadUsers} />
+                                </div>
                             </div>
 
                             <div className="flex justify-end gap-2">
@@ -575,6 +521,104 @@ export default function UserManagement() {
                     </div>
                 </DialogContent>
             </Dialog>
+        </div>
+    )
+}
+
+// Helper component to display user permissions
+function UserPermissionsDisplay({ userId }: { userId: string }) {
+    const [permissions, setPermissions] = useState<Permission[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const loadPermissions = async () => {
+            try {
+                const userPermissions = await getUserPermissions(userId)
+                setPermissions(userPermissions)
+            } catch (error) {
+                console.error('Failed to load permissions:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadPermissions()
+    }, [userId])
+
+    if (loading) return <div>Loading permissions...</div>
+
+    return (
+        <>
+            {permissions.map((perm) => (
+                <Badge key={`${perm.module}-${perm.action}`} variant="secondary" className="text-xs">
+                    {perm.module}.{perm.action}
+                </Badge>
+            ))}
+        </>
+    )
+}
+
+// Helper component for role assignment
+function RoleAssignment({ userId, onRoleChange }: { userId: string; onRoleChange: () => void }) {
+    const [roles, setRoles] = useState<any[]>([])
+    const [userRoles, setUserRoles] = useState<string[]>([])
+    const [loading, setLoading] = useState(true)
+    const { userData } = useAuth()
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [allRoles, userPerms] = await Promise.all([
+                    getAllRoles(),
+                    getUserPermissions(userId)
+                ])
+                setRoles(allRoles)
+                // For now, show all roles - in future we could determine assigned roles from permissions
+                setUserRoles(allRoles.map(r => r.id))
+            } catch (error) {
+                console.error('Failed to load roles:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadData()
+    }, [userId])
+
+    const handleRoleToggle = async (roleId: string, assign: boolean) => {
+        if (!userData) return
+
+        try {
+            if (assign) {
+                await assignRolesToUser(userId, [roleId], userData.uid)
+            } else {
+                // For now, we'll reassign all roles except the one being removed
+                const newRoles = userRoles.filter(id => id !== roleId)
+                await assignRolesToUser(userId, newRoles, userData.uid)
+            }
+            onRoleChange()
+        } catch (error) {
+            toast.error('Failed to update role assignment')
+        }
+    }
+
+    if (loading) return <div>Loading roles...</div>
+
+    return (
+        <div className="space-y-2">
+            {roles.map((role) => (
+                <div key={role.id} className="flex items-center space-x-2">
+                    <Checkbox
+                        id={role.id}
+                        checked={userRoles.includes(role.id)}
+                        onCheckedChange={(checked) => handleRoleToggle(role.id, checked as boolean)}
+                    />
+                    <label htmlFor={role.id} className="text-sm font-medium">
+                        {role.name}
+                    </label>
+                    <span className="text-xs text-muted-foreground">
+                        {role.description}
+                    </span>
+                </div>
+            ))}
         </div>
     )
 }
