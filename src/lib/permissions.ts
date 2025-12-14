@@ -1,5 +1,5 @@
 // src/lib/permissions.ts
-import { UserRole, Permission, RolePermissions } from '@/types';
+import { UserRole, Permission, RolePermissions, LegacyPermission } from '@/types';
 
 /**
  * Role hierarchy definition
@@ -32,7 +32,7 @@ export function getManageableRoles(role: UserRole): UserRole[] {
  * Default permissions for each role
  * These can be overridden by custom permissions on individual users
  */
-export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, LegacyPermission[]> = {
     admin: [
         'view_dashboard',
         'view_tasks',
@@ -93,8 +93,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
  */
 export function hasPermission(
     userRole: UserRole | null | undefined,
-    customPermissions: Permission[] | null | undefined,
-    requiredPermission: Permission
+    customPermissions: LegacyPermission[] | null | undefined,
+    requiredPermission: LegacyPermission
 ): boolean {
     // Edge case: No user role provided
     if (!userRole) {
@@ -194,8 +194,8 @@ export function validateRoleTransition(
  */
 export function getEffectivePermissions(
     userRole: UserRole | null | undefined,
-    customPermissions: Permission[] | null | undefined
-): Permission[] {
+    customPermissions: LegacyPermission[] | null | undefined
+): LegacyPermission[] {
     if (!userRole || !(userRole in DEFAULT_ROLE_PERMISSIONS)) {
         return [];
     }
@@ -208,7 +208,7 @@ export function getEffectivePermissions(
         customPermissions.forEach(permission => {
             if (permission.startsWith('!')) {
                 // Remove permission
-                effectivePermissions.delete(permission.slice(1) as Permission);
+                effectivePermissions.delete(permission.slice(1) as LegacyPermission);
             } else {
                 // Add permission
                 effectivePermissions.add(permission);
@@ -225,8 +225,8 @@ export function getEffectivePermissions(
  */
 export function hasAllPermissions(
     userRole: UserRole | null | undefined,
-    customPermissions: Permission[] | null | undefined,
-    requiredPermissions: Permission[]
+    customPermissions: LegacyPermission[] | null | undefined,
+    requiredPermissions: LegacyPermission[]
 ): boolean {
     return requiredPermissions.every(permission =>
         hasPermission(userRole, customPermissions, permission)
@@ -238,8 +238,8 @@ export function hasAllPermissions(
  */
 export function hasAnyPermission(
     userRole: UserRole | null | undefined,
-    customPermissions: Permission[] | null | undefined,
-    permissions: Permission[]
+    customPermissions: LegacyPermission[] | null | undefined,
+    permissions: LegacyPermission[]
 ): boolean {
     return permissions.some(permission =>
         hasPermission(userRole, customPermissions, permission)
@@ -250,7 +250,7 @@ export function hasAnyPermission(
  * Get permissions for a user, combining role defaults with custom permissions
  * Legacy function for backward compatibility
  */
-export function getUserPermissions(user: { role: UserRole; permissions?: Permission[] }): Permission[] {
+export function getUserPermissions(user: { role: UserRole; permissions?: LegacyPermission[] }): LegacyPermission[] {
     return getEffectivePermissions(user.role, user.permissions);
 }
 
@@ -278,7 +278,7 @@ export const ROLE_CONFIGURATIONS: RolePermissions[] = [
 /**
  * Permission categories for UI organization
  */
-export const PERMISSION_CATEGORIES: Record<string, Permission[]> = {
+export const PERMISSION_CATEGORIES: Record<string, LegacyPermission[]> = {
     'Dashboard': ['view_dashboard'],
     'Tasks': ['view_tasks', 'create_tasks', 'update_tasks', 'delete_tasks', 'assign_tasks'],
     'KRAs': ['view_kras', 'create_kras', 'update_kras', 'delete_kras', 'assign_kras'],
@@ -293,7 +293,7 @@ export const PERMISSION_CATEGORIES: Record<string, Permission[]> = {
 /**
  * Permission descriptions for UI
  */
-export const PERMISSION_DESCRIPTIONS: Record<Permission, string> = {
+export const PERMISSION_DESCRIPTIONS: Record<LegacyPermission, string> = {
     view_dashboard: 'View personal dashboard',
     view_tasks: 'View assigned tasks',
     create_tasks: 'Create new tasks',

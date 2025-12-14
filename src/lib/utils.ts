@@ -1,140 +1,86 @@
-// Utility function for conditional class names
-export function cn(...classes: (string | boolean | undefined | null)[]) {
-    return classes.filter(Boolean).join(' ')
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
 }
 
-// Convert Firestore Timestamp to JS Date
+// Error handling utility
+export function handleError(error: any, message?: string): void {
+  console.error(message || 'Error:', error);
+  // You can add more sophisticated error handling here
+}
+
+// Convert Firebase timestamp to Date
 export function timestampToDate(timestamp: any): Date {
-    if (timestamp && typeof timestamp.toDate === 'function') {
-        return timestamp.toDate()
-    }
-    return new Date(timestamp)
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  return new Date(timestamp);
 }
 
-// Centralized error handler
-export function handleError(error: any, defaultMessage: string = 'An error occurred') {
-    console.error('Error:', error)
-    const message = error?.message || defaultMessage
-    // Import toast dynamically to avoid SSR issues
-    import('react-hot-toast').then(({ default: toast }) => {
-        toast.error(message)
-    })
+// Get initials from full name
+export function getInitials(fullName: string): string {
+  if (!fullName) return '';
+  return fullName
+    .split(' ')
+    .map(name => name.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
-// Format date utilities
-export function formatDate(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date
-    return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    })
+// Get avatar color based on name
+export function getAvatarColor(name: string): string {
+  if (!name) return 'bg-gray-500';
+  const colors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-red-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-teal-500'
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  return colors[index];
 }
 
-export function formatDateTime(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date
-    return d.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
+// Priority color mapping
+export function getPriorityColor(priority: string): string {
+  switch (priority) {
+    case 'critical': return 'text-red-600 bg-red-100';
+    case 'high': return 'text-orange-600 bg-orange-100';
+    case 'medium': return 'text-yellow-600 bg-yellow-100';
+    case 'low': return 'text-green-600 bg-green-100';
+    default: return 'text-gray-600 bg-gray-100';
+  }
 }
 
-export function getRelativeTime(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000)
-
-    if (diffInSeconds < 60) return 'just now'
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
-    return formatDate(d)
+// Status color mapping
+export function getStatusColor(status: string): string {
+  switch (status) {
+    case 'completed': return 'text-green-600 bg-green-100';
+    case 'in_progress': return 'text-blue-600 bg-blue-100';
+    case 'blocked': return 'text-red-600 bg-red-100';
+    case 'assigned': return 'text-yellow-600 bg-yellow-100';
+    default: return 'text-gray-600 bg-gray-100';
+  }
 }
 
-// Priority utilities
-export function getPriorityColor(priority: 'low' | 'medium' | 'high' | 'critical'): string {
-    const colors = {
-        low: 'bg-blue-100 text-blue-700 border-blue-200',
-        medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-        high: 'bg-orange-100 text-orange-700 border-orange-200',
-        critical: 'bg-red-100 text-red-700 border-red-200'
-    }
-    return colors[priority]
-}
-
-export function getPriorityGradient(priority: 'low' | 'medium' | 'high' | 'critical'): string {
-    const gradients = {
-        low: 'from-blue-500 to-cyan-500',
-        medium: 'from-yellow-500 to-orange-500',
-        high: 'from-orange-500 to-red-500',
-        critical: 'from-red-500 to-pink-500'
-    }
-    return gradients[priority]
-}
-
-// Status utilities
-export function getStatusColor(status: 'not_started' | 'in_progress' | 'blocked' | 'completed' | 'assigned'): string {
-    const colors = {
-        not_started: 'bg-gray-100 text-gray-700 border-gray-200',
-        assigned: 'bg-blue-100 text-blue-700 border-blue-200',
-        in_progress: 'bg-purple-100 text-purple-700 border-purple-200',
-        blocked: 'bg-red-100 text-red-700 border-red-200',
-        completed: 'bg-green-100 text-green-700 border-green-200'
-    }
-    return colors[status]
+// Format date
+export function formatDate(date: Date | string | number): string {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleDateString();
 }
 
 // Calculate progress percentage
 export function calculateProgress(completed: number, total: number): number {
-    if (total === 0) return 0
-    return Math.round((completed / total) * 100)
-}
-
-// Validate email
-export function isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-}
-
-// Generate initials from name
-export function getInitials(name: string): string {
-    // Safety check: return default initials if name is undefined, null, or empty
-    if (!name || name.trim().length === 0) {
-        return 'NA'
-    }
-    return name
-        .split(' ')
-        .map(part => part[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-}
-
-// Truncate text
-export function truncate(text: string, length: number): string {
-    if (text.length <= length) return text
-    return text.slice(0, length) + '...'
-}
-
-// Generate random color for avatars
-export function getAvatarColor(name: string): string {
-    const colors = [
-        'from-blue-400 to-blue-600',
-        'from-purple-400 to-purple-600',
-        'from-pink-400 to-pink-600',
-        'from-green-400 to-green-600',
-        'from-yellow-400 to-yellow-600',
-        'from-red-400 to-red-600',
-        'from-indigo-400 to-indigo-600',
-        'from-teal-400 to-teal-600'
-    ]
-    // Safety check: return default color if name is undefined, null, or empty
-    if (!name || name.length === 0) {
-        return colors[0]
-    }
-    const index = name.charCodeAt(0) % colors.length
-    return colors[index]
+  if (total === 0) return 0;
+  return Math.round((completed / total) * 100);
 }

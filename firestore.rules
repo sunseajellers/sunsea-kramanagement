@@ -260,6 +260,86 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    // --- Header Configuration Collection ---
+    match /header_config/{configId} {
+      // Read: All authenticated users (to get header settings)
+      allow read: if isAuthenticated();
+
+      // Create: Admins only
+      allow create: if isAdmin();
+
+      // Update: Admins only
+      allow update: if isAdmin();
+
+      // Delete: Admins only
+      allow delete: if isAdmin();
+    }
+    
+    // --- RBAC Collections ---
+    
+    // Roles Collection
+    match /roles/{roleId} {
+      // Read: All authenticated users (to check permissions)
+      allow read: if isAuthenticated();
+
+      // Create: Admins only
+      allow create: if isAdmin();
+
+      // Update: Admins only (except system roles)
+      allow update: if isAdmin() && (!resource.data.isSystem || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isSystem']));
+
+      // Delete: Admins only (system roles cannot be deleted)
+      allow delete: if isAdmin() && !resource.data.isSystem;
+    }
+    
+    // Permissions Collection
+    match /permissions/{permissionId} {
+      // Read: All authenticated users (to check permissions)
+      allow read: if isAuthenticated();
+
+      // Create: Admins only
+      allow create: if isAdmin();
+
+      // Update: Admins only (except system permissions)
+      allow update: if isAdmin() && (!resource.data.isSystem || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isSystem']));
+
+      // Delete: Admins only (system permissions cannot be deleted)
+      allow delete: if isAdmin() && !resource.data.isSystem;
+    }
+    
+    // Role Permissions Collection
+    match /role_permissions/{rolePermissionId} {
+      // Read: All authenticated users (to check permissions)
+      allow read: if isAuthenticated();
+
+      // Create: Admins only
+      allow create: if isAdmin();
+
+      // Update: Admins only
+      allow update: if isAdmin();
+
+      // Delete: Admins only
+      allow delete: if isAdmin();
+    }
+    
+    // User Roles Collection
+    match /user_roles/{userRoleId} {
+      // Read: User can read their own roles, admins can read all
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Create: Admins only
+      allow create: if isAdmin();
+
+      // Update: Admins only
+      allow update: if isAdmin();
+
+      // Delete: Admins only
+      allow delete: if isAdmin();
+    }
+    
     // Default deny
     match /{document=**} {
       allow read, write: if false;

@@ -2,13 +2,13 @@
 
 > **A comprehensive Task Delegation & KRA Management Platform for Modern Teams**
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.0.3-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)](https://tailwindcss.com/)
-[![Firebase](https://img.shields.io/badge/Firebase-11.0-orange)](https://firebase.google.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0.10-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4.0-blue)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.0-38bdf8)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-12.6.0-orange)](https://firebase.google.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
-A powerful web-based platform that helps organizations set Key Result Areas (KRAs), delegate daily tasks, monitor progress in real-time, and generate automatic weekly performance reports with intelligent scoring.
+A powerful web-based platform that helps organizations set Key Result Areas (KRAs), delegate daily tasks, monitor progress in real-time, and generate automatic weekly performance reports with intelligent scoring. Features a comprehensive **Role-Based Access Control (RBAC)** system for secure, scalable permission management.
 
 ---
 
@@ -20,6 +20,7 @@ A powerful web-based platform that helps organizations set Key Result Areas (KRA
 - [Getting Started](#-getting-started)
 - [Project Structure](#-project-structure)
 - [User Roles & Permissions](#-user-roles--permissions)
+- [RBAC System](#-rbac-system)
 - [Detailed Feature Documentation](#-detailed-feature-documentation)
 - [API & Services](#-api--services)
 - [Database Schema](#-database-schema)
@@ -380,28 +381,48 @@ Total Score = (Completion × Weight₁) + (Timeliness × Weight₂) +
 ### Frontend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Next.js** | 16.0.3 | React framework with App Router |
-| **React** | 19.x | UI library |
-| **TypeScript** | 5.4 | Type safety |
-| **Tailwind CSS** | 3.4 | Utility-first styling |
-| **Lucide React** | Latest | Icon library |
-| **date-fns** | Latest | Date manipulation |
+| **Next.js** | 16.0.10 | React framework with App Router |
+| **React** | 19.2.3 | UI library with concurrent features |
+| **TypeScript** | 5.4.0 | Type safety and modern JavaScript |
+| **Tailwind CSS** | 3.4.0 | Utility-first styling framework |
+| **Lucide React** | 0.561.0 | Beautiful icon library |
+| **date-fns** | 4.1.0 | Modern date utility library |
+| **Recharts** | 3.4.1 | Composable charting library |
+| **React Hot Toast** | 2.6.0 | Toast notifications |
+| **Sonner** | 2.0.7 | Modern toast notifications |
+| **Zod** | 4.1.13 | TypeScript-first schema validation |
+
+### UI Components & Styling
+| Library | Version | Purpose |
+|---------|---------|---------|
+| **Radix UI** | Various | Accessible UI primitives |
+| **Class Variance Authority** | 0.7.1 | Component variant utilities |
+| **Tailwind Merge** | 3.4.0 | Conditional Tailwind class merging |
+| **Tailwind Animate** | 1.0.7 | Animation utilities |
 
 ### Backend & Database
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Firebase Auth** | 11.0 | Authentication |
-| **Firestore** | 11.0 | NoSQL database |
-| **Firebase Storage** | 11.0 | File storage |
-| **Firebase Functions** | 11.0 | Serverless functions |
+| **Firebase** | 12.6.0 | Complete Firebase SDK |
+| **Firebase Admin** | 13.6.0 | Server-side Firebase SDK |
+| **Firestore** | 12.6.0 | NoSQL document database |
+| **Firebase Auth** | 12.6.0 | Authentication service |
+| **Firebase Storage** | 12.6.0 | File storage service |
+
+### Security & Validation
+| Library | Version | Purpose |
+|---------|---------|---------|
+| **DOMPurify** | 3.3.0 | XSS prevention |
+| **isomorphic-dompurify** | 2.33.0 | Server-side sanitization |
 
 ### Development Tools
-| Tool | Purpose |
-|------|---------|
-| **ESLint** | Code linting |
-| **Prettier** | Code formatting |
-| **Git** | Version control |
-| **npm** | Package management |
+| Tool | Version | Purpose |
+|------|---------|---------|
+| **ESLint** | 9.0.0 | Code linting and quality |
+| **TypeScript** | 5.4.0 | Type checking |
+| **Firebase Tools** | 15.0.0 | Firebase CLI and deployment |
+| **PostCSS** | 8.4.0 | CSS processing |
+| **Autoprefixer** | 10.4.0 | CSS vendor prefixing |
 
 ---
 
@@ -494,141 +515,499 @@ npm run dev
 ```
 jewelmatrix/
 ├── src/
-│   ├── app/                          # Next.js App Router
-│   │   ├── dashboard/
-│   │   │   ├── admin/
-│   │   │   │   ├── scoring/
-│   │   │   │   │   └── page.tsx     # Scoring configuration
-│   │   │   │   ├── teams/
-│   │   │   │   │   └── page.tsx     # Team management
-│   │   │   │   ├── users/
-│   │   │   │   │   └── page.tsx     # User management
-│   │   │   │   ├── layout.tsx       # Admin layout
-│   │   │   │   └── page.tsx         # Admin dashboard
-│   │   │   ├── kras/
-│   │   │   │   └── page.tsx         # KRA management
-│   │   │   ├── reports/
-│   │   │   │   └── page.tsx         # Analytics & reports
-│   │   │   ├── tasks/
-│   │   │   │   └── page.tsx         # Task management
-│   │   │   ├── weekly-reports/
-│   │   │   │   └── page.tsx         # Weekly reports
-│   │   │   ├── layout.tsx           # Dashboard layout
-│   │   │   └── page.tsx             # Dashboard home
-│   │   ├── login/
-│   │   │   └── page.tsx             # Login page
-│   │   ├── signup/
-│   │   │   └── page.tsx             # Signup page
-│   │   ├── globals.css              # Global styles
-│   │   ├── layout.tsx               # Root layout
-│   │   └── page.tsx                 # Landing page
+│   ├── app/                          # Next.js 16 App Router
+│   │   ├── api/                      # API routes
+│   │   │   └── admin/
+│   │   │       └── init-rbac/        # RBAC initialization endpoint
+│   │   │           └── route.ts
+│   │   ├── dashboard/                # Protected dashboard routes
+│   │   │   ├── admin/                # Admin-only routes
+│   │   │   │   ├── analytics/        # System analytics
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── notifications/    # Notification management
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── reports/          # Admin reports
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── roles/            # RBAC role management
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── scoring/          # Scoring configuration
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── system/           # System administration
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── teams/            # Team management
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── users/            # User management
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── layout.tsx        # Admin layout
+│   │   │   │   └── page.tsx          # Admin dashboard
+│   │   │   ├── kras/                 # KRA management
+│   │   │   │   └── page.tsx
+│   │   │   ├── profile/              # User profile
+│   │   │   │   └── page.tsx
+│   │   │   ├── reports/              # User reports
+│   │   │   │   └── page.tsx
+│   │   │   ├── settings/             # User settings
+│   │   │   │   └── page.tsx
+│   │   │   ├── tasks/                # Task management
+│   │   │   │   └── page.tsx
+│   │   │   ├── team/                 # Team dashboard
+│   │   │   │   └── page.tsx
+│   │   │   ├── weekly-reports/       # Weekly performance reports
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx            # Dashboard layout
+│   │   │   └── page.tsx              # Main dashboard
+│   │   ├── admin-setup/              # Admin setup wizard
+│   │   │   └── page.tsx
+│   │   ├── signup/                   # User registration
+│   │   │   └── page.tsx
+│   │   ├── globals.css               # Global Tailwind styles
+│   │   ├── layout.tsx                # Root layout with providers
+│   │   └── page.tsx                  # Landing/Login page
 │   │
-│   ├── components/                   # React components
-│   │   ├── charts/
-│   │   │   ├── KRAProgressChart.tsx
-│   │   │   ├── TaskPriorityChart.tsx
-│   │   │   ├── TaskStatusChart.tsx
-│   │   │   └── TaskTrendChart.tsx
-│   │   ├── DashboardHeader.tsx      # Dashboard header
-│   │   ├── KRACalendar.tsx          # KRA calendar view
-│   │   ├── KRAForm.tsx              # KRA creation form
-│   │   ├── KRAList.tsx              # KRA list view
-│   │   ├── Modal.tsx                # Reusable modal
-│   │   ├── TaskBoardView.tsx        # Kanban board
-│   │   ├── TaskCalendarView.tsx     # Task calendar
-│   │   ├── TaskCard.tsx             # Task card component
-│   │   ├── TaskDetailModal.tsx      # Task detail view
-│   │   ├── TaskForm.tsx             # Task creation form
-│   │   └── TaskList.tsx             # Task list view
+│   ├── components/                   # Reusable React components
+│   │   ├── charts/                   # Data visualization components
+│   │   │   ├── KRAProgressChart.tsx  # KRA progress visualization
+│   │   │   ├── TaskPriorityChart.tsx # Task priority distribution
+│   │   │   ├── TaskStatusChart.tsx   # Task status overview
+│   │   │   └── TaskTrendChart.tsx    # Task completion trends
+│   │   ├── ui/                       # Radix UI component wrappers
+│   │   │   ├── alert-dialog.tsx      # Alert dialog component
+│   │   │   ├── badge.tsx             # Status badges
+│   │   │   ├── button.tsx            # Button variants
+│   │   │   ├── card.tsx              # Card containers
+│   │   │   ├── checkbox.tsx          # Form checkboxes
+│   │   │   ├── dialog.tsx            # Modal dialogs
+│   │   │   ├── dropdown-menu.tsx     # Dropdown menus
+│   │   │   ├── input.tsx             # Form inputs
+│   │   │   ├── label.tsx             # Form labels
+│   │   │   ├── select.tsx            # Select dropdowns
+│   │   │   ├── switch.tsx            # Toggle switches
+│   │   │   └── textarea.tsx          # Text areas
+│   │   ├── AdminHeader.tsx           # Admin-specific header
+│   │   ├── DashboardHeader.tsx       # Main dashboard header
+│   │   ├── EmptyState.tsx            # Empty state components
+│   │   ├── ErrorBoundary.tsx         # Error handling boundary
+│   │   ├── Header.tsx                # Main application header
+│   │   ├── KRACalendar.tsx           # KRA calendar view
+│   │   ├── KRAForm.tsx               # KRA creation/editing form
+│   │   ├── KRAList.tsx               # KRA list display
+│   │   ├── Modal.tsx                 # Generic modal wrapper
+│   │   ├── ProtectedRoute.tsx        # Route protection component
+│   │   ├── Skeletons.tsx             # Loading skeleton components
+│   │   ├── TaskBoardView.tsx         # Kanban board view
+│   │   ├── TaskCalendarView.tsx      # Calendar view for tasks
+│   │   ├── TaskCard.tsx              # Task card component
+│   │   ├── TaskDetailModal.tsx       # Task detail modal
+│   │   ├── TaskForm.tsx              # Task creation/editing form
+│   │   ├── TaskList.tsx              # Task list view
+│   │   └── UserManagement.tsx        # User management interface
 │   │
-│   ├── contexts/                     # React contexts
-│   │   └── AuthContext.tsx          # Authentication context
+│   ├── contexts/                     # React Context providers
+│   │   ├── AuthContext.tsx           # Authentication state management
+│   │   └── PermissionsContext.tsx    # RBAC permission management
 │   │
-│   ├── lib/                          # Utility libraries
-│   │   ├── analyticsService.ts      # Analytics functions
-│   │   ├── authService.ts           # Authentication functions
-│   │   ├── firebase.ts              # Firebase configuration
-│   │   ├── kraService.ts            # KRA CRUD operations
-│   │   ├── notificationService.ts   # Notification functions
-│   │   ├── reportService.ts         # Report generation
-│   │   ├── taskService.ts           # Task CRUD operations
-│   │   ├── teamService.ts           # Team management
-│   │   ├── userService.ts           # User management
-│   │   └── utils.ts                 # Utility functions
+│   ├── lib/                          # Business logic and utilities
+│   │   ├── adminService.ts           # Admin-specific operations
+│   │   ├── analyticsService.ts       # Analytics and reporting
+│   │   ├── authService.ts            # Authentication operations
+│   │   ├── firebase.ts               # Firebase configuration
+│   │   ├── headerService.ts          # Header configuration
+│   │   ├── kraService.ts             # KRA CRUD operations
+│   │   ├── notificationService.ts    # Notification management
+│   │   ├── permissions.ts            # Legacy permission utilities
+│   │   ├── rbacMiddleware.tsx        # API route protection
+│   │   ├── rbacService.ts            # RBAC operations
+│   │   ├── reportService.ts          # Report generation
+│   │   ├── sanitize.ts               # Input sanitization
+│   │   ├── taskService.ts            # Task CRUD operations
+│   │   ├── teamService.ts            # Team management
+│   │   ├── userService.ts            # User management
+│   │   ├── utils.ts                  # General utilities
+│   │   └── validation.ts             # Input validation
 │   │
-│   └── types/
-│       └── index.ts                 # TypeScript type definitions
+│   └── types/                        # TypeScript type definitions
+│       └── index.ts                  # All type interfaces and enums
 │
-├── public/                           # Static assets
-│   └── (images, fonts, etc.)
-│
-├── .env.local                        # Environment variables
-├── .eslintrc.json                    # ESLint configuration
-├── .gitignore                        # Git ignore rules
-├── firestore.rules                   # Firestore security rules
-├── next.config.js                    # Next.js configuration
-├── package.json                      # Dependencies
-├── postcss.config.js                 # PostCSS configuration
-├── tailwind.config.js                # Tailwind configuration
-├── tsconfig.json                     # TypeScript configuration
-├── IMPLEMENTATION_SUMMARY.md         # Feature implementation summary
-└── README.md                         # This file
+├── firebase.json                      # Firebase project configuration
+├── firestore.rules                    # Firestore security rules
+├── next-env.d.ts                      # Next.js TypeScript declarations
+├── next.config.js                     # Next.js configuration
+├── package.json                       # Dependencies and scripts
+├── postcss.config.js                  # PostCSS configuration
+├── tailwind.config.js                 # Tailwind CSS configuration
+├── tsconfig.json                      # TypeScript configuration
+├── IMPLEMENTATION_SUMMARY.md          # Feature implementation details
+└── README.md                          # This documentation
 ```
 
+### 📂 Key Architecture Patterns
+
+#### **Component Organization**
+- **UI Components** (`/ui/`): Radix UI primitives wrapped with Tailwind styling
+- **Feature Components**: Business logic components in root components directory
+- **Chart Components**: Data visualization using Recharts library
+- **Layout Components**: Header, navigation, and layout wrappers
+
+#### **Service Layer Architecture**
+- **Authentication** (`authService.ts`): Firebase Auth operations
+- **RBAC** (`rbacService.ts`, `rbacMiddleware.tsx`): Permission management
+- **Business Services**: Domain-specific operations (tasks, KRAs, teams, etc.)
+- **Utility Services**: Analytics, notifications, reporting
+
+#### **Context Providers**
+- **AuthContext**: User authentication state and routing logic
+- **PermissionsContext**: Real-time permission checking and RBAC state
+
+#### **API Routes**
+- **RESTful Design**: Next.js API routes with proper HTTP methods
+- **RBAC Protection**: Server-side permission validation using middleware
+- **Error Handling**: Consistent error responses and logging
+
 ---
+
+
 
 ## 👥 User Roles & Permissions
 
-### Role Hierarchy
-```
-Admin > Manager > Employee
+### RBAC Role System
+
+JewelMatrix uses a comprehensive **Role-Based Access Control (RBAC)** system with flexible permissions. The system includes **system roles** (automatically created) and **custom roles** (user-defined).
+
+### Default System Roles
+
+#### 1. **Super Admin** (System Role)
+- **Full System Access**: All permissions across all modules
+- **System Management**: Can modify system settings and roles
+- **User Management**: Complete control over all users
+- **Data Access**: Access to all organizational data
+- **Cannot be deleted or modified**
+
+#### 2. **Administrator** (System Role)
+- **User Management**: Create, edit, and manage users
+- **Team Management**: Full team organization control
+- **System Configuration**: Access to scoring and system settings
+- **Analytics Access**: View system-wide analytics
+- **Report Generation**: Generate all types of reports
+
+#### 3. **Manager** (System Role)
+- **Team Leadership**: Manage assigned teams and members
+- **Task Management**: Create and assign tasks within teams
+- **KRA Management**: Define KRAs for team members
+- **Performance Monitoring**: View team performance and reports
+- **Limited User Management**: Manage users within their teams
+
+#### 4. **Employee** (System Role)
+- **Personal Tasks**: Manage assigned tasks and update status
+- **KRA Viewing**: View assigned KRAs and progress
+- **Self-Service**: Generate personal reports and analytics
+- **Basic Notifications**: Receive task and system notifications
+
+### Permission Modules
+
+The system organizes permissions into logical modules:
+
+| Module | Description | Key Actions |
+|--------|-------------|-------------|
+| **users** | User account management | view, create, edit, delete, manage |
+| **teams** | Team organization | view, create, edit, delete, manage |
+| **tasks** | Task management | view, create, edit, delete, assign, manage |
+| **kras** | KRA management | view, create, edit, delete, assign, manage |
+| **reports** | Report generation | view, generate, export, manage |
+| **analytics** | System analytics | view, manage |
+| **notifications** | Notification system | view, create, manage |
+| **roles** | RBAC role management | view, create, edit, delete, manage |
+| **scoring** | Performance scoring config | view, manage |
+| **system** | System administration | view, manage, admin |
+
+### Permission Inheritance
+
+- **Role-Based**: Users inherit all permissions from their assigned roles
+- **Multiple Roles**: Users can have multiple roles simultaneously
+- **Additive Permissions**: Permissions from multiple roles are combined
+- **No Conflicts**: Permission conflicts are resolved by allowing access
+
+### Custom Roles
+
+Administrators can create custom roles with specific permission combinations:
+
+```typescript
+// Example: Project Lead Role
+{
+  name: "Project Lead",
+  permissions: [
+    "tasks.view", "tasks.create", "tasks.edit", "tasks.assign",
+    "kras.view", "kras.create", "kras.edit",
+    "reports.view", "reports.generate", "reports.export",
+    "teams.view", "analytics.view"
+  ]
+}
 ```
 
-### Detailed Permissions Matrix
+### Permission Checking
 
-| Feature | Admin | Manager | Employee |
-|---------|-------|---------|----------|
-| **User Management** |
-| Create users | ✅ | ❌ | ❌ |
-| Edit user roles | ✅ | ❌ | ❌ |
-| Deactivate users | ✅ | ❌ | ❌ |
-| View all users | ✅ | ✅ (team only) | ❌ |
-| **Team Management** |
-| Create teams | ✅ | ❌ | ❌ |
-| Edit teams | ✅ | ✅ (own team) | ❌ |
-| Add team members | ✅ | ✅ (own team) | ❌ |
-| Remove team members | ✅ | ✅ (own team) | ❌ |
-| **KRA Management** |
-| Create KRAs | ✅ | ✅ | ❌ |
-| Edit KRAs | ✅ | ✅ (assigned) | ❌ |
-| Delete KRAs | ✅ | ✅ (created by self) | ❌ |
-| View KRAs | ✅ | ✅ | ✅ (assigned) |
-| **Task Management** |
-| Create tasks | ✅ | ✅ | ✅ |
-| Assign tasks | ✅ | ✅ | ✅ (to self) |
-| Reassign tasks | ✅ | ✅ | ❌ |
-| Edit tasks | ✅ | ✅ | ✅ (assigned) |
-| Delete tasks | ✅ | ✅ (created by self) | ❌ |
-| Update status | ✅ | ✅ | ✅ (assigned) |
-| Add checklist items | ✅ | ✅ | ✅ (assigned) |
-| **Reports & Scoring** |
-| View own reports | ✅ | ✅ | ✅ |
-| View team reports | ✅ | ✅ (own team) | ❌ |
-| View all reports | ✅ | ❌ | ❌ |
-| Generate reports | ✅ | ✅ | ✅ (own) |
-| Export reports | ✅ | ✅ | ✅ (own) |
-| Configure scoring | ✅ | ❌ | ❌ |
-| **Analytics** |
-| View system analytics | ✅ | ❌ | ❌ |
-| View team analytics | ✅ | ✅ (own team) | ❌ |
-| View own analytics | ✅ | ✅ | ✅ |
-| **Notifications** |
-| Send notifications | ✅ | ✅ | ✅ |
-| Configure preferences | ✅ | ✅ | ✅ |
+The system provides real-time permission validation:
+
+```typescript
+// Component-level permission check
+{hasPermission('tasks', 'create') && <CreateTaskButton />}
+
+// API route protection
+export async function POST(request: NextRequest) {
+  return withRBAC(request, 'users', 'create', async (request, userId) => {
+    // Handler code - user has permission
+  });
+}
+```
+
+### Security Features
+
+- **Server-Side Validation**: All API calls validate permissions
+- **Client-Side UI**: Interface elements hidden based on permissions
+- **Audit Logging**: Permission checks and role changes are logged
+- **Real-time Updates**: Permission changes take effect immediately
+- **Fallback Handling**: Graceful handling of insufficient permissions
 
 ---
 
-## 📚 Detailed Feature Documentation
+
+
+## � RBAC System (Role-Based Access Control)
+
+### Overview
+JewelMatrix implements a comprehensive **Role-Based Access Control (RBAC)** system that provides fine-grained permission management beyond simple role hierarchies. The system supports dynamic role creation, flexible permission assignment, and real-time access control.
+
+### Key Components
+
+#### 1. **Roles Management**
+- **Dynamic Role Creation**: Create custom roles with specific permission sets
+- **System vs Custom Roles**: System roles cannot be deleted, custom roles are fully manageable
+- **Role Hierarchy**: Flexible role relationships (not strictly hierarchical)
+- **Active/Inactive Roles**: Enable/disable roles without deleting them
+
+#### 2. **Permissions System**
+- **Modular Permissions**: Permissions organized by modules (users, tasks, teams, etc.)
+- **Granular Actions**: View, Create, Edit, Delete, Manage actions per module
+- **System Permissions**: Core permissions that cannot be modified
+- **Custom Permissions**: Extensible permission framework
+
+#### 3. **User-Role Assignments**
+- **Multiple Roles per User**: Users can have multiple roles simultaneously
+- **Role Inheritance**: Users inherit all permissions from their assigned roles
+- **Dynamic Updates**: Permission changes take effect immediately
+- **Audit Trail**: Track who assigned roles and when
+
+#### 4. **Permission Checking**
+- **Component-Level Protection**: React components check permissions before rendering
+- **API Route Protection**: Server-side permission validation
+- **Real-time Updates**: Permission changes reflected instantly
+- **Fallback Handling**: Graceful handling of insufficient permissions
+
+### Permission Modules
+
+| Module | Actions | Description |
+|--------|---------|-------------|
+| **users** | view, create, edit, delete, manage | User account management |
+| **teams** | view, create, edit, delete, manage | Team organization |
+| **tasks** | view, create, edit, delete, assign, manage | Task management |
+| **kras** | view, create, edit, delete, assign, manage | KRA management |
+| **reports** | view, generate, export, manage | Report generation |
+| **analytics** | view, manage | System analytics |
+| **notifications** | view, create, manage | Notification system |
+| **roles** | view, create, edit, delete, manage | RBAC role management |
+| **scoring** | view, manage | Performance scoring config |
+| **system** | view, manage, admin | System administration |
+
+### RBAC Architecture
+
+#### Database Collections
+```typescript
+// roles - Role definitions
+{
+  id: string
+  name: string              // e.g., "Project Manager", "Senior Developer"
+  description: string
+  isSystem: boolean         // Cannot be deleted if true
+  isActive: boolean         // Can be enabled/disabled
+  createdAt: Date
+  updatedAt: Date
+}
+
+// permissions - Available permissions
+{
+  id: string
+  name: string              // e.g., "users.view", "tasks.create"
+  description: string
+  module: string            // e.g., "users", "tasks"
+  action: string            // e.g., "view", "create"
+  isSystem: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+// role_permissions - Role-permission relationships
+{
+  id: string
+  roleId: string
+  permissionId: string
+  createdAt: Date
+}
+
+// user_roles - User-role assignments
+{
+  id: string
+  userId: string
+  roleId: string
+  assignedBy: string
+  assignedAt: Date
+}
+```
+
+#### React Integration
+```typescript
+// Permission Context
+const { hasPermission } = usePermissions()
+
+// Check permissions in components
+if (hasPermission('users', 'view')) {
+  // Render user management UI
+}
+
+// Higher-order component for protection
+const ProtectedComponent = withPermissionCheck(
+  MyComponent,
+  'admin',
+  'manage'
+)
+```
+
+#### API Protection
+```typescript
+// Route-level permission checking
+export async function POST(request: NextRequest) {
+  return withRBAC(request, 'users', 'create', async (request, userId) => {
+    // Handler code - user has permission
+  });
+}
+```
+
+### Default Roles
+
+#### System Roles (Auto-created)
+1. **Super Admin**
+   - All permissions across all modules
+   - Cannot be deleted or modified
+   - Assigned to initial admin user
+
+2. **Administrator**
+   - Full access to user management
+   - Team management permissions
+   - System configuration access
+   - Report generation and analytics
+
+3. **Manager**
+   - Team management within assigned teams
+   - Task creation and assignment
+   - KRA creation and management
+   - Team report access
+   - Limited user management
+
+4. **Employee**
+   - Personal task management
+   - KRA viewing (assigned)
+   - Personal report generation
+   - Basic notification access
+
+### RBAC Management UI
+
+#### Roles Page (`/dashboard/admin/roles`)
+- **Role List**: View all roles with status indicators
+- **Create Role**: Add new custom roles with permission selection
+- **Edit Role**: Modify existing roles and their permissions
+- **Permission Matrix**: Visual permission assignment grid
+- **Role Status**: Enable/disable roles
+- **System Role Protection**: Prevent modification of system roles
+
+#### Permission Grid Interface
+```
+┌─────────────────┬──────┬────────┬──────┬────────┐
+│ Module/Action   │ View │ Create │ Edit │ Delete │
+├─────────────────┼──────┼────────┼──────┼────────┤
+│ Users          │  ✅  │   ✅   │  ✅  │   ✅   │
+│ Teams          │  ✅  │   ✅   │  ✅  │   ❌   │
+│ Tasks          │  ✅  │   ✅   │  ✅  │   ✅   │
+│ KRAs           │  ✅  │   ✅   │  ✅  │   ✅   │
+│ Reports        │  ✅  │   ❌   │  ❌  │   ❌   │
+│ Analytics      │  ✅  │   ❌   │  ❌  │   ❌   │
+└─────────────────┴──────┴────────┴──────┴────────┘
+```
+
+### Security Features
+
+#### Permission Validation
+- **Client-side Checks**: UI elements hidden based on permissions
+- **Server-side Validation**: All API calls validate permissions
+- **Real-time Updates**: Permission changes take effect immediately
+- **Audit Logging**: All permission changes are logged
+
+#### Access Control Patterns
+```typescript
+// Pattern 1: Component-level protection
+{hasPermission('users', 'view') && <UserManagement />}
+
+// Pattern 2: Conditional rendering
+{hasPermission('tasks', 'create') ? (
+  <CreateTaskButton />
+) : (
+  <AccessDeniedMessage />
+)}
+
+// Pattern 3: Route protection
+export default function AdminPage() {
+  if (!hasPermission('admin', 'view')) {
+    return <AccessDenied />
+  }
+  return <AdminDashboard />
+}
+```
+
+### RBAC Initialization
+
+#### Automatic Setup
+1. **System Roles Creation**: Default roles created automatically
+2. **Permission Seeding**: All system permissions initialized
+3. **Role-Permission Assignment**: Default permissions assigned to roles
+4. **Admin User Setup**: Initial admin gets Super Admin role
+
+#### Manual Initialization
+```bash
+# Initialize RBAC system (admin only)
+POST /api/admin/init-rbac
+Authorization: Bearer <admin-token>
+```
+
+### Best Practices
+
+#### Role Design
+- **Principle of Least Privilege**: Give minimum required permissions
+- **Role Naming**: Use descriptive, consistent naming conventions
+- **Regular Audits**: Review and update role permissions periodically
+- **Documentation**: Document what each role can do
+
+#### Permission Management
+- **Granular Control**: Use specific permissions rather than broad access
+- **Testing**: Test permission changes thoroughly
+- **Backup**: Maintain backup of permission assignments
+- **Monitoring**: Monitor permission usage and access patterns
+
+#### Security Considerations
+- **No Permission Elevation**: Prevent users from granting themselves higher permissions
+- **Audit Trail**: Log all permission changes with timestamps and user info
+- **Regular Reviews**: Conduct periodic security reviews of role assignments
+- **Emergency Access**: Have procedures for emergency permission granting
+
+---
+
+## �📚 Detailed Feature Documentation
 
 ### Task Management Workflows
 
@@ -849,6 +1228,9 @@ sendWeeklyReportEmail(reportId: string, recipientEmail: string): Promise<void>
 ### Analytics Service (`analyticsService.ts`)
 
 ```typescript
+// Get dashboard statistics
+getDashboardStats(uid: string): Promise<DashboardStats>
+
 // Get task analytics
 getTaskAnalytics(uid: string): Promise<TaskAnalytics>
 
@@ -857,9 +1239,248 @@ getKRAAnalytics(uid: string): Promise<KRAAnalytics>
 
 // Export analytics data
 exportAnalyticsData(uid: string): Promise<void>
+
+// Get admin dashboard analytics
+getAdminDashboardAnalytics(): Promise<AdminAnalytics>
+
+// Get team detailed analytics
+getTeamDetailedAnalytics(teamId: string): Promise<TeamAnalytics>
+
+// Generate admin reports
+generateAdminReport(reportType: 'overview' | 'teams' | 'users' | 'performance', dateRange?: { start: Date, end: Date }): Promise<AdminReport>
+```
+
+### RBAC Service (`rbacService.ts`)
+
+```typescript
+// ROLES MANAGEMENT
+// Get all roles
+getAllRoles(): Promise<Role[]>
+
+// Get role by ID
+getRoleById(roleId: string): Promise<Role | null>
+
+// Create new role
+createRole(roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>
+
+// Update role
+updateRole(roleId: string, updates: Partial<Omit<Role, 'id' | 'createdAt'>>): Promise<void>
+
+// Delete role
+deleteRole(roleId: string): Promise<void>
+
+// PERMISSIONS MANAGEMENT
+// Get all permissions
+getAllPermissions(): Promise<Permission[]>
+
+// Get permissions by module
+getPermissionsByModule(): Promise<Record<string, Permission[]>>
+
+// Create new permission
+createPermission(permissionData: Omit<Permission, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>
+
+// ROLE-PERMISSION RELATIONSHIPS
+// Get role permissions
+getRolePermissions(roleId: string): Promise<Permission[]>
+
+// Assign permissions to role
+assignPermissionsToRole(roleId: string, permissionIds: string[]): Promise<void>
+
+// Remove all permissions from role
+removeAllPermissionsFromRole(roleId: string): Promise<void>
+
+// USER-ROLE ASSIGNMENTS
+// Get user roles
+getUserRoles(userId: string): Promise<Role[]>
+
+// Assign roles to user
+assignRolesToUser(userId: string, roleIds: string[], assignedBy: string): Promise<void>
+
+// Remove role from all users
+removeRoleFromAllUsers(roleId: string): Promise<void>
+
+// PERMISSION CHECKING
+// Check if user has permission
+userHasPermission(userId: string, module: string, action: string): Promise<boolean>
+
+// Get user permissions
+getUserPermissions(userId: string): Promise<Permission[]>
+
+// SYSTEM INITIALIZATION
+// Initialize default RBAC system
+initializeDefaultRBAC(): Promise<void>
+```
+
+### User Service (`userService.ts`)
+
+```typescript
+// Get all users
+getAllUsers(): Promise<User[]>
+
+// Get user by ID
+getUserById(uid: string): Promise<User | null>
+
+// Update user
+updateUser(uid: string, data: Partial<User>): Promise<void>
+
+// Delete user
+deleteUser(uid: string): Promise<void>
+
+// Bulk update users
+bulkUpdateUsers(userIds: string[], data: Partial<User>): Promise<void>
+
+// Bulk delete users
+bulkDeleteUsers(userIds: string[]): Promise<void>
+
+// Search users
+searchUsers(query: string): Promise<User[]>
+
+// Get users by role
+getUsersByRole(role: string): Promise<User[]>
+
+// Get active users
+getActiveUsers(): Promise<User[]>
+```
+
+### Team Service (`teamService.ts`)
+
+```typescript
+// Get all teams
+getAllTeams(): Promise<Team[]>
+
+// Create new team
+createTeam(teamData: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>
+
+// Update team
+updateTeam(teamId: string, data: Partial<Team>): Promise<void>
+
+// Delete team
+deleteTeam(teamId: string): Promise<void>
+
+// Bulk update teams
+bulkUpdateTeams(teamIds: string[], data: Partial<Team>): Promise<void>
+
+// Get team hierarchy
+getTeamHierarchy(): Promise<Team[]>
+
+// Get teams by manager
+getTeamsByManager(managerId: string): Promise<Team[]>
+
+// Get sub-teams
+getSubTeams(parentId: string): Promise<Team[]>
+
+// Get team by ID
+getTeamById(teamId: string): Promise<Team | null>
+
+// Get team weekly report
+getTeamWeeklyReport(teamId: string, weekStart: string): Promise<{...}>
+```
+
+### Notification Service (`notificationService.ts`)
+
+```typescript
+// Get user notifications
+getUserNotifications(userId: string, limit?: number): Promise<Notification[]>
+
+// Get all notification rules
+getAllNotificationRules(): Promise<NotificationRule[]>
+
+// Create notification rule
+createNotificationRule(ruleData: Omit<NotificationRule, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>
+
+// Update notification rule
+updateNotificationRule(ruleId: string, updates: Partial<NotificationRule>): Promise<void>
+
+// Delete notification rule
+deleteNotificationRule(ruleId: string): Promise<void>
+
+// Get notification analytics
+getNotificationAnalytics(): Promise<NotificationAnalytics>
+
+// Test notification rule
+testNotificationRule(ruleId: string, testRecipientId: string): Promise<void>
+
+// Initialize default notification rules
+initializeDefaultNotificationRules(adminId: string): Promise<void>
+```
+
+### Admin Service (`adminService.ts`)
+
+```typescript
+// System administration functions
+// Initialize system with default data
+initializeSystem(adminId: string): Promise<void>
+
+// Get system health status
+getSystemHealth(): Promise<SystemHealth>
+
+// Get system statistics
+getSystemStats(): Promise<SystemStats>
+
+// Clean up orphaned data
+cleanupOrphanedData(): Promise<void>
+
+// Export system data
+exportSystemData(): Promise<void>
+```
+
+### Header Service (`headerService.ts`)
+
+```typescript
+// Get header configuration
+getHeaderConfig(): Promise<HeaderConfig | null>
+
+// Update header configuration
+updateHeaderConfig(config: HeaderConfig): Promise<void>
+
+// Get default header configuration
+getDefaultHeaderConfig(): HeaderConfig
+```
+
+### Utility Services
+
+#### Validation Service (`validation.ts`)
+```typescript
+// Validate data against schema
+validateData<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; errors: string[] }
+
+// Safe validation with error handling
+safeValidate<T>(schema: z.ZodSchema<T>, data: unknown): T | null
+```
+
+#### Sanitization Service (`sanitize.ts`)
+```typescript
+// Sanitize HTML content
+sanitizeHtml(html: string): string
+
+// Sanitize user input
+sanitizeInput(input: string): string
+
+// Validate email format
+isValidEmail(email: string): boolean
+
+// Validate password strength
+validatePassword(password: string): { valid: boolean; errors: string[] }
+```
+
+#### Permissions Service (`permissions.ts`)
+```typescript
+// Check if user has permission (context-based)
+hasPermission(module: string, action: string): boolean
+
+// Get current user permissions
+getCurrentUserPermissions(): Permission[]
+
+// Check multiple permissions
+hasAnyPermission(permissions: Array<{ module: string; action: string }>): boolean
+
+// Check all permissions
+hasAllPermissions(permissions: Array<{ module: string; action: string }>): boolean
 ```
 
 ---
+
+
 
 ## 💾 Database Schema
 
@@ -1003,6 +1624,73 @@ exportAnalyticsData(uid: string): Promise<void>
   kraAlignmentWeight: number    // 0-100
   updatedAt: Timestamp
   updatedBy: string
+}
+```
+
+#### RBAC Collections
+
+##### `roles`
+```typescript
+{
+  id: string
+  name: string                  // e.g., "Project Manager", "Senior Developer"
+  description: string
+  isSystem: boolean             // Cannot be deleted if true
+  isActive: boolean             // Can be enabled/disabled
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+```
+
+##### `permissions`
+```typescript
+{
+  id: string
+  name: string                  // e.g., "users.view", "tasks.create"
+  description: string
+  module: string                // e.g., "users", "tasks"
+  action: string                // e.g., "view", "create"
+  isSystem: boolean
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+```
+
+##### `role_permissions`
+```typescript
+{
+  id: string
+  roleId: string
+  permissionId: string
+  createdAt: Timestamp
+}
+```
+
+##### `user_roles`
+```typescript
+{
+  id: string
+  userId: string
+  roleId: string
+  assignedBy: string
+  assignedAt: Timestamp
+}
+```
+
+##### `notificationRules`
+```typescript
+{
+  id: string
+  name: string
+  description: string
+  trigger: NotificationTrigger
+  conditions: NotificationCondition[]
+  template: NotificationTemplate
+  recipients: string[]           // User IDs or role names
+  isActive: boolean
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 ```
 
@@ -1168,6 +1856,93 @@ firebase emulators:start  # Start local emulators
 - Use CSS variables for theming
 - Follow mobile-first approach
 
+### RBAC Development Guidelines
+
+#### Permission Checking
+```typescript
+// ✅ Good: Use the permissions hook
+const { hasPermission } = usePermissions()
+
+if (hasPermission('users', 'view')) {
+  return <UserManagement />
+}
+
+// ❌ Bad: Direct permission checking
+const user = await getCurrentUser()
+if (await userHasPermission(user.uid, 'users', 'view')) {
+  // ...
+}
+```
+
+#### API Route Protection
+```typescript
+// ✅ Good: Use withRBAC HOF
+export async function POST(request: NextRequest) {
+  return withRBAC(request, 'users', 'create', async (request, userId) => {
+    // Handler code
+  });
+}
+
+// ❌ Bad: Manual permission checking
+export async function POST(request: NextRequest) {
+  const userId = await verifyToken(request)
+  if (!await userHasPermission(userId, 'users', 'create')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  // Handler code
+}
+```
+
+#### Component-Level Protection
+```typescript
+// ✅ Good: Conditional rendering
+{hasPermission('tasks', 'create') && (
+  <CreateTaskButton />
+)}
+
+// ✅ Good: Protected component
+<ProtectedRoute requiredPermission={{ module: 'admin', action: 'view' }}>
+  <AdminDashboard />
+</ProtectedRoute>
+
+// ❌ Bad: No protection
+<CreateTaskButton /> // Always visible
+```
+
+#### Role and Permission Naming
+- **Modules**: Use plural nouns (users, tasks, teams, kras, reports)
+- **Actions**: Use CRUD operations (view, create, edit, delete, manage)
+- **Roles**: Use descriptive names (Project Manager, Senior Developer)
+- **Consistency**: Follow established naming patterns
+
+#### Testing Permissions
+```typescript
+// Test permission logic
+describe('User Management', () => {
+  it('should allow admin to view users', async () => {
+    const hasAccess = await userHasPermission(adminId, 'users', 'view')
+    expect(hasAccess).toBe(true)
+  })
+
+  it('should deny employee from managing roles', async () => {
+    const hasAccess = await userHasPermission(employeeId, 'roles', 'manage')
+    expect(hasAccess).toBe(false)
+  })
+})
+```
+
+#### Database Security Rules
+```javascript
+// Firestore security rules for RBAC
+match /users/{userId} {
+  allow read: if request.auth != null &&
+    (request.auth.uid == userId ||
+     userHasPermission(request.auth.uid, 'users', 'view'))
+  allow write: if request.auth != null &&
+    userHasPermission(request.auth.uid, 'users', 'edit')
+}
+```
+
 ### Git Workflow
 
 ```bash
@@ -1298,6 +2073,80 @@ npx tsc --noEmit
 npm install -D typescript@latest
 ```
 
+### RBAC Troubleshooting
+
+#### Permission Denied Errors
+```typescript
+// Check user permissions
+const { hasPermission } = usePermissions()
+console.log('User permissions:', hasPermission)
+
+// Verify role assignments
+const userRoles = await getUserRoles(userId)
+console.log('User roles:', userRoles)
+
+// Check permission existence
+const permissions = await getAllPermissions()
+console.log('Available permissions:', permissions)
+```
+
+#### Role Assignment Issues
+```bash
+# Initialize RBAC system (admin only)
+curl -X POST http://localhost:3000/api/admin/init-rbac \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+
+# Check role assignments
+# Use Firebase console or API to verify user_roles collection
+```
+
+#### Permission Caching Problems
+```typescript
+// Clear permission cache
+localStorage.removeItem('user_permissions')
+window.location.reload()
+
+// Or force permission refresh
+const { refreshPermissions } = usePermissions()
+refreshPermissions()
+```
+
+#### API Route Protection Issues
+```typescript
+// Debug API route permissions
+export async function POST(request: NextRequest) {
+  console.log('Request headers:', request.headers)
+  console.log('Auth token:', request.headers.get('authorization'))
+
+  return withRBAC(request, 'users', 'create', async (request, userId) => {
+    console.log('User ID from token:', userId)
+    // Handler code
+  });
+}
+```
+
+#### Common RBAC Errors
+
+**"Permission denied" on protected routes**
+- Verify user has required role
+- Check if role has necessary permissions
+- Ensure API route uses `withRBAC` wrapper
+
+**"Role not found" errors**
+- Run RBAC initialization
+- Check if roles exist in database
+- Verify role names match exactly
+
+**Permission changes not taking effect**
+- Clear browser cache
+- Force page reload
+- Check if permissions context updated
+
+**System roles cannot be modified**
+- System roles (Super Admin, Administrator, etc.) are protected
+- Create custom roles for modifications
+- Only custom roles can be deleted
+
 ### Performance Optimization
 
 #### Image Optimization
@@ -1335,6 +2184,11 @@ npm install -D typescript@latest
 - [x] Team management
 - [x] User management
 - [x] Analytics and charts
+- [x] **RBAC System** - Complete role-based access control
+- [x] **Permission Management** - Granular permission system
+- [x] **Role Assignment** - Dynamic user-role management
+- [x] **API Protection** - Server-side permission validation
+- [x] **Component-Level Security** - Client-side access control
 
 ### 🚧 In Progress
 - [ ] Real-time notifications
@@ -1356,8 +2210,8 @@ npm install -D typescript@latest
 - [ ] Mobile app (React Native)
 - [ ] Slack/Teams integration
 - [ ] API for third-party integrations
-- [ ] Advanced role permissions
 - [ ] Multi-language support
+- [ ] Advanced audit logging
 
 #### Q3 2025
 - [ ] AI-powered task suggestions

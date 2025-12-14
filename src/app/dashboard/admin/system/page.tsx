@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { hasPermission } from '@/lib/permissions';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { getSystemHealth, updateSystemSettings, toggleMaintenanceMode, performSystemBackup, getSystemSettings, getDatabaseStats } from '@/lib/adminService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

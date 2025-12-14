@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { PermissionsProvider } from '@/contexts/PermissionsContext'
 import { Toaster } from 'react-hot-toast'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import './globals.css'
@@ -29,32 +30,34 @@ export default function RootLayout({
             <body className={inter.className}>
                 <ErrorBoundary>
                     <AuthProvider>
-                        {children}
-                        <Toaster
-                            position="top-right"
-                            toastOptions={{
-                                duration: 4000,
-                                style: {
-                                    background: '#fff',
-                                    color: '#363636',
-                                    padding: '16px',
-                                    borderRadius: '12px',
-                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                                },
-                                success: {
-                                    iconTheme: {
-                                        primary: '#10B981',
-                                        secondary: '#fff',
+                        <PermissionsProvider>
+                            {children}
+                            <Toaster
+                                position="top-right"
+                                toastOptions={{
+                                    duration: 4000,
+                                    style: {
+                                        background: '#fff',
+                                        color: '#363636',
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                                     },
-                                },
-                                error: {
-                                    iconTheme: {
-                                        primary: '#EF4444',
-                                        secondary: '#fff',
+                                    success: {
+                                        iconTheme: {
+                                            primary: '#10B981',
+                                            secondary: '#fff',
+                                        },
                                     },
-                                },
-                            }}
-                        />
+                                    error: {
+                                        iconTheme: {
+                                            primary: '#EF4444',
+                                            secondary: '#fff',
+                                        },
+                                    },
+                                }}
+                            />
+                        </PermissionsProvider>
                     </AuthProvider>
                 </ErrorBoundary>
             </body>

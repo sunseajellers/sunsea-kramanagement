@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { User, Permission } from '@/types'
+import { User, Permission, LegacyPermission } from '@/types'
 import { getAllUsers, updateUser, deleteUser, bulkUpdateUsers } from '@/lib/userService'
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_CATEGORIES, PERMISSION_DESCRIPTIONS, ROLE_CONFIGURATIONS, validateRoleTransition, canManageUser, getManageableRoles } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,7 @@ export default function UserManagement() {
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
-    const [customPermissions, setCustomPermissions] = useState<Permission[]>([])
+    const [customPermissions, setCustomPermissions] = useState<LegacyPermission[]>([])
     const [dialogOpen, setDialogOpen] = useState(false)
     const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
@@ -220,7 +220,7 @@ export default function UserManagement() {
         window.URL.revokeObjectURL(url)
     }
 
-    const handlePermissionToggle = (permission: Permission, checked: boolean) => {
+    const handlePermissionToggle = (permission: LegacyPermission, checked: boolean) => {
         if (checked) {
             setCustomPermissions(prev => [...prev, permission])
         } else {

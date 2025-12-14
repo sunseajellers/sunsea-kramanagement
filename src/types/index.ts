@@ -19,8 +19,59 @@ export type NotificationType =
     | 'report_ready'
     | 'reassignment'
 
-// Permission Types
-export type Permission =
+// Header Configuration Types
+export interface HeaderNavigationItem {
+    name: string
+    href: string
+    roles: UserRole[]
+}
+
+export interface HeaderConfig {
+    logo: string
+    title: string
+    navigation: HeaderNavigationItem[]
+    theme: 'default' | 'indian' | 'corporate'
+}
+
+// RBAC Types
+export interface Role {
+    id: string
+    name: string
+    description: string
+    isSystem?: boolean // System roles cannot be deleted
+    isActive: boolean
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface Permission {
+    id: string
+    name: string
+    description: string
+    module: string // e.g., 'dashboard', 'users', 'tasks'
+    action: string // e.g., 'view', 'create', 'edit', 'delete'
+    isSystem?: boolean // System permissions cannot be deleted
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface RolePermission {
+    id: string
+    roleId: string
+    permissionId: string
+    createdAt: Date
+}
+
+export interface UserRoleAssignment {
+    id: string
+    userId: string
+    roleId: string
+    assignedBy: string
+    assignedAt: Date
+}
+
+// Legacy Permission Types (for backward compatibility)
+export type LegacyPermission =
     | 'view_dashboard'
     | 'view_tasks'
     | 'create_tasks'
@@ -45,10 +96,10 @@ export type Permission =
     | 'manage_scoring'
     | 'system_admin'
 
-// Role Permissions Configuration
+// Role Permissions Configuration (Legacy)
 export interface RolePermissions {
     role: UserRole
-    permissions: Permission[]
+    permissions: LegacyPermission[]
     description: string
 }
 
@@ -58,7 +109,8 @@ export interface User {
     fullName: string
     email: string
     role: UserRole
-    permissions?: Permission[] // Custom permissions override role defaults
+    permissions?: LegacyPermission[] // Custom permissions override role defaults
+    roleIds?: string[] // New RBAC role IDs
     isAdmin: boolean // Manually set by developer in database
     avatar?: string
     teamId?: string

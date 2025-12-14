@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { hasPermission } from '@/lib/permissions';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
 import { getAdminDashboardAnalytics } from '@/lib/analyticsService';
 import { Users, Settings, BarChart3, Award, FileText, TrendingUp, Bell, Server, Activity, Database, Shield, AlertTriangle, RefreshCw, Download, Search } from 'lucide-react';
@@ -36,20 +36,22 @@ interface DbStats {
 
 export default function AdminHome() {
     const { userData } = useAuth();
+    const { hasPermission } = usePermissions();
     const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
     const [dbStats, setDbStats] = useState<DbStats | null>(null);
     const [analytics, setAnalytics] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const adminCards = [
+    const allAdminCards = [
         {
             href: '/dashboard/admin/users',
             icon: Users,
             title: 'User Management',
             description: 'Manage users, roles, and permissions',
             color: 'from-blue-500 to-blue-600',
-            stats: dbStats ? `${dbStats.users} users` : 'Loading...'
+            stats: dbStats ? `${dbStats.users} users` : 'Loading...',
+            requiredPermission: { module: 'users', action: 'view' }
         },
         {
             href: '/dashboard/admin/teams',
@@ -57,14 +59,16 @@ export default function AdminHome() {
             title: 'Team Management',
             description: 'Create and manage teams',
             color: 'from-purple-500 to-purple-600',
-            stats: dbStats ? `${dbStats.teams} teams` : 'Loading...'
+            stats: dbStats ? `${dbStats.teams} teams` : 'Loading...',
+            requiredPermission: { module: 'teams', action: 'view' }
         },
         {
             href: '/dashboard/admin/scoring',
             icon: Award,
             title: 'Scoring Configuration',
             description: 'Configure performance scoring weights',
-            color: 'from-green-500 to-green-600'
+            color: 'from-green-500 to-green-600',
+            requiredPermission: { module: 'scoring', action: 'manage' }
         },
         {
             href: '/dashboard/admin/analytics',
@@ -72,14 +76,16 @@ export default function AdminHome() {
             title: 'Analytics',
             description: 'View system-wide analytics',
             color: 'from-orange-500 to-orange-600',
-            stats: analytics ? `${analytics.overview?.totalTasks || 0} tasks` : 'Loading...'
+            stats: analytics ? `${analytics.overview?.totalTasks || 0} tasks` : 'Loading...',
+            requiredPermission: { module: 'analytics', action: 'view' }
         },
         {
             href: '/dashboard/admin/notifications',
             icon: Bell,
             title: 'Notifications',
             description: 'Manage notification rules and templates',
-            color: 'from-red-500 to-red-600'
+            color: 'from-red-500 to-red-600',
+            requiredPermission: { module: 'notifications', action: 'manage' }
         },
         {
             href: '/dashboard/admin/reports',
@@ -87,26 +93,34 @@ export default function AdminHome() {
             title: 'Weekly Reports',
             description: 'View and manage team reports',
             color: 'from-pink-500 to-pink-600',
-            stats: dbStats ? `${dbStats.reports} reports` : 'Loading...'
+            stats: dbStats ? `${dbStats.reports} reports` : 'Loading...',
+            requiredPermission: { module: 'reports', action: 'view' }
         },
         {
-            href: '/dashboard/reports',
-            icon: TrendingUp,
-            title: 'Performance Metrics',
-            description: 'Track overall performance trends',
-            color: 'from-indigo-500 to-indigo-600'
+            href: '/dashboard/admin/roles',
+            icon: Shield,
+            title: 'Role Management',
+            description: 'Manage roles and permissions',
+            color: 'from-indigo-500 to-indigo-600',
+            requiredPermission: { module: 'roles', action: 'manage' }
         }
     ];
 
-    // Add system admin card if user has system_admin permission
-    if (userData && userData.isAdmin) {
+    // Filter cards based on permissions
+    const adminCards = allAdminCards.filter(card =>
+        hasPermission(card.requiredPermission.module, card.requiredPermission.action)
+    );
+
+    // Add system admin card if user has system permission
+    if (hasPermission('system', 'manage')) {
         adminCards.push({
             href: '/dashboard/admin/system',
             icon: Server,
             title: 'System Administration',
             description: 'Advanced system management and configuration',
             color: 'from-red-500 to-red-700',
-            stats: systemHealth ? `${systemHealth.uptime}% uptime` : 'Loading...'
+            stats: systemHealth ? `${systemHealth.uptime}% uptime` : 'Loading...',
+            requiredPermission: { module: 'system', action: 'manage' }
         });
     }
 
