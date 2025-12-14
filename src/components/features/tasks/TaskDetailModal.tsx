@@ -75,7 +75,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
     const handleAddChecklistItem = async () => {
         if (!user || !newChecklistItem.trim()) return
         try {
-            await addChecklistItem()
+            await addChecklistItem(task.id, newChecklistItem.trim(), user.uid)
             setNewChecklistItem('')
             onUpdate()
         } catch (error) {
@@ -144,8 +144,8 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                             onClick={() => handleStatusChange(option.value)}
                                             disabled={updating}
                                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${localTask.status === option.value
-                                                    ? option.color + ' ring-2 ring-offset-2 ring-primary-500'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? option.color + ' ring-2 ring-offset-2 ring-primary-500'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {option.label}
@@ -163,8 +163,8 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                             onClick={() => handlePriorityChange(option.value)}
                                             disabled={updating}
                                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${localTask.priority === option.value
-                                                    ? option.color + ' ring-2 ring-offset-2 ring-primary-500'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? option.color + ' ring-2 ring-offset-2 ring-primary-500'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {option.label}
@@ -234,22 +234,22 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
 
                             {/* Add Checklist Item - Hidden until subcollection fetching is implemented */}
                             {false && (
-                            <div className="flex space-x-2">
-                                <input
-                                    type="text"
-                                    value={newChecklistItem}
-                                    onChange={(e) => setNewChecklistItem(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleAddChecklistItem()}
-                                    placeholder="Add a checklist item..."
-                                    className="flex-1 py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                />
-                                <button
-                                    onClick={handleAddChecklistItem}
-                                    className="btn-primary flex items-center px-4"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </button>
-                            </div>
+                                <div className="flex space-x-2">
+                                    <input
+                                        type="text"
+                                        value={newChecklistItem}
+                                        onChange={(e) => setNewChecklistItem(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleAddChecklistItem()}
+                                        placeholder="Add a checklist item..."
+                                        className="flex-1 py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    />
+                                    <button
+                                        onClick={handleAddChecklistItem}
+                                        className="btn-primary flex items-center px-4"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
                             )}
                         </div>
 

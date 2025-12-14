@@ -1,7 +1,7 @@
 // src/lib/taskService.ts
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, limit, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, limit, getDoc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import { Task, TaskStats } from '@/types';
+import { Task, TaskStats, ChecklistItem } from '@/types';
 import { timestampToDate, handleError } from './utils';
 
 /**
@@ -126,19 +126,170 @@ export async function reassignTask(
 }
 
 /**
- * Update checklist item status
+ * Get all checklist items for a task
+ * @param taskId - The ID of the task
+ * @returns Array of ChecklistItem objects
  */
-export async function updateChecklistItem(): Promise<void> {
-    // TODO: Implement checklist functionality with subcollections
-    throw new Error('Checklist functionality not yet implemented');
+export async function getChecklistItems(taskId: string): Promise<ChecklistItem[]> {
+    try {
+        const checklistRef = collection(db, 'tasks', taskId, 'checklist');
+        const q = query(checklistRef, orderBy('createdAt', 'asc'));
+        const snap = await getDocs(q);
+
+        return snap.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                taskId,
+                text: data.text,
+                completed: data.completed || false,
+                completedBy: data.completedBy,
+                completedAt: timestampToDate(data.completedAt),
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            } as ChecklistItem;
+        });
+    } catch (error) {
+        handleError(error, 'Failed to fetch checklist items');
+        throw error;
+    }
 }
 
 /**
  * Add a checklist item to a task
+ * @param taskId - The ID of the task
+ * @param text - The text of the checklist item
+ * @param userId - The ID of the user adding the item
+ * @returns The ID of the created checklist item
  */
-export async function addChecklistItem(): Promise<void> {
-    // TODO: Implement checklist functionality with subcollections
-    throw new Error('Checklist functionality not yet implemented');
+export async function addChecklistItem(
+    taskId: string,
+    text: string,
+    userId: string
+): Promise<string> {
+    try {
+        const checklistRef = collection(db, 'tasks', taskId, 'checklist');
+        const now = new Date();
+
+        const docRef = await addDoc(checklistRef, {
+            taskId,
+            text,
+            completed: false,
+            createdAt: now,
+            updatedAt: now
+        });
+
+        // Log activity
+        const activityLogRef = collection(db, 'tasks', taskId, 'activityLog');
+        await addDoc(activityLogRef, {
+            userId,
+            userName: 'User',
+            action: 'checklist_added',
+            details: `Added checklist item: "${text}"`,
+            timestamp: now
+        });
+
+        return docRef.id;
+    } catch (error) {
+        handleError(error, 'Failed to add checklist item');
+        throw error;
+    }
+}
+
+/**
+ * Update a checklist item (toggle completion or edit text)
+ * @param taskId - The ID of the task
+ * @param itemId - The ID of the checklist item
+ * @param updates - The updates to apply
+ * @param userId - The ID of the user making the update
+ */
+export async function updateChecklistItem(
+    taskId: string,
+    itemId: string,
+    updates: { text?: string; completed?: boolean },
+    userId: string
+): Promise<void> {
+    try {
+        const itemRef = doc(db, 'tasks', taskId, 'checklist', itemId);
+        const itemSnap = await getDoc(itemRef);
+
+        if (!itemSnap.exists()) {
+            throw new Error('Checklist item not found');
+        }
+
+        const now = new Date();
+        const updateData: Record<string, unknown> = {
+            ...updates,
+            updatedAt: now
+        };
+
+        // If marking as completed, add completion metadata
+        if (updates.completed === true) {
+            updateData.completedBy = userId;
+            updateData.completedAt = now;
+        } else if (updates.completed === false) {
+            updateData.completedBy = null;
+            updateData.completedAt = null;
+        }
+
+        await updateDoc(itemRef, updateData);
+
+        // Log activity
+        const activityLogRef = collection(db, 'tasks', taskId, 'activityLog');
+        const action = updates.completed !== undefined
+            ? (updates.completed ? 'checklist_completed' : 'checklist_uncompleted')
+            : 'checklist_updated';
+
+        await addDoc(activityLogRef, {
+            userId,
+            userName: 'User',
+            action,
+            details: updates.completed !== undefined
+                ? `${updates.completed ? 'Completed' : 'Uncompleted'} checklist item`
+                : `Updated checklist item text`,
+            timestamp: now
+        });
+    } catch (error) {
+        handleError(error, 'Failed to update checklist item');
+        throw error;
+    }
+}
+
+/**
+ * Delete a checklist item from a task
+ * @param taskId - The ID of the task
+ * @param itemId - The ID of the checklist item to delete
+ * @param userId - The ID of the user deleting the item
+ */
+export async function deleteChecklistItem(
+    taskId: string,
+    itemId: string,
+    userId: string
+): Promise<void> {
+    try {
+        const itemRef = doc(db, 'tasks', taskId, 'checklist', itemId);
+        const itemSnap = await getDoc(itemRef);
+
+        if (!itemSnap.exists()) {
+            throw new Error('Checklist item not found');
+        }
+
+        const itemData = itemSnap.data();
+        await deleteDoc(itemRef);
+
+        // Log activity
+        const activityLogRef = collection(db, 'tasks', taskId, 'activityLog');
+        await addDoc(activityLogRef, {
+            userId,
+            userName: 'User',
+            action: 'checklist_deleted',
+            details: `Deleted checklist item: "${itemData.text}"`,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        handleError(error, 'Failed to delete checklist item');
+        throw error;
+    }
 }
 
 /**

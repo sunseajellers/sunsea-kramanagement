@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { UnifiedHeader } from '@/components/layout'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
@@ -24,7 +25,7 @@ export default function DashboardLayout({
             router.push('/')
             return
         }
-        
+
         // Admin routing is now handled by individual admin pages with RBAC checks
         // All users can access the main dashboard
     }, [user, userData, loading, router])
@@ -50,7 +51,9 @@ export default function DashboardLayout({
             {/* Main Content */}
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 <div className="max-w-7xl mx-auto animate-fade-in">
-                    {children}
+                    <ErrorBoundary>
+                        {children}
+                    </ErrorBoundary>
                 </div>
             </main>
         </div>
