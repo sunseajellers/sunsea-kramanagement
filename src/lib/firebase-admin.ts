@@ -1,4 +1,5 @@
 // Firebase Admin SDK configuration for server-side operations
+import 'server-only'
 import * as admin from 'firebase-admin'
 
 // Initialize Firebase Admin SDK (singleton pattern)

@@ -1,10 +1,12 @@
 // src/lib/analyticsService.ts
-import { DashboardStats } from '@/types';
+import 'server-only'
+import { DashboardStats, Task, KRA } from '@/types';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';
 import { getAllUsers } from './userService';
 import { getAllTeams } from './teamService';
-import { handleError } from './utils';
+import { handleError, timestampToDate } from './utils';
+import { adminDb } from './firebase-admin';
 
 /**
  * Simple aggregation for a user's dashboard.
@@ -12,9 +14,29 @@ import { handleError } from './utils';
 export async function getDashboardStats(uid: string): Promise<DashboardStats> {
     try {
         // Fetch tasks for the user
-        const tasks = await getUserTasks(uid);
+        const tasksSnap = await adminDb.collection('tasks').where('assignedTo', 'array-contains', uid).get();
+        const tasks = tasksSnap.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                dueDate: timestampToDate(data.dueDate),
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            };
+        }) as Task[];
         // Fetch KRAs for the user
-        const kras = await getUserKRAs(uid);
+        const krasSnap = await adminDb.collection('kras').where('assignedTo', 'array-contains', uid).get();
+        const kras = krasSnap.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                dueDate: timestampToDate(data.dueDate),
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            };
+        }) as any as KRA[];
 
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter((t) => t.status === 'completed').length;
@@ -45,7 +67,17 @@ export async function getDashboardStats(uid: string): Promise<DashboardStats> {
 
 export async function getTaskAnalytics(uid: string) {
     try {
-        const tasks = await getUserTasks(uid);
+        const tasksSnap = await adminDb.collection('tasks').where('assignedTo', 'array-contains', uid).get();
+        const tasks = tasksSnap.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                dueDate: timestampToDate(data.dueDate),
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            };
+        }) as Task[];
 
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter((t) => t.status === 'completed').length;
@@ -104,7 +136,17 @@ export async function getTaskAnalytics(uid: string) {
 
 export async function getKRAAnalytics(uid: string) {
     try {
-        const kras = await getUserKRAs(uid);
+        const krasSnap = await adminDb.collection('kras').where('assignedTo', 'array-contains', uid).get();
+        const kras = krasSnap.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                dueDate: timestampToDate(data.dueDate),
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            };
+        }) as any as KRA[];
 
         const totalKRAs = kras.length;
         const activeKRAs = kras.filter(k => k.status === 'in_progress').length;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getTaskAnalytics, getKRAAnalytics, exportAnalyticsData } from '@/lib/analyticsService'
+// import { getTaskAnalytics, getKRAAnalytics, exportAnalyticsData } from '@/lib/analyticsService'
 import { TaskStatusChart, TaskPriorityChart, TaskTrendChart, KRAProgressChart } from '@/components/features/analytics'
 import {
     BarChart3,
@@ -27,12 +27,14 @@ export default function ReportsPage() {
             if (!user) return
             setLoading(true)
             try {
-                const [taskData, kraData] = await Promise.all([
-                    getTaskAnalytics(user.uid),
-                    getKRAAnalytics(user.uid)
+                const [taskRes, kraRes] = await Promise.all([
+                    fetch(`/api/analytics/tasks?userId=${user.uid}`),
+                    fetch(`/api/analytics/kras?userId=${user.uid}`)
                 ])
-                setTaskAnalytics(taskData)
-                setKraAnalytics(kraData)
+                const taskData = await taskRes.json()
+                const kraData = await kraRes.json()
+                setTaskAnalytics(taskData.data)
+                setKraAnalytics(kraData.data)
             } catch (error) {
                 console.error('Failed to load analytics', error)
             } finally {
@@ -43,16 +45,8 @@ export default function ReportsPage() {
     }, [user])
 
     const handleExport = async () => {
-        if (!user) return
-        setExporting(true)
-        try {
-            await exportAnalyticsData(user.uid)
-        } catch (error) {
-            console.error('Failed to export data', error)
-            alert('Failed to export analytics data')
-        } finally {
-            setExporting(false)
-        }
+        // TODO: Implement export via API
+        alert('Export not implemented yet')
     }
 
     if (loading) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin';
 import { getDashboardStats, getTaskAnalytics, getKRAAnalytics } from '@/lib/analyticsService';
-import { getUserTasks } from '@/lib/taskService';
-import { getUserKRAs } from '@/lib/kraService';
+import { timestampToDate } from '@/lib/utils';
 
 // GET /api/dashboard - Get user dashboard data
 export async function GET(request: NextRequest) {
@@ -18,8 +18,32 @@ export async function GET(request: NextRequest) {
 
         const [stats, tasks, kras, taskAnalytics, kraAnalytics] = await Promise.all([
             getDashboardStats(userId),
-            getUserTasks(userId),
-            getUserKRAs(userId),
+            (async () => {
+                const tasksSnap = await adminDb.collection('tasks').where('assignedTo', 'array-contains', userId).limit(5).get();
+                return tasksSnap.docs.map((doc) => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        dueDate: timestampToDate(data.dueDate),
+                        createdAt: timestampToDate(data.createdAt),
+                        updatedAt: timestampToDate(data.updatedAt)
+                    };
+                });
+            })(),
+            (async () => {
+                const krasSnap = await adminDb.collection('kras').where('assignedTo', 'array-contains', userId).limit(3).get();
+                return krasSnap.docs.map((doc) => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        dueDate: timestampToDate(data.dueDate),
+                        createdAt: timestampToDate(data.createdAt),
+                        updatedAt: timestampToDate(data.updatedAt)
+                    };
+                }).filter((kra: any) => kra.status === 'in_progress');
+            })(),
             getTaskAnalytics(userId),
             getKRAAnalytics(userId),
         ]);

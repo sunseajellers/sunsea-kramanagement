@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserKRAs } from '@/lib/kraService';
 import { getAllTeams } from '@/lib/teamService';
+import { adminDb } from '@/lib/firebase-admin';
+import { timestampToDate } from '@/lib/utils';
 
 // GET /api/kras - Get user KRAs and teams
 export async function GET(request: NextRequest) {
@@ -16,8 +18,26 @@ export async function GET(request: NextRequest) {
         }
 
         const [kras, teams] = await Promise.all([
-            getUserKRAs(userId),
-            getAllTeams()
+            (async () => {
+                const krasSnap = await adminDb.collection('kras').where('assignedTo', 'array-contains', userId).get();
+                return krasSnap.docs.map((doc) => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        dueDate: timestampToDate(data.dueDate),
+                        createdAt: timestampToDate(data.createdAt),
+                        updatedAt: timestampToDate(data.updatedAt)
+                    };
+                });
+            })(),
+            (async () => {
+                const teamsSnap = await adminDb.collection('teams').get();
+                return teamsSnap.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+            })()
         ]);
 
         return NextResponse.json({

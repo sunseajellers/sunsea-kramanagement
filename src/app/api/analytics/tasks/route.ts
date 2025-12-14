@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getTaskAnalytics } from '@/lib/analyticsService';
+
+// GET /api/analytics/tasks - Get task analytics for user
+export async function GET(request: NextRequest) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const userId = searchParams.get('userId');
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Missing required parameter: userId' },
+                { status: 400 }
+            );
+        }
+
+        const analytics = await getTaskAnalytics(userId);
+
+        return NextResponse.json({
+            success: true,
+            data: analytics
+        });
+    } catch (error: any) {
+        console.error('Task analytics API Error:', error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to get task analytics' },
+            { status: 500 }
+        );
+    }
+}
