@@ -29,7 +29,11 @@ export default function TasksPage() {
             setLoadingStats(true)
             setLoadingTasks(true)
             try {
-                const result = await authenticatedJsonFetch(`/api/tasks?userId=${user.uid}`);
+                const result = await authenticatedJsonFetch('/api/tasks', {
+                    headers: {
+                        'x-user-id': user.uid
+                    }
+                });
                 
                 if (result.success && result.data) {
                     setStats(result.data.stats);

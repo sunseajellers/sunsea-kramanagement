@@ -9,7 +9,7 @@ import { Modal } from '@/components/common'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
 
 export default function TeamPage() {
-    const { } = useAuth()
+    const { user } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [teams, setTeams] = useState<Team[]>([])
     const [loading, setLoading] = useState(true)
@@ -24,7 +24,11 @@ export default function TeamPage() {
     const loadData = async () => {
         setLoading(true)
         try {
-            const result = await authenticatedJsonFetch('/api/team');
+            const result = await authenticatedJsonFetch('/api/team', {
+                headers: {
+                    'x-user-id': user!.uid
+                }
+            });
             
             if (result.success && result.data) {
                 setUsers(result.data.users);

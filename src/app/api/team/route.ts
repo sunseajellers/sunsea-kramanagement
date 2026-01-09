@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllUsers, updateUser } from '@/lib/userService';
 import { getAllTeams } from '@/lib/teamService';
+import { withRBAC } from '@/lib/rbacMiddleware';
 
 // GET /api/team - Get all users and teams
 export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const userId = searchParams.get('userId');
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Missing userId parameter' },
-                { status: 400 }
-            );
-        }
-
+    return withRBAC(request, 'teams', 'view', async (_request: NextRequest, userId: string) => {
         const [users, teams] = await Promise.all([
             getAllUsers(),
             getAllTeams()
@@ -27,13 +18,7 @@ export async function GET(request: NextRequest) {
                 teams
             }
         });
-    } catch (error) {
-        console.error('Failed to get team data:', error);
-        return NextResponse.json(
-            { error: 'Failed to get team data' },
-            { status: 500 }
-        );
-    }
+    });
 }
 
 // PUT /api/team - Update user team assignment

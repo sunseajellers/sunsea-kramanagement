@@ -63,7 +63,11 @@ export default function DashboardPage() {
             if (isAdmin) return
             
             try {
-                const result = await authenticatedJsonFetch(`/api/dashboard?userId=${userData.uid}`);
+                const result = await authenticatedJsonFetch('/api/dashboard', {
+                    headers: {
+                        'x-user-id': userData.uid
+                    }
+                });
                 
                 if (result.success && result.data) {
                     const { stats, recentTasks, activeKRAs, taskAnalytics, kraAnalytics } = result.data;

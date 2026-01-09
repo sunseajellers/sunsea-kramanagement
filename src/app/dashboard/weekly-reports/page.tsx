@@ -36,7 +36,11 @@ export default function WeeklyReportsPage() {
         setLoading(true)
         try {
             const [reportsResult, configResult] = await Promise.all([
-                authenticatedJsonFetch(`/api/reports?userId=${user.uid}&limit=10`),
+                authenticatedJsonFetch('/api/reports?limit=10', {
+                    headers: {
+                        'x-user-id': user.uid
+                    }
+                }),
                 authenticatedJsonFetch('/api/scoring/config')
             ])
             
@@ -75,8 +79,10 @@ export default function WeeklyReportsPage() {
 
             const result = await authenticatedJsonFetch('/api/reports', {
                 method: 'POST',
+                headers: {
+                    'x-user-id': user.uid
+                },
                 body: JSON.stringify({
-                    userId: user.uid,
                     userName: user.displayName || user.email || 'User',
                     weekStart: weekStart.toISOString(),
                     weekEnd: weekEnd.toISOString(),

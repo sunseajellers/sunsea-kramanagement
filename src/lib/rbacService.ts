@@ -308,11 +308,11 @@ export async function removeAllPermissionsFromRole(roleId: string): Promise<void
  */
 
 /**
- * Get roles for a user - SIMPLIFIED: reads from user document
+ * Get roles for a user - SIMPLIFIED: reads role names from user document and queries by name
  */
 export async function getUserRoles(userId: string): Promise<Role[]> {
     try {
-        // Read roleIds directly from user document
+        // Read role names directly from user document
         const userDoc = await getDoc(doc(db, 'users', userId));
 
         if (!userDoc.exists()) {
@@ -320,18 +320,26 @@ export async function getUserRoles(userId: string): Promise<Role[]> {
         }
 
         const userData = userDoc.data();
-        const roleIds: string[] = userData.roleIds || [];
+        const roleNames: string[] = userData.roleIds || [];
 
-        if (roleIds.length === 0) {
+        if (roleNames.length === 0) {
             return [];
         }
 
-        // Batch fetch all roles (more efficient than N queries)
+        // Query roles by name
         const roles: Role[] = [];
-        for (const roleId of roleIds) {
-            const role = await getRoleById(roleId);
-            if (role) {
-                roles.push(role);
+        for (const roleName of roleNames) {
+            const q = query(collection(db, 'roles'), where('name', '==', roleName));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                const data = doc.data();
+                roles.push({
+                    id: doc.id,
+                    ...data,
+                    createdAt: timestampToDate(data.createdAt),
+                    updatedAt: timestampToDate(data.updatedAt)
+                } as Role);
             }
         }
 
@@ -343,14 +351,14 @@ export async function getUserRoles(userId: string): Promise<Role[]> {
 }
 
 /**
- * Assign roles to a user - SIMPLIFIED: updates user document directly
+ * Assign roles to a user - SIMPLIFIED: updates user document with role names
  */
-export async function assignRolesToUser(userId: string, roleIds: string[], _assignedBy: string): Promise<void> {
+export async function assignRolesToUser(userId: string, roleNames: string[], _assignedBy: string): Promise<void> {
     try {
-        // Simply update the roleIds array on the user document
+        // Simply update the roleIds array on the user document with role names
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, {
-            roleIds: roleIds,
+            roleIds: roleNames,
             updatedAt: new Date()
         });
     } catch (error) {

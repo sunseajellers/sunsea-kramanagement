@@ -49,8 +49,7 @@ export const signUpWithEmail = async (
         try {
             const adminRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'admin')));
             if (!adminRole.empty) {
-                const roleId = adminRole.docs[0].id;
-                await assignRolesToUser(user.uid, [roleId], 'system');
+                await assignRolesToUser(user.uid, ['admin'], 'system');
             }
         } catch (error) {
             // RBAC not initialized yet, will be assigned later

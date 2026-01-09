@@ -25,7 +25,11 @@ export default function AdminScoringPage() {
     const loadConfig = async () => {
         setLoading(true)
         try {
-            const result = await authenticatedJsonFetch('/api/scoring/config')
+            const result = await authenticatedJsonFetch('/api/scoring/config', {
+                headers: {
+                    'x-user-id': user!.uid
+                }
+            })
             if (result.success && result.data) {
                 const data = result.data
                 setConfig(data)
@@ -66,6 +70,9 @@ export default function AdminScoringPage() {
         try {
             const result = await authenticatedJsonFetch('/api/scoring/config', {
                 method: 'PUT',
+                headers: {
+                    'x-user-id': user.uid
+                },
                 body: JSON.stringify({
                     config: {
                         ...formData,

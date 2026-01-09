@@ -24,7 +24,11 @@ export default function KRAPage() {
             if (!user) return
             setLoading(true)
             try {
-                const result = await authenticatedJsonFetch(`/api/kras?userId=${user.uid}`);
+                const result = await authenticatedJsonFetch('/api/kras', {
+                    headers: {
+                        'x-user-id': user.uid
+                    }
+                });
                 
                 if (result.success && result.data) {
                     setKras(result.data.kras);
