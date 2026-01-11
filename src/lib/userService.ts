@@ -27,6 +27,40 @@ export async function getAllUsers(): Promise<User[]> {
 }
 
 /**
+ * Create a new user (Admin only).
+ * Uses Firebase Admin SDK via API route.
+ */
+export async function createUser(
+    email: string,
+    password: string,
+    fullName: string,
+    roleIds: string[] = [],
+    idToken: string
+): Promise<{ id: string; email: string; fullName: string }> {
+    try {
+        const response = await fetch('/api/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ email, password, fullName, roleIds })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create user');
+        }
+
+        return data.user;
+    } catch (error) {
+        handleError(error, 'Failed to create user');
+        throw error;
+    }
+}
+
+/**
  * Fetch a single user by ID.
  */
 export async function getUserById(uid: string): Promise<User | null> {

@@ -1,67 +1,15 @@
 // Firebase Authentication Service
 import {
-    createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
     User,
     UserCredential,
-    GoogleAuthProvider,
-    signInWithPopup,
     sendPasswordResetEmail,
-    updateProfile
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { handleError, timestampToDate } from './utils'
-import { assignRolesToUser } from './rbacService'
-
-// Google Auth Provider
-const googleProvider = new GoogleAuthProvider()
-
-// Sign up with email and password
-export const signUpWithEmail = async (
-    email: string,
-    password: string,
-    fullName: string
-): Promise<UserCredential> => {
-    try {
-        // Create user in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        const user = userCredential.user
-
-        // Update user profile with display name
-        await updateProfile(user, {
-            displayName: fullName
-        })
-
-        // Create user document in Firestore
-        await setDoc(doc(db, 'users', user.uid), {
-            id: user.uid,
-            email: user.email,
-            fullName: fullName,
-            roleIds: [], // Will be assigned after RBAC initialization
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        })
-
-        // Assign default admin role if RBAC is initialized
-        try {
-            const adminRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'admin')));
-            if (!adminRole.empty) {
-                await assignRolesToUser(user.uid, ['admin'], 'system');
-            }
-        } catch (error) {
-            // RBAC not initialized yet, will be assigned later
-            console.log('RBAC not initialized, user will need role assignment');
-        }
-
-        return userCredential
-    } catch (error: any) {
-        handleError(error, 'Failed to sign up')
-        throw new Error(error.message || 'Failed to sign up')
-    }
-}
 
 // Sign in with email and password
 export const signInWithEmail = async (
@@ -74,56 +22,6 @@ export const signInWithEmail = async (
     } catch (error: any) {
         handleError(error, 'Failed to sign in')
         throw new Error(error.message || 'Failed to sign in')
-    }
-}
-
-// Sign in with Google
-export const signInWithGoogle = async (allowCreate: boolean = false): Promise<{ success: boolean, userCredential?: UserCredential, error?: string }> => {
-    try {
-        const userCredential = await signInWithPopup(auth, googleProvider)
-        const user = userCredential.user
-
-        // Check if user document exists
-        const userDoc = await getDoc(doc(db, 'users', user.uid))
-
-        // Handle based on allowCreate
-        if (allowCreate) {
-            // For signup: if exists, error; if not, create
-            if (userDoc.exists()) {
-                return { success: false, error: 'Account already exists. Please sign in instead.' }
-            } else {
-                await setDoc(doc(db, 'users', user.uid), {
-                    id: user.uid,
-                    email: user.email,
-                    fullName: user.displayName || 'User',
-                    roleIds: [], // Will be assigned after RBAC initialization
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                })
-
-                // Assign default admin role if RBAC is initialized
-                try {
-                    const adminRole = await getDocs(query(collection(db, 'roles'), where('name', '==', 'admin')));
-                    if (!adminRole.empty) {
-                        const roleId = adminRole.docs[0].id;
-                        await assignRolesToUser(user.uid, [roleId], 'system');
-                    }
-                } catch (error) {
-                    // RBAC not initialized yet, will be assigned later
-                    console.log('RBAC not initialized, user will need role assignment');
-                }
-
-                return { success: true, userCredential }
-            }
-        } else {
-            // For login: must exist
-            if (!userDoc.exists()) {
-                return { success: false, error: 'Account not found. Please sign up first.' }
-            }
-            return { success: true, userCredential }
-        }
-    } catch (error: any) {
-        return { success: false, error: error.message || 'Failed to sign in with Google' }
     }
 }
 

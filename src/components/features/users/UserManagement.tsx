@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { User, Permission } from '@/types'
-import { getAllUsers, updateUser, deleteUser, bulkUpdateUsers } from '@/lib/userService'
+import { getAllUsers, updateUser, deleteUser, bulkUpdateUsers, createUser } from '@/lib/userService'
 import { assignRolesToUser, getAllRoles, getUserPermissions } from '@/lib/rbacService'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
-import { UserCheck, Settings, Search, Download, Trash2, Users, MoreHorizontal } from 'lucide-react'
+import { UserCheck, Settings, Search, Download, Trash2, Users, MoreHorizontal, UserPlus, Eye, EyeOff } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,7 +28,7 @@ interface BulkAction {
 }
 
 export default function UserManagement() {
-    const { userData: currentUser } = useAuth()
+    const { userData: currentUser, user } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -36,6 +36,14 @@ export default function UserManagement() {
     const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
     const [bulkAction, setBulkAction] = useState<BulkAction | null>(null)
+
+    // Create user dialog state
+    const [createDialogOpen, setCreateDialogOpen] = useState(false)
+    const [createLoading, setCreateLoading] = useState(false)
+    const [newUserEmail, setNewUserEmail] = useState('')
+    const [newUserPassword, setNewUserPassword] = useState('')
+    const [newUserName, setNewUserName] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
 
     // Filtering and search state
     const [searchTerm, setSearchTerm] = useState('')
@@ -63,11 +71,11 @@ export default function UserManagement() {
     const filteredUsers = useMemo(() => {
         let filtered = users.filter(user => {
             const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                user.email.toLowerCase().includes(searchTerm.toLowerCase())
             const matchesRole = roleFilter === 'all'
             const matchesStatus = statusFilter === 'all' ||
-                                (statusFilter === 'active' && user.isActive !== false) ||
-                                (statusFilter === 'inactive' && user.isActive === false)
+                (statusFilter === 'active' && user.isActive !== false) ||
+                (statusFilter === 'inactive' && user.isActive === false)
 
             return matchesSearch && matchesRole && matchesStatus
         })
@@ -208,6 +216,43 @@ export default function UserManagement() {
         setBulkDialogOpen(true)
     }
 
+    const handleCreateUser = async () => {
+        if (!user) {
+            toast.error('You must be logged in to create users')
+            return
+        }
+
+        if (!newUserEmail || !newUserPassword || !newUserName) {
+            toast.error('Please fill in all fields')
+            return
+        }
+
+        if (newUserPassword.length < 6) {
+            toast.error('Password must be at least 6 characters')
+            return
+        }
+
+        setCreateLoading(true)
+
+        try {
+            // Get the current user's ID token for authentication
+            const idToken = await user.getIdToken()
+
+            await createUser(newUserEmail, newUserPassword, newUserName, [], idToken)
+
+            toast.success(`User ${newUserName} created successfully!`)
+            setCreateDialogOpen(false)
+            setNewUserEmail('')
+            setNewUserPassword('')
+            setNewUserName('')
+            loadUsers()
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to create user')
+        } finally {
+            setCreateLoading(false)
+        }
+    }
+
     if (loading) {
         return <div className="flex justify-center items-center h-64">Loading users...</div>
     }
@@ -220,6 +265,10 @@ export default function UserManagement() {
                     User Management
                 </h1>
                 <div className="flex items-center gap-2">
+                    <Button onClick={() => setCreateDialogOpen(true)}>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Create User
+                    </Button>
                     <Button variant="outline" onClick={exportUsers}>
                         <Download className="h-4 w-4 mr-2" />
                         Export
@@ -477,6 +526,84 @@ export default function UserManagement() {
                                 onClick={handleBulkAction}
                             >
                                 Confirm
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Create User Dialog */}
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create New User</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Full Name
+                            </label>
+                            <Input
+                                placeholder="John Doe"
+                                value={newUserName}
+                                onChange={(e) => setNewUserName(e.target.value)}
+                                disabled={createLoading}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Email Address
+                            </label>
+                            <Input
+                                type="email"
+                                placeholder="john@example.com"
+                                value={newUserEmail}
+                                onChange={(e) => setNewUserEmail(e.target.value)}
+                                disabled={createLoading}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="••••••••"
+                                    value={newUserPassword}
+                                    onChange={(e) => setNewUserPassword(e.target.value)}
+                                    disabled={createLoading}
+                                    className="pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                    ) : (
+                                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                    )}
+                                </button>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setCreateDialogOpen(false)
+                                    setNewUserEmail('')
+                                    setNewUserPassword('')
+                                    setNewUserName('')
+                                }}
+                                disabled={createLoading}
+                            >
+                                Cancel
+                            </Button>
+                            <Button onClick={handleCreateUser} disabled={createLoading}>
+                                {createLoading ? 'Creating...' : 'Create User'}
                             </Button>
                         </div>
                     </div>

@@ -1,164 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ============================================================
-    // JEWELMATRIX FIRESTORE SECURITY RULES
-    // ============================================================
-    // 
-    // Simplified rules for now - complex RBAC handled server-side
-    // 
-    // ============================================================
-
-    // === HELPER FUNCTIONS ===
-
+    
+    // Simple rule: All authenticated users have full access
+    // RBAC permissions are enforced server-side via API routes
+    
     function isAuthenticated() {
       return request.auth != null && request.auth.uid != null;
     }
 
-    function isOwner(userId, resource) {
-      return resource.data.ownerId == userId ||
-             resource.data.userId == userId ||
-             resource.data.createdBy == userId;
-    }
-
-    function isAssignedTo(userId, resource) {
-      return (resource.data.assignedTo is list && userId in resource.data.assignedTo) ||
-             (resource.data.assignedUsers is list && userId in resource.data.assignedUsers) ||
-             resource.data.assignedTo == userId;
-    }
-
-    // ============================================================
-    // USERS COLLECTION
-    // ============================================================
-    match /users/{userId} {
-      // Read: Authenticated users can read any user (needed for teams/assignments)
-      allow read: if isAuthenticated();
-
-      // Create: Only own document during signup
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-
-      // Update: Own profile only (admin updates go through API)
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-
-      // Delete: Not allowed from client (use API)
-      allow delete: if false;
-    }
-
-    // ============================================================
-    // RBAC COLLECTIONS
-    // ============================================================
-    match /roles/{roleId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();  // Simplified - API validates admin
-    }
-
-    match /permissions/{permissionId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();  // Simplified - API validates admin
-    }
-
-    // ============================================================
-    // TEAMS COLLECTION
-    // ============================================================
-    match /teams/{teamId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();  // Simplified - API validates permissions
-    }
-
-    // ============================================================
-    // KRAS COLLECTION
-    // ============================================================
-    match /kras/{kraId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        isOwner(request.auth.uid, resource) ||
-        isAssignedTo(request.auth.uid, resource)
-      );
-      allow delete: if isAuthenticated() && isOwner(request.auth.uid, resource);
-    }
-
-    // ============================================================
-    // TASKS COLLECTION
-    // ============================================================
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        isOwner(request.auth.uid, resource) ||
-        isAssignedTo(request.auth.uid, resource)
-      );
-      allow delete: if isAuthenticated() && isOwner(request.auth.uid, resource);
-
-      // Subcollections
-      match /checklist/{itemId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      match /activityLog/{logId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if false;  // Immutable
-      }
-    }
-
-    // ============================================================
-    // REPORTS COLLECTIONS
-    // ============================================================
-    match /weeklyReports/{reportId} {
-      allow read: if isAuthenticated() && (
-        isOwner(request.auth.uid, resource) || true
-      );
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && isOwner(request.auth.uid, resource);
-    }
-
-    match /teamWeeklyReports/{reportId} {
+    // Catch-all rule for all collections
+    match /{document=**} {
       allow read, write: if isAuthenticated();
-    }
-
-    // ============================================================
-    // NOTIFICATIONS COLLECTION
-    // ============================================================
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    // ============================================================
-    // COMMENTS COLLECTION
-    // ============================================================
-    match /comments/{commentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
-    }
-
-    // ============================================================
-    // ACTIVITY LOGS COLLECTION
-    // ============================================================
-    match /activityLogs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if false;  // Immutable audit logs
-    }
-
-    // ============================================================
-    // SYSTEM CONFIG
-    // ============================================================
-    match /systemConfig/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();  // Simplified - API validates admin
-    }
-
-    match /scoringConfig/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();  // Simplified - API validates admin
     }
   }
 }

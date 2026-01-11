@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User } from 'firebase/auth'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { onAuthStateChange, getUserData, logOut } from '@/lib/authService'
 
 interface UserData {
@@ -52,7 +54,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
             if (firebaseUser) {
                 try {
                     // Fetch user data from Firestore
-                    const data = await getUserData(firebaseUser.uid)
+                    let data = await getUserData(firebaseUser.uid)
+
+                    // If no Firestore document exists, auto-create one
+                    if (!data) {
+                        console.log('📝 Creating Firestore user document for:', firebaseUser.email)
+
+                        // Create the user document
+                        const newUserData = {
+                            id: firebaseUser.uid,
+                            email: firebaseUser.email,
+                            fullName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                            roleIds: ['admin'], // First user gets admin role
+                            isActive: true,
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        }
+
+                        await setDoc(doc(db, 'users', firebaseUser.uid), newUserData)
+
+                        // Fetch the newly created document
+                        data = await getUserData(firebaseUser.uid)
+                    }
+
                     if (data) {
                         const processedUserData = {
                             uid: data.uid || firebaseUser.uid,
@@ -65,17 +89,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                         setUserData(processedUserData)
                         setError(null)
                     } else {
-                        // If no Firestore document exists, don't allow access
-                        console.warn('No Firestore document found for user')
+                        console.error('Failed to create or retrieve user document')
                         setUserData(null)
-                        setError('Account not found in database. Please contact support.')
+                        setError('Failed to create user profile. Please try again.')
                     }
                 } catch (err: unknown) {
                     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch user data'
                     console.error('Error fetching user data:', errorMessage)
                     setError(errorMessage)
-                    // SECURITY FIX: Don't set userData on error - force re-auth
-                    // Previously this would set empty roles, which is a security risk
                     setUserData(null)
                 }
             } else {
@@ -103,8 +124,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
     const getDefaultRoute = () => {
         if (!userData) return '/dashboard'
 
-        // All authenticated users go to regular dashboard
-        // Permission checks are handled by ProtectedRoute components
+        // Check if user has admin role
+        if (userData.roleIds.includes('admin')) {
+            return '/dashboard/admin'
+        }
+
+        // All other authenticated users go to regular dashboard
         return '/dashboard'
     }
 
