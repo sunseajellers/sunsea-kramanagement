@@ -49,8 +49,8 @@ export default function KRAProgressChart({ data }: KRAProgressChartProps) {
                         border: '1px solid #E5E7EB',
                         borderRadius: '8px'
                     }}
-                    formatter={(value: number, _name: string, props: any) => [
-                        `${value}% (${props.payload.tasksCompleted}/${props.payload.tasksTotal} tasks)`,
+                    formatter={(value: number | undefined, _name: string | undefined, props: any) => [
+                        `${value ?? 0}% (${props.payload.tasksCompleted ?? 0}/${props.payload.tasksTotal ?? 0} tasks)`,
                         'Progress'
                     ]}
                 />

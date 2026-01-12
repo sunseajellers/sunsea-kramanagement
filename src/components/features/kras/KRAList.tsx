@@ -4,14 +4,16 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchKRAs, deleteKRA } from '@/lib/kraService'
 import { KRA, KRAType } from '@/types'
-import { Loader2, Trash2, Edit, Calendar, Target, Filter } from 'lucide-react'
+import { Loader2, Trash2, Edit, Calendar, Target, Filter, BarChart2 } from 'lucide-react'
 import { getAllTeams } from '@/lib/teamService'
+import KPIEditor from './KPIEditor'
 
 export default function KRAList({ onEdit }: { onEdit: (kra: KRA) => void }) {
     const { user } = useAuth()
     const [kras, setKras] = useState<KRA[]>([])
     const [loading, setLoading] = useState(true)
     const [filterType, setFilterType] = useState<KRAType | 'all'>('all')
+    const [selectedKRAForKPI, setSelectedKRAForKPI] = useState<KRA | null>(null)
     const [teams, setTeams] = useState<any[]>([])
 
     const filteredKras = filterType === 'all' ? kras : kras.filter(kra => kra.type === filterType)
@@ -127,144 +129,158 @@ export default function KRAList({ onEdit }: { onEdit: (kra: KRA) => void }) {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Filter Bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center space-x-2">
-                        <Filter className="w-5 h-5 text-gray-500" />
-                        <span className="font-semibold text-gray-700">Filter by Type:</span>
-                    </div>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setFilterType('all')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'all'
-                                    ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            All ({kras.length})
-                        </button>
-                        <button
-                            onClick={() => setFilterType('daily')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'daily'
-                                    ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            📅 Daily ({kras.filter(k => k.type === 'daily').length})
-                        </button>
-                        <button
-                            onClick={() => setFilterType('weekly')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'weekly'
-                                    ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            📆 Weekly ({kras.filter(k => k.type === 'weekly').length})
-                        </button>
-                        <button
-                            onClick={() => setFilterType('monthly')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'monthly'
-                                    ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            🗓️ Monthly ({kras.filter(k => k.type === 'monthly').length})
-                        </button>
+        <>
+            <div className="space-y-6">
+                {/* Filter Bar - Simplified */}
+                <div className="bg-white rounded-xl border p-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center space-x-2">
+                            <Filter className="w-4 h-4 text-gray-400" />
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Type:</span>
+                        </div>
+                        <div className="flex space-x-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar scroll-smooth">
+                            {[
+                                { value: 'all', label: `All (${kras.length})` },
+                                { value: 'daily', label: `Daily (${kras.filter(k => k.type === 'daily').length})` },
+                                { value: 'weekly', label: `Weekly (${kras.filter(k => k.type === 'weekly').length})` },
+                                { value: 'monthly', label: `Monthly (${kras.filter(k => k.type === 'monthly').length})` }
+                            ].map((item) => (
+                                <button
+                                    key={item.value}
+                                    onClick={() => setFilterType(item.value as any)}
+                                    className={`flex-shrink-0 px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-tighter transition-all ${filterType === item.value
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* KRA Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredKras.map((kra) => {
-                    const priority = getPriorityBadge(kra.priority)
-                    const status = getStatusBadge(kra.status)
-                    const typeIcon = getTypeBadge(kra.type)
+                {/* KRA Grid - Simplified */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredKras.map((kra) => {
+                        const priority = getPriorityBadge(kra.priority)
+                        const status = getStatusBadge(kra.status)
+                        const typeIcon = getTypeBadge(kra.type)
 
-                    return (
-                        <div
-                            key={kra.id}
-                            className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-primary-100 transition-all duration-300 relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary-500 to-secondary-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                            <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-2xl">{typeIcon}</span>
-                                    <span className="text-xs font-semibold text-gray-500 uppercase">{kra.type}</span>
-                                </div>
-                                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={() => onEdit(kra)}
-                                        className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                                        title="Edit"
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(kra.id)}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Delete"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl font-bold text-gray-800 group-hover:text-primary-700 transition-colors line-clamp-1 mb-3">
-                                {kra.title}
-                            </h3>
-
-                            <p className="text-gray-600 mb-4 line-clamp-2 text-sm h-10">
-                                {kra.description}
-                            </p>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center text-sm text-gray-500 bg-gray-50 p-2 rounded-lg">
-                                    <Target className="w-4 h-4 mr-2 text-secondary-500" />
-                                    <span className="font-medium text-gray-700 truncate">{kra.target}</span>
+                        return (
+                            <div
+                                key={kra.id}
+                                className="group bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 hover:border-blue-200 transition-all duration-200 relative overflow-hidden flex flex-col h-full shadow-sm"
+                            >
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-xl sm:text-2xl">{typeIcon}</span>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{kra.type}</span>
+                                    </div>
+                                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => setSelectedKRAForKPI(kra)}
+                                            className="p-1.5 sm:p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                            title="Manage KPIs"
+                                        >
+                                            <BarChart2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => onEdit(kra)}
+                                            className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Edit"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(kra.id)}
+                                            className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Team Assignment Display */}
-                                {kra.teamIds && kra.teamIds.length > 0 && (
-                                    <div className="flex items-center text-sm text-gray-500 bg-blue-50 p-2 rounded-lg">
-                                        <span className="w-4 h-4 mr-2 text-blue-500">👥</span>
-                                        <span className="font-medium text-gray-700 truncate">
-                                            Teams: {getTeamNames(kra.teamIds)}
+                                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1 mb-2">
+                                    {kra.title}
+                                </h3>
+
+                                <p className="text-gray-500 mb-4 line-clamp-2 text-xs h-8">
+                                    {kra.description}
+                                </p>
+
+                                <div className="space-y-4 mt-auto">
+                                    {/* Progress Section - Simplified */}
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Progress</span>
+                                            <span className="text-[10px] font-bold text-blue-600">{kra.progress || 0}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                                                style={{ width: `${kra.progress || 0}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded-lg uppercase tracking-tighter">
+                                        <Target className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+                                        <span className="truncate">{kra.target}</span>
+                                    </div>
+
+                                    {/* Team Assignment Display */}
+                                    {kra.teamIds && kra.teamIds.length > 0 && (
+                                        <div className="flex items-center text-[10px] font-bold text-blue-600 bg-blue-50 p-2 rounded-lg uppercase tracking-tighter">
+                                            <span className="w-3.5 h-3.5 mr-2">👥</span>
+                                            <span className="truncate">
+                                                {getTeamNames(kra.teamIds)}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Priority and Status Badges */}
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter ${priority.className}`}>
+                                            {kra.priority}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter ${status.className}`}>
+                                            {status.label}
                                         </span>
                                     </div>
-                                )}
 
-                                {/* Priority and Status Badges */}
-                                <div className="flex space-x-2">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${priority.className}`}>
-                                        {priority.icon} {kra.priority}
-                                    </span>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${status.className}`}>
-                                        {status.icon} {status.label}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center text-xs text-gray-400">
-                                    <Calendar className="w-3 h-3 mr-1.5" />
-                                    <span>
-                                        {new Date(kra.startDate).toLocaleDateString()} –{' '}
-                                        {new Date(kra.endDate).toLocaleDateString()}
-                                    </span>
+                                    <div className="flex items-center text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                        <Calendar className="w-3 h-3 mr-1.5" />
+                                        <span>
+                                            {new Date(kra.startDate).toLocaleDateString()} –{' '}
+                                            {new Date(kra.endDate).toLocaleDateString()}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
+                        )
+                    })}
+                </div>
+
+                {
+                    filteredKras.length === 0 && (
+                        <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
+                            <p className="text-gray-500">No {filterType} goals found.</p>
                         </div>
                     )
-                })}
+                }
             </div>
 
-            {filteredKras.length === 0 && (
-                <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <p className="text-gray-500">No {filterType} goals found.</p>
-                </div>
-            )}
-        </div>
+            {/* KPI Editor Modal */}
+            {
+                selectedKRAForKPI && (
+                    <KPIEditor
+                        kra={selectedKRAForKPI}
+                        onClose={() => setSelectedKRAForKPI(null)}
+                    />
+                )
+            }
+        </>
     )
 }

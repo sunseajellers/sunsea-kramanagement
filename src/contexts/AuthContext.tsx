@@ -10,7 +10,7 @@ interface UserData {
     uid: string
     email: string | null
     fullName: string
-    roleIds: string[]
+    isAdmin: boolean // Simple boolean - set by developer in Firebase
     avatar?: string
     teamId?: string
 }
@@ -20,7 +20,9 @@ interface AuthContextType {
     userData: UserData | null
     loading: boolean
     error: string | null
+    isAdmin: boolean
     logout: () => Promise<void>
+    signOut: () => Promise<void>
     getDefaultRoute: () => string
 }
 
@@ -29,8 +31,10 @@ const AuthContext = createContext<AuthContextType>({
     userData: null,
     loading: true,
     error: null,
+    isAdmin: false,
     logout: async () => { },
-    getDefaultRoute: () => '/dashboard'
+    signOut: async () => { },
+    getDefaultRoute: () => '/admin'
 })
 
 export const useAuth = () => {
@@ -46,51 +50,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
     const [userData, setUserData] = useState<UserData | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
 
     useEffect(() => {
         const unsubscribe = onAuthStateChange(async (firebaseUser) => {
+            console.log('🔐 Auth state changed:', firebaseUser?.email)
             setUser(firebaseUser)
 
             if (firebaseUser) {
                 try {
                     // Fetch user data from Firestore
                     let data = await getUserData(firebaseUser.uid)
+                    console.log('🔐 User data from Firestore:', data)
 
                     // If no Firestore document exists, auto-create one
                     if (!data) {
                         console.log('📝 Creating Firestore user document for:', firebaseUser.email)
 
-                        // Create the user document
+                        // Create the user document - isAdmin: false by default
+                        // Developer must set isAdmin: true in Firebase for admin users
                         const newUserData = {
                             id: firebaseUser.uid,
                             email: firebaseUser.email,
                             fullName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                            roleIds: ['admin'], // First user gets admin role
+                            isAdmin: false, // Default false - developer sets true in Firebase
                             isActive: true,
                             createdAt: serverTimestamp(),
                             updatedAt: serverTimestamp()
                         }
 
                         await setDoc(doc(db, 'users', firebaseUser.uid), newUserData)
-
-                        // Fetch the newly created document
                         data = await getUserData(firebaseUser.uid)
                     }
 
                     if (data) {
-                        const processedUserData = {
-                            uid: data.uid || firebaseUser.uid,
+                        // Check isAdmin - can be boolean or check roleIds for backward compatibility
+                        let adminStatus = false
+                        if (typeof data.isAdmin === 'boolean') {
+                            adminStatus = data.isAdmin
+                        } else if (Array.isArray(data.roleIds)) {
+                            adminStatus = data.roleIds.includes('admin')
+                        }
+
+                        console.log('🔐 Admin status:', adminStatus)
+
+                        const processedUserData: UserData = {
+                            uid: data.uid || data.id || firebaseUser.uid,
                             email: data.email || firebaseUser.email,
                             fullName: data.fullName || firebaseUser.displayName || 'User',
-                            roleIds: data.roleIds || [],
+                            isAdmin: adminStatus,
                             avatar: data.avatar || undefined,
                             teamId: data.teamId || undefined
                         }
+
+                        console.log('🔐 Processed userData:', processedUserData)
+
                         setUserData(processedUserData)
+                        setIsAdmin(adminStatus)
                         setError(null)
                     } else {
                         console.error('Failed to create or retrieve user document')
                         setUserData(null)
+                        setIsAdmin(false)
                         setError('Failed to create user profile. Please try again.')
                     }
                 } catch (err: unknown) {
@@ -98,9 +119,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                     console.error('Error fetching user data:', errorMessage)
                     setError(errorMessage)
                     setUserData(null)
+                    setIsAdmin(false)
                 }
             } else {
                 setUserData(null)
+                setIsAdmin(false)
             }
 
             setLoading(false)
@@ -114,6 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
             await logOut()
             setUser(null)
             setUserData(null)
+            setIsAdmin(false)
             setError(null)
         } catch (error: any) {
             setError(error.message || 'Failed to logout')
@@ -122,15 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
     }
 
     const getDefaultRoute = () => {
-        if (!userData) return '/dashboard'
-
-        // Check if user has admin role
-        if (userData.roleIds.includes('admin')) {
-            return '/dashboard/admin'
-        }
-
-        // All other authenticated users go to regular dashboard
-        return '/dashboard'
+        return '/admin'
     }
 
     const value = {
@@ -138,7 +154,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         userData,
         loading,
         error,
+        isAdmin,
         logout,
+        signOut: logout,
         getDefaultRoute
     }
 

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDashboardAnalytics, getTeamDetailedAnalytics, generateAdminReport } from '@/lib/analyticsService';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { withAdmin } from '@/lib/authMiddleware';
 
 // GET /api/analytics - Get analytics data
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'analytics', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, _userId: string) => {
         try {
             const { searchParams } = new URL(request.url);
             const type = searchParams.get('type');
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/analytics/reports - Generate reports
 export async function POST(request: NextRequest) {
-    return withRBAC(request, 'analytics', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, _userId: string) => {
         try {
             const { reportType, dateRange } = await request.json();
 

@@ -235,7 +235,7 @@ export async function getDatabaseStats(): Promise<{
             getDocs(collection(db, 'teams')),
             getDocs(collection(db, 'tasks')),
             getDocs(collection(db, 'kras')),
-            getDocs(collection(db, 'reports'))
+            getDocs(collection(db, 'weeklyReports'))
         ]);
 
         return {

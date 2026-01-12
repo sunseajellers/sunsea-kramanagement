@@ -2,10 +2,19 @@
 import 'server-only'
 import * as admin from 'firebase-admin'
 
+// Check if Firebase Admin is configured
+const isAdminConfigured = () => {
+    return !!(
+        process.env.FIREBASE_PROJECT_ID &&
+        process.env.FIREBASE_PRIVATE_KEY &&
+        process.env.FIREBASE_CLIENT_EMAIL
+    )
+}
+
 // Initialize Firebase Admin SDK (singleton pattern)
 let adminApp: admin.app.App
 
-if (!admin.apps.length) {
+if (!admin.apps.length && isAdminConfigured()) {
     // Initialize with service account credentials
     // In production, use environment variables or service account key file
     const serviceAccount = {
@@ -25,13 +34,22 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
         projectId: process.env.FIREBASE_PROJECT_ID
     })
-} else {
+} else if (admin.apps.length) {
     adminApp = admin.apps[0] as admin.app.App
+} else {
+    // Log warning in development
+    if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Firebase Admin SDK is not configured.')
+        console.warn('Server-side features will not work without proper configuration.')
+    }
+    // Create a placeholder to prevent build errors
+    adminApp = {} as admin.app.App
 }
 
-// Export admin services
-export const adminAuth = admin.auth(adminApp)
-export const adminDb = admin.firestore(adminApp)
-export const adminStorage = admin.storage(adminApp)
+// Export admin services (will throw errors if used without proper config)
+export const adminAuth = isAdminConfigured() ? admin.auth(adminApp) : ({} as admin.auth.Auth)
+export const adminDb = isAdminConfigured() ? admin.firestore(adminApp) : ({} as admin.firestore.Firestore)
+export const adminStorage = isAdminConfigured() ? admin.storage(adminApp) : ({} as admin.storage.Storage)
 
+export { isAdminConfigured }
 export default adminApp

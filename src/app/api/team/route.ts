@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllUsers, updateUser } from '@/lib/userService';
-import { getAllTeams } from '@/lib/teamService';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { getAllUsers, updateUser } from '@/lib/server/userService';
+import { getAllTeams } from '@/lib/server/teamService';
+import { withAdmin } from '@/lib/authMiddleware';
 
 // GET /api/team - Get all users and teams
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'teams', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, _userId: string) => {
         const [users, teams] = await Promise.all([
             getAllUsers(),
             getAllTeams()

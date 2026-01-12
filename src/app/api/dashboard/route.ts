@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getDashboardStats, getTaskAnalytics, getKRAAnalytics } from '@/lib/analyticsService';
 import { timestampToDate } from '@/lib/utils';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { withAdmin } from '@/lib/authMiddleware';
 
 // GET /api/dashboard - Get user dashboard data
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'dashboard', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, userId: string) => {
         try {
             const [stats, tasks, kras, taskAnalytics, kraAnalytics] = await Promise.all([
                 getDashboardStats(userId),

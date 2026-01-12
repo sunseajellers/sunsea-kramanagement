@@ -2,17 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { User, Permission } from '@/types'
-import { getAllUsers, updateUser, deleteUser, bulkUpdateUsers, createUser } from '@/lib/userService'
-import { assignRolesToUser, getAllRoles, getUserPermissions } from '@/lib/rbacService'
+import { User } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
-import { UserCheck, Settings, Search, Download, Trash2, Users, MoreHorizontal, UserPlus, Eye, EyeOff } from 'lucide-react'
+import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,21 +18,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { getAllUsers, createUser, updateUser } from '@/lib/userService'
 
-interface BulkAction {
-    type: 'role_change' | 'delete' | 'activate' | 'deactivate'
-    value?: string
-}
+
 
 export default function UserManagement() {
-    const { userData: currentUser, user } = useAuth()
+    const { user } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
-    const [selectedUser, setSelectedUser] = useState<User | null>(null)
-    const [dialogOpen, setDialogOpen] = useState(false)
-    const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
-    const [bulkAction, setBulkAction] = useState<BulkAction | null>(null)
 
     // Create user dialog state
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -47,7 +38,6 @@ export default function UserManagement() {
 
     // Filtering and search state
     const [searchTerm, setSearchTerm] = useState('')
-    const [roleFilter, setRoleFilter] = useState<string>('all')
     const [statusFilter, setStatusFilter] = useState<string>('all')
     const [sortBy, setSortBy] = useState<string>('name')
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -72,12 +62,11 @@ export default function UserManagement() {
         let filtered = users.filter(user => {
             const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchTerm.toLowerCase())
-            const matchesRole = roleFilter === 'all'
             const matchesStatus = statusFilter === 'all' ||
                 (statusFilter === 'active' && user.isActive !== false) ||
                 (statusFilter === 'inactive' && user.isActive === false)
 
-            return matchesSearch && matchesRole && matchesStatus
+            return matchesSearch && matchesStatus
         })
 
         // Sort users
@@ -93,10 +82,6 @@ export default function UserManagement() {
                     aValue = a.email.toLowerCase()
                     bValue = b.email.toLowerCase()
                     break
-                case 'role':
-                    aValue = 'employee'
-                    bValue = 'employee'
-                    break
                 case 'joined':
                     aValue = a.createdAt.getTime()
                     bValue = b.createdAt.getTime()
@@ -111,52 +96,7 @@ export default function UserManagement() {
         })
 
         return filtered
-    }, [users, searchTerm, roleFilter, statusFilter, sortBy, sortOrder])
-
-    const handleBulkAction = async () => {
-        if (!bulkAction || selectedUsers.size === 0) return
-
-        try {
-            const userIds = Array.from(selectedUsers)
-
-            switch (bulkAction.type) {
-                case 'role_change':
-                    if (!bulkAction.value) return
-                    const roles = await getAllRoles()
-                    const roleToAssign = roles.find(r => r.name.toLowerCase() === bulkAction.value!.toLowerCase())
-                    if (roleToAssign) {
-                        for (const userId of userIds) {
-                            await assignRolesToUser(userId, [roleToAssign.id], currentUser!.uid)
-                        }
-                        toast.success(`Updated ${userIds.length} users' roles`)
-                    } else {
-                        toast.error('Role not found')
-                    }
-                    break
-                case 'delete':
-                    for (const userId of userIds) {
-                        await deleteUser(userId)
-                    }
-                    toast.success(`Deleted ${userIds.length} users`)
-                    break
-                case 'activate':
-                    await bulkUpdateUsers(userIds, { isActive: true })
-                    toast.success(`Activated ${userIds.length} users`)
-                    break
-                case 'deactivate':
-                    await bulkUpdateUsers(userIds, { isActive: false })
-                    toast.success(`Deactivated ${userIds.length} users`)
-                    break
-            }
-
-            setSelectedUsers(new Set())
-            setBulkDialogOpen(false)
-            setBulkAction(null)
-            loadUsers()
-        } catch (error) {
-            toast.error('Bulk operation failed')
-        }
-    }
+    }, [users, searchTerm, statusFilter, sortBy, sortOrder])
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
@@ -198,23 +138,7 @@ export default function UserManagement() {
         window.URL.revokeObjectURL(url)
     }
 
-    const handleSavePermissions = async () => {
-        if (!selectedUser) return
 
-        // Permissions are now managed via RBAC roles
-        toast.success('Permissions are now managed via RBAC roles. Please assign appropriate roles to users.')
-        setDialogOpen(false)
-    }
-
-    const openPermissionDialog = (user: User) => {
-        setSelectedUser(user)
-        setDialogOpen(true)
-    }
-
-    const openBulkDialog = (action: BulkAction) => {
-        setBulkAction(action)
-        setBulkDialogOpen(true)
-    }
 
     const handleCreateUser = async () => {
         if (!user) {
@@ -254,458 +178,241 @@ export default function UserManagement() {
     }
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Loading users...</div>
+        return (
+            <div className="flex flex-col items-center justify-center h-96 py-20">
+                <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Personnel...</p>
+            </div>
+        )
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <UserCheck className="h-6 w-6" />
-                    User Management
-                </h1>
-                <div className="flex items-center gap-2">
-                    <Button onClick={() => setCreateDialogOpen(true)}>
+        <div className="space-y-10 pb-12">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                <div>
+                    <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Personnel Hub</h1>
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                        <UserCheck className="h-3 w-3 text-blue-500" />
+                        Manage platform users and access levels
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Button onClick={() => setCreateDialogOpen(true)} className="bg-gray-900 hover:bg-black h-11 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm">
                         <UserPlus className="h-4 w-4 mr-2" />
-                        Create User
+                        New User
                     </Button>
-                    <Button variant="outline" onClick={exportUsers}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
+                    <Button variant="outline" onClick={exportUsers} className="h-11 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest border-gray-100 text-gray-400 hover:bg-white transition-all">
+                        <Download className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
 
-            {/* Filters and Search */}
-            <Card>
-                <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search users..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-                        <select
-                            value={roleFilter}
-                            onChange={(e) => setRoleFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Roles</option>
-                            <option value="admin">Admin</option>
-                            <option value="manager">Manager</option>
-                            <option value="employee">Employee</option>
-                        </select>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="name">Name</option>
-                            <option value="email">Email</option>
-                            <option value="role">Role</option>
-                            <option value="joined">Joined Date</option>
-                        </select>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        >
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Controls Bar */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                    <Input
+                        placeholder="SEARCH BY NAME OR EMAIL..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-12 h-12 border-none bg-gray-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest placeholder:text-gray-300"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="h-12 px-6 bg-gray-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none border-none pr-10 relative cursor-pointer"
+                    >
+                        <option value="all">Status: All</option>
+                        <option value="active">Status: Active</option>
+                        <option value="inactive">Status: Inactive</option>
+                    </select>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="h-12 px-6 bg-gray-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none border-none pr-10 cursor-pointer"
+                    >
+                        <option value="name">Sort: Name</option>
+                        <option value="email">Sort: Email</option>
+                        <option value="joined">Sort: Joined</option>
+                    </select>
+                    <Button
+                        variant="ghost"
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="h-12 w-12 rounded-xl bg-gray-50/50 text-gray-400 hover:text-blue-600"
+                    >
+                        {sortOrder === 'asc' ? '↑' : '↓'}
+                    </Button>
+                </div>
+            </div>
 
-            {/* Bulk Actions */}
-            {selectedUsers.size > 0 && (
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                <span className="text-sm font-medium">
-                                    {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openBulkDialog({ type: 'role_change' })}
-                                >
-                                    Change Role
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openBulkDialog({ type: 'activate' })}
-                                >
-                                    Activate
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openBulkDialog({ type: 'deactivate' })}
-                                >
-                                    Deactivate
-                                </Button>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => openBulkDialog({ type: 'delete' })}
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Users List */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Users ({filteredUsers.length})</CardTitle>
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
-                                onCheckedChange={handleSelectAll}
-                            />
-                            <span className="text-sm text-muted-foreground">Select All</span>
-                        </div>
+            {/* Users Content */}
+            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                <CardHeader className="border-b border-gray-50 px-8 py-6 flex flex-row items-center justify-between bg-white">
+                    <CardTitle className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Listing {filteredUsers.length} records</CardTitle>
+                    <div className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-xl px-4">
+                        <Checkbox
+                            checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                            onCheckedChange={handleSelectAll}
+                            className="w-4 h-4 border-gray-200"
+                        />
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Select All</span>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {filteredUsers.map((user) => (
-                            <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="flex items-center gap-4">
-                                    <Checkbox
-                                        checked={selectedUsers.has(user.id)}
-                                        onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
-                                    />
-                                    <div>
-                                        <h3 className="font-medium">{user.fullName}</h3>
-                                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <Badge className="bg-blue-100 text-blue-800">
-                                                Employee
-                                            </Badge>
-                                            {user.isActive === false && (
-                                                <Badge variant="secondary">Inactive</Badge>
-                                            )}
+                <div className="divide-y divide-gray-50">
+                    {filteredUsers.length > 0 ? (
+                        filteredUsers.map((user) => (
+                            <div key={user.id} className="group hover:bg-blue-50/20 transition-all px-8 py-6 flex items-center justify-between">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-8">
+                                        <Checkbox
+                                            checked={selectedUsers.has(user.id)}
+                                            onCheckedChange={(checked: boolean) => handleSelectUser(user.id, checked)}
+                                            className="w-4 h-4 border-gray-100 group-hover:border-blue-200"
+                                        />
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all font-black text-xs uppercase text-gray-400">
+                                                {user.fullName.substring(0, 2)}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{user.fullName}</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{user.email}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="text-sm text-muted-foreground">
-                                        Joined: {user.createdAt.toLocaleDateString()}
+                                    <div className="h-8 w-[1px] bg-gray-50 hidden md:block mx-2" />
+                                    <div className="hidden lg:flex items-center gap-2">
+                                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${user.isActive !== false ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                            {user.isActive !== false ? 'Active Status' : 'Inactive Status'}
+                                        </span>
+                                        {user.isAdmin && (
+                                            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[8px] font-black uppercase tracking-widest border border-blue-100">
+                                                Administrator
+                                            </span>
+                                        )}
                                     </div>
+                                </div>
+
+                                <div className="flex items-center gap-10">
+                                    <div className="hidden xl:block text-right">
+                                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Enrolled On</p>
+                                        <p className="text-[10px] font-black text-gray-900 mt-0.5 uppercase tracking-tighter">{user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    </div>
+
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm">
+                                            <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-100 text-gray-400">
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => openPermissionDialog(user)}>
-                                                <Settings className="h-4 w-4 mr-2" />
-                                                Permissions
+                                        <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-gray-100 shadow-xl">
+                                            <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-300 px-3 py-2">Quick Actions</DropdownMenuLabel>
+                                            <DropdownMenuSeparator className="bg-gray-50" />
+                                            <DropdownMenuItem
+                                                onClick={() => updateUser(user.id, { isAdmin: !user.isAdmin })}
+                                                className="cursor-pointer rounded-xl h-10 text-[10px] font-black uppercase tracking-widest focus:bg-blue-50 focus:text-blue-600"
+                                            >
+                                                <Shield className="h-3.5 w-3.5 mr-3 opacity-50" />
+                                                {user.isAdmin ? 'Revoke Admin' : 'Assign Admin'}
                                             </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
                                             <DropdownMenuItem
                                                 onClick={() => updateUser(user.id, { isActive: user.isActive === false })}
+                                                className={`cursor-pointer rounded-xl h-10 text-[10px] font-black uppercase tracking-widest ${user.isActive === false ? 'focus:bg-green-50 focus:text-green-600' : 'focus:bg-red-50 focus:text-red-600'}`}
                                             >
-                                                {user.isActive === false ? 'Activate' : 'Deactivate'}
+                                                <Activity className="h-3.5 w-3.5 mr-3 opacity-50" />
+                                                {user.isActive === false ? 'Activate User' : 'Suspend Account'}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Permission Management Dialog */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>
-                            Manage Permissions for {selectedUser?.fullName}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    {selectedUser && (
-                        <div className="space-y-6">
-                            <div className="bg-muted p-4 rounded-lg">
-                                <h3 className="font-medium mb-2">Role: Employee</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Employee role with standard permissions managed via RBAC.
-                                </p>
-                                <div className="mt-2">
-                                    <p className="text-sm font-medium">Current Permissions:</p>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                        {selectedUser && (
-                                            <UserPermissionsDisplay userId={selectedUser.id} />
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="border rounded-lg p-4">
-                                    <h4 className="font-medium mb-3">Role Assignment</h4>
-                                    <p className="text-sm text-muted-foreground mb-3">
-                                        Assign RBAC roles to this user. Permissions are determined by assigned roles.
-                                    </p>
-                                    <RoleAssignment userId={selectedUser?.id || ''} onRoleChange={loadUsers} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleSavePermissions}>
-                                    Save Permissions
-                                </Button>
-                            </div>
+                        ))
+                    ) : (
+                        <div className="py-20 text-center">
+                            <Users className="h-10 w-10 text-gray-100 mx-auto mb-4" />
+                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">No records found matching criteria</p>
                         </div>
                     )}
-                </DialogContent>
-            </Dialog>
+                </div>
+            </Card>
 
-            {/* Bulk Action Confirmation Dialog */}
-            <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            Confirm Bulk Action
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <p>
-                            Are you sure you want to {bulkAction?.type.replace('_', ' ')} {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''}?
-                        </p>
-                        {bulkAction?.type === 'role_change' && (
-                            <select
-                                onChange={(value) => setBulkAction({ ...bulkAction, value: value.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="">Select new role</option>
-                                <option value="admin">Admin</option>
-                                <option value="manager">Manager</option>
-                                <option value="employee">Employee</option>
-                            </select>
-                        )}
-                        <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setBulkDialogOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                variant={bulkAction?.type === 'delete' ? 'destructive' : 'default'}
-                                onClick={handleBulkAction}
-                            >
-                                Confirm
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Create User Dialog */}
+            {/* Minimal Create User Dialog */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create New User</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Full Name
-                            </label>
-                            <Input
-                                placeholder="John Doe"
-                                value={newUserName}
-                                onChange={(e) => setNewUserName(e.target.value)}
-                                disabled={createLoading}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Email Address
-                            </label>
-                            <Input
-                                type="email"
-                                placeholder="john@example.com"
-                                value={newUserEmail}
-                                onChange={(e) => setNewUserEmail(e.target.value)}
-                                disabled={createLoading}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Password
-                            </label>
-                            <div className="relative">
+                <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
+                    <div className="bg-gray-900 px-8 py-10 text-white">
+                        <h2 className="text-2xl font-black uppercase tracking-tighter">New Personnel</h2>
+                        <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Initialize system access</p>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Identity Profile</label>
                                 <Input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
-                                    value={newUserPassword}
-                                    onChange={(e) => setNewUserPassword(e.target.value)}
+                                    placeholder="FULL LEGAL NAME"
+                                    value={newUserName}
+                                    onChange={(e) => setNewUserName(e.target.value)}
                                     disabled={createLoading}
-                                    className="pr-10"
+                                    className="h-14 bg-gray-50 border-none rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest placeholder:text-gray-200"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                >
-                                    {showPassword ? (
-                                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                                    ) : (
-                                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                                    )}
-                                </button>
                             </div>
-                            <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Authentication Email</label>
+                                <Input
+                                    type="email"
+                                    placeholder="CORPORATE EMAIL ADDRESS"
+                                    value={newUserEmail}
+                                    onChange={(e) => setNewUserEmail(e.target.value)}
+                                    disabled={createLoading}
+                                    className="h-14 bg-gray-50 border-none rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest placeholder:text-gray-200"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Security Key (MIN 6 CHARACTERS)</label>
+                                <div className="relative">
+                                    <Input
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="ENCRYPTED ACCESS KEY"
+                                        value={newUserPassword}
+                                        onChange={(e) => setNewUserPassword(e.target.value)}
+                                        disabled={createLoading}
+                                        className="h-14 bg-gray-50 border-none rounded-2xl px-6 pr-14 text-[10px] font-black uppercase tracking-widest placeholder:text-gray-200"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-6 flex items-center"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4 text-gray-300" />
+                                        ) : (
+                                            <Eye className="h-4 w-4 text-gray-300" />
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex justify-end gap-2 pt-4">
+                        <div className="flex gap-3 pt-4">
                             <Button
                                 variant="outline"
-                                onClick={() => {
-                                    setCreateDialogOpen(false)
-                                    setNewUserEmail('')
-                                    setNewUserPassword('')
-                                    setNewUserName('')
-                                }}
+                                onClick={() => setCreateDialogOpen(false)}
                                 disabled={createLoading}
+                                className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest border-gray-100 text-gray-400"
                             >
-                                Cancel
+                                ABORT
                             </Button>
-                            <Button onClick={handleCreateUser} disabled={createLoading}>
-                                {createLoading ? 'Creating...' : 'Create User'}
+                            <Button
+                                onClick={handleCreateUser}
+                                disabled={createLoading}
+                                className="flex-1 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-200"
+                            >
+                                {createLoading ? <Loader2 className="animate-spin h-5 w-5" /> : 'AUTHORIZE USER'}
                             </Button>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
-        </div>
-    )
-}
-
-// Helper component to display user permissions
-function UserPermissionsDisplay({ userId }: { userId: string }) {
-    const [permissions, setPermissions] = useState<Permission[]>([])
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        const loadPermissions = async () => {
-            try {
-                const userPermissions = await getUserPermissions(userId)
-                setPermissions(userPermissions)
-            } catch (error) {
-                console.error('Failed to load permissions:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        loadPermissions()
-    }, [userId])
-
-    if (loading) return <div>Loading permissions...</div>
-
-    return (
-        <>
-            {permissions.map((perm) => (
-                <Badge key={`${perm.module}-${perm.action}`} variant="secondary" className="text-xs">
-                    {perm.module}.{perm.action}
-                </Badge>
-            ))}
-        </>
-    )
-}
-
-// Helper component for role assignment
-function RoleAssignment({ userId, onRoleChange }: { userId: string; onRoleChange: () => void }) {
-    const [roles, setRoles] = useState<any[]>([])
-    const [userRoles, setUserRoles] = useState<string[]>([])
-    const [loading, setLoading] = useState(true)
-    const { userData } = useAuth()
-
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [allRoles] = await Promise.all([
-                    getAllRoles()
-                ])
-                setRoles(allRoles)
-                // For now, show all roles - in future we could determine assigned roles from permissions
-                setUserRoles(allRoles.map(r => r.id))
-            } catch (error) {
-                console.error('Failed to load roles:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        loadData()
-    }, [userId])
-
-    const handleRoleToggle = async (roleId: string, assign: boolean) => {
-        if (!userData) return
-
-        try {
-            if (assign) {
-                await assignRolesToUser(userId, [roleId], userData.uid)
-            } else {
-                // For now, we'll reassign all roles except the one being removed
-                const newRoles = userRoles.filter(id => id !== roleId)
-                await assignRolesToUser(userId, newRoles, userData.uid)
-            }
-            onRoleChange()
-        } catch (error) {
-            toast.error('Failed to update role assignment')
-        }
-    }
-
-    if (loading) return <div>Loading roles...</div>
-
-    return (
-        <div className="space-y-2">
-            {roles.map((role) => (
-                <div key={role.id} className="flex items-center space-x-2">
-                    <Checkbox
-                        id={role.id}
-                        checked={userRoles.includes(role.id)}
-                        onCheckedChange={(checked) => handleRoleToggle(role.id, checked as boolean)}
-                    />
-                    <label htmlFor={role.id} className="text-sm font-medium">
-                        {role.name}
-                    </label>
-                    <span className="text-xs text-muted-foreground">
-                        {role.description}
-                    </span>
-                </div>
-            ))}
         </div>
     )
 }

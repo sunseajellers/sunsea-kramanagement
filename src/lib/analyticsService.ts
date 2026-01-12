@@ -3,8 +3,8 @@ import 'server-only'
 import { DashboardStats, Task, KRA } from '@/types';
 import { getUserTasks } from './taskService';
 import { getUserKRAs } from './kraService';
-import { getAllUsers } from './userService';
-import { getAllTeams } from './teamService';
+import { getAllUsers } from './server/userService';
+import { getAllTeams } from './server/teamService';
 import { handleError, timestampToDate } from './utils';
 import { adminDb } from './firebase-admin';
 
@@ -47,6 +47,8 @@ export async function getDashboardStats(uid: string): Promise<DashboardStats> {
         }).length;
 
         const activeKRAs = kras.filter((k) => k.status === 'in_progress').length;
+        const totalKRAs = kras.length;
+        const completedKRAs = kras.filter((k) => k.status === 'completed').length;
         const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const weeklyScore = Math.min(100, completionRate + activeKRAs * 2); // dummy calculation
 
@@ -55,6 +57,8 @@ export async function getDashboardStats(uid: string): Promise<DashboardStats> {
             completedTasks,
             pendingTasks,
             overdueTasks,
+            totalKRAs,
+            completedKRAs,
             activeKRAs,
             completionRate,
             weeklyScore,

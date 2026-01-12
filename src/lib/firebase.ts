@@ -16,6 +16,18 @@ const firebaseConfig = {
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 }
 
+// Check if Firebase config is valid
+const isFirebaseConfigured = () => {
+    return !!(
+        firebaseConfig.apiKey &&
+        firebaseConfig.authDomain &&
+        firebaseConfig.projectId &&
+        firebaseConfig.storageBucket &&
+        firebaseConfig.messagingSenderId &&
+        firebaseConfig.appId
+    )
+}
+
 // Initialize Firebase (singleton pattern)
 let app: FirebaseApp
 let auth: Auth
@@ -23,25 +35,41 @@ let db: Firestore
 let storage: FirebaseStorage
 let analytics: Analytics | null = null
 
-// Initialize Firebase app only once
-if (!getApps().length) {
-    app = initializeApp(firebaseConfig)
+// Only initialize if config is valid
+if (isFirebaseConfigured()) {
+    // Initialize Firebase app only once
+    if (!getApps().length) {
+        app = initializeApp(firebaseConfig)
+    } else {
+        app = getApps()[0]
+    }
+
+    // Initialize Firebase services
+    auth = getAuth(app)
+    db = getFirestore(app)
+    storage = getStorage(app)
+
+    // Initialize Analytics only in browser environment
+    if (typeof window !== 'undefined') {
+        analytics = getAnalytics(app)
+    }
 } else {
-    app = getApps()[0]
-}
+    // Log warning in development
+    if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Firebase is not configured. Please set up environment variables.')
+        console.warn('Copy .env.example to .env.local and add your Firebase credentials.')
+    }
 
-// Initialize Firebase services
-auth = getAuth(app)
-db = getFirestore(app)
-storage = getStorage(app)
-
-// Initialize Analytics only in browser environment
-if (typeof window !== 'undefined') {
-    analytics = getAnalytics(app)
+    // Create mock objects to prevent errors during build
+    // These will throw errors if actually used, but won't break the build
+    app = {} as FirebaseApp
+    auth = {} as Auth
+    db = {} as Firestore
+    storage = {} as FirebaseStorage
 }
 
 // Export Firebase services
-export { app, auth, db, storage, analytics }
+export { app, auth, db, storage, analytics, isFirebaseConfigured }
 
 // Export Firebase app for use in other files
 export default app

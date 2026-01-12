@@ -4,6 +4,11 @@ const nextConfig = {
     images: {
         domains: [],
     },
+    // TypeScript configuration
+    typescript: {
+        // Don't fail build on type errors (we'll check separately)
+        ignoreBuildErrors: false,
+    },
 }
 
 module.exports = nextConfig

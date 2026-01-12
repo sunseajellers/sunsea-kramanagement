@@ -94,6 +94,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 assignedTo: [form.assignedTo],
                 assignedBy: user.uid,
                 dueDate: new Date(form.dueDate),
+                progress: 0,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 checklist: [],
@@ -135,54 +136,98 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 {/* Form */}
                 <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    {/* Title */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Task Title</label>
-                        <div className="relative">
-                            <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                            <input
-                                name="title"
-                                required
-                                placeholder="e.g., Complete Q4 sales report"
-                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                value={form.title}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
-                        <div className="relative">
-                            <FileText className="absolute left-4 top-4 w-4 h-4 text-gray-400 z-10" />
-                            <textarea
-                                name="description"
-                                required
-                                placeholder="Describe the task details..."
-                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 h-24 resize-none"
-                                value={form.description}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Priority and Status */}
-                    <div className="grid grid-cols-2 gap-4">
+                        {/* Title */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Task Title</label>
                             <div className="relative">
-                                <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                <input
+                                    name="title"
+                                    required
+                                    placeholder="e.g., Complete Q4 sales report"
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    value={form.title}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
+                            <div className="relative">
+                                <FileText className="absolute left-4 top-4 w-4 h-4 text-gray-400 z-10" />
+                                <textarea
+                                    name="description"
+                                    required
+                                    placeholder="Describe the task details..."
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 h-24 resize-none"
+                                    value={form.description}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Priority and Status */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
+                                <div className="relative">
+                                    <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <select
+                                        name="priority"
+                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
+                                        value={form.priority}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
                                 <select
-                                    name="priority"
-                                    className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
-                                    value={form.priority}
+                                    name="status"
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
+                                    value={form.status}
                                     onChange={handleChange}
                                 >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="critical">Critical</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="blocked">Blocked</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Link to KRA */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                Link to KRA (Optional)
+                            </label>
+                            <div className="relative">
+                                <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                <select
+                                    name="kraId"
+                                    className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
+                                    value={form.kraId}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">No KRA</option>
+                                    {kras.map((kra) => (
+                                        <option key={kra.id} value={kra.id}>
+                                            {kra.title}
+                                        </option>
+                                    ))}
                                 </select>
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,91 +237,47 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             </div>
                         </div>
 
+                        {/* Due Date */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
-                            <select
-                                name="status"
-                                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
-                                value={form.status}
-                                onChange={handleChange}
-                            >
-                                <option value="assigned">Assigned</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                                <option value="blocked">Blocked</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Link to KRA */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                            Link to KRA (Optional)
-                        </label>
-                        <div className="relative">
-                            <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                            <select
-                                name="kraId"
-                                className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
-                                value={form.kraId}
-                                onChange={handleChange}
-                            >
-                                <option value="">No KRA</option>
-                                {kras.map((kra) => (
-                                    <option key={kra.id} value={kra.id}>
-                                        {kra.title}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                </svg>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Due Date</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                <input
+                                    type="date"
+                                    name="dueDate"
+                                    required
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    value={form.dueDate}
+                                    onChange={handleChange}
+                                />
                             </div>
                         </div>
-                    </div>
 
-                    {/* Due Date */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Due Date</label>
-                        <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                            <input
-                                type="date"
-                                name="dueDate"
-                                required
-                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                value={form.dueDate}
-                                onChange={handleChange}
-                            />
+                        {/* Actions */}
+                        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-5 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-primary flex items-center px-6 py-2.5"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    isEdit ? 'Save Changes' : 'Create Task'
+                                )}
+                            </button>
                         </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-5 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary flex items-center px-6 py-2.5"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                isEdit ? 'Save Changes' : 'Create Task'
-                            )}
-                        </button>
-                    </div>
-                </form>
+                    </form>
                 </div>
             </div>
         </div>

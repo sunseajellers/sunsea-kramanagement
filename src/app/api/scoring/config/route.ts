@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getScoringConfig, updateScoringConfig } from '@/lib/reportService';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { withAdmin } from '@/lib/authMiddleware';
 
 // GET /api/scoring/config - Get current scoring configuration
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'scoring', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, _userId: string) => {
         try {
             const config = await getScoringConfig();
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
 // PUT /api/scoring/config - Update scoring configuration
 export async function PUT(request: NextRequest) {
-    return withRBAC(request, 'scoring', 'manage', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, userId: string) => {
         try {
             const { config } = await request.json();
 

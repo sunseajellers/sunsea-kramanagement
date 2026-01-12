@@ -1,9 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Task } from '@/types'
+import { Task, TaskRevision } from '@/types'
 import { updateTask, addChecklistItem, reassignTask } from '@/lib/taskService'
+import { getTaskRevisions } from '@/lib/revisionService'
 import { useAuth } from '@/contexts/AuthContext'
+import RevisionRequestModal from './RevisionRequestModal'
+import RevisionResolveModal from './RevisionResolveModal'
+import RevisionHistory from './RevisionHistory'
 import {
     X,
     Calendar,
@@ -11,7 +15,9 @@ import {
     CheckSquare,
     Plus,
     History,
-    UserPlus
+    UserPlus,
+    AlertCircle,
+    CheckCircle
 } from 'lucide-react'
 
 interface Props {
@@ -23,6 +29,8 @@ interface Props {
 const statusOptions = [
     { value: 'assigned', label: 'Assigned', color: 'bg-gray-100 text-gray-700' },
     { value: 'in_progress', label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
+    { value: 'pending_review', label: 'Pending Review', color: 'bg-purple-100 text-purple-700' },
+    { value: 'revision_requested', label: 'Revision Requested', color: 'bg-orange-100 text-orange-700' },
     { value: 'blocked', label: 'Blocked', color: 'bg-red-100 text-red-700' },
     { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-700' }
 ]
@@ -35,16 +43,38 @@ const priorityOptions = [
 ]
 
 export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
-    const { user } = useAuth()
+    const { user, userData } = useAuth()
     const [localTask, setLocalTask] = useState<Task>(task)
     const [newChecklistItem, setNewChecklistItem] = useState('')
     const [showReassignModal, setShowReassignModal] = useState(false)
+    const [showRevisionRequestModal, setShowRevisionRequestModal] = useState(false)
+    const [showRevisionResolveModal, setShowRevisionResolveModal] = useState(false)
     const [reassignEmail, setReassignEmail] = useState('')
     const [updating, setUpdating] = useState(false)
+    const [canRequestRevision, setCanRequestRevision] = useState(false)
+    const [revisions, setRevisions] = useState<TaskRevision[]>([])
 
     useEffect(() => {
         setLocalTask(task)
+        loadRevisions()
+        checkPermissions()
     }, [task])
+
+    const loadRevisions = async () => {
+        try {
+            const data = await getTaskRevisions(task.id)
+            setRevisions(data)
+        } catch (error) {
+            console.error('Failed to load revisions:', error)
+        } finally {
+            // Revisions loaded
+        }
+    }
+
+    const checkPermissions = async () => {
+        if (!userData?.uid) return
+        setCanRequestRevision(!!userData.isAdmin)
+    }
 
     const handleStatusChange = async (status: string) => {
         if (!user) return
@@ -134,7 +164,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
 
                     <div className="p-6 space-y-6">
                         {/* Status and Priority */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
                                 <div className="flex flex-wrap gap-2">
@@ -144,7 +174,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                             onClick={() => handleStatusChange(option.value)}
                                             disabled={updating}
                                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${localTask.status === option.value
-                                                ? option.color + ' ring-2 ring-offset-2 ring-primary-500'
+                                                ? option.color + ' ring-2 ring-offset-2 ring-primary-500 shadow-sm'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
@@ -163,7 +193,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                             onClick={() => handlePriorityChange(option.value)}
                                             disabled={updating}
                                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${localTask.priority === option.value
-                                                ? option.color + ' ring-2 ring-offset-2 ring-primary-500'
+                                                ? option.color + ' ring-2 ring-offset-2 ring-primary-500 shadow-sm'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
@@ -171,6 +201,41 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Progress Slider */}
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <div className="flex justify-between items-center mb-4">
+                                <label className="text-sm font-bold text-gray-800">Task Progress</label>
+                                <span className="text-sm font-black text-primary-600 bg-white px-3 py-1 rounded-full shadow-sm border border-primary-100">
+                                    {localTask.progress || 0}%
+                                </span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={localTask.progress || 0}
+                                onChange={async (e) => {
+                                    const val = parseInt(e.target.value)
+                                    setLocalTask(prev => ({ ...prev, progress: val }))
+                                }}
+                                onMouseUp={async (e) => {
+                                    const val = parseInt((e.target as HTMLInputElement).value)
+                                    await updateTask(task.id, { progress: val, updatedAt: new Date() })
+                                    onUpdate()
+                                }}
+                                onTouchEnd={async (e) => {
+                                    const val = parseInt((e.target as HTMLInputElement).value)
+                                    await updateTask(task.id, { progress: val, updatedAt: new Date() })
+                                    onUpdate()
+                                }}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                            />
+                            <div className="flex justify-between mt-2 text-[10px] text-gray-400 font-medium">
+                                <span>START</span>
+                                <span>DONE</span>
                             </div>
                         </div>
 
@@ -203,6 +268,34 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                             <UserPlus className="w-4 h-4" />
                             <span className="text-sm font-medium">Reassign Task</span>
                         </button>
+
+                        {/* Revision Actions */}
+                        {task.status === 'revision_requested' && task.assignedTo.includes(user?.uid || '') && (
+                            <button
+                                onClick={() => setShowRevisionResolveModal(true)}
+                                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
+                            >
+                                <CheckCircle className="w-4 h-4" />
+                                <span className="text-sm font-medium">Mark Revision Complete</span>
+                            </button>
+                        )}
+
+                        {canRequestRevision && task.status !== 'revision_requested' && task.status !== 'completed' && (
+                            <button
+                                onClick={() => setShowRevisionRequestModal(true)}
+                                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors"
+                            >
+                                <AlertCircle className="w-4 h-4" />
+                                <span className="text-sm font-medium">Request Revision</span>
+                            </button>
+                        )}
+
+                        {/* Revision History */}
+                        {revisions.length > 0 && (
+                            <div className="border-t border-gray-200 pt-6">
+                                <RevisionHistory taskId={task.id} />
+                            </div>
+                        )}
 
                         {/* Checklist */}
                         <div className="border-t border-gray-200 pt-6">
@@ -301,6 +394,37 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Revision Request Modal */}
+            {showRevisionRequestModal && user && userData && (
+                <RevisionRequestModal
+                    taskId={task.id}
+                    taskTitle={task.title}
+                    requestedBy={user.uid}
+                    requestedByName={userData.fullName || user.email || 'Unknown'}
+                    onClose={() => setShowRevisionRequestModal(false)}
+                    onSuccess={() => {
+                        loadRevisions()
+                        onUpdate()
+                    }}
+                />
+            )}
+
+            {/* Revision Resolve Modal */}
+            {showRevisionResolveModal && user && userData && task.lastRevisionId && (
+                <RevisionResolveModal
+                    revisionId={task.lastRevisionId}
+                    taskTitle={task.title}
+                    revisionReason={revisions.find(r => r.id === task.lastRevisionId)?.reason || ''}
+                    resolvedBy={user.uid}
+                    resolvedByName={userData.fullName || user.email || 'Unknown'}
+                    onClose={() => setShowRevisionResolveModal(false)}
+                    onSuccess={() => {
+                        loadRevisions()
+                        onUpdate()
+                    }}
+                />
             )}
         </>
     )

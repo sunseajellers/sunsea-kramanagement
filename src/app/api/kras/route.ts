@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserKRAs } from '@/lib/kraService';
-import { getAllTeams } from '@/lib/teamService';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { withAdmin } from '@/lib/authMiddleware';
 import { adminDb } from '@/lib/firebase-admin';
 import { timestampToDate } from '@/lib/utils';
 
 // GET /api/kras - Get user KRAs and teams
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'kras', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, userId: string) => {
         try {
             const [kras, teams] = await Promise.all([
                 (async () => {

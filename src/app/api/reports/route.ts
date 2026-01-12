@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateWeeklyReport, getUserWeeklyReports } from '@/lib/reportService';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { withAdmin } from '@/lib/authMiddleware';
 
 // POST /api/reports - Generate weekly report for a user
 export async function POST(request: NextRequest) {
-    return withRBAC(request, 'reports', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, userId: string) => {
         try {
             const { userName, weekStart, weekEnd } = await request.json();
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
 // GET /api/reports - Get reports for a user
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'reports', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, userId: string) => {
         try {
             const { searchParams } = new URL(request.url);
             const limit = parseInt(searchParams.get('limit') || '10');

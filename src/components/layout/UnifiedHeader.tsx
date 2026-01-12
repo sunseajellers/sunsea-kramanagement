@@ -28,7 +28,7 @@ export default function UnifiedHeader({
   onHeaderConfigChange,
   showAdminControls = false
 }: UnifiedHeaderProps) {
-  const { userData, loading, logout } = useAuth()
+  const { userData, loading, logout, isAdmin } = useAuth()
   const [showNotifications, setShowNotifications] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -106,46 +106,19 @@ export default function UnifiedHeader({
   }
 
   const navigation = getNavigation()
-  const filteredNav = navigation.filter(item =>
-    mode === 'public' ? true : item.roles.includes('admin')
-  )
-
-  const getThemeColors = (theme: string) => {
-    switch (theme) {
-      case 'indian':
-        return {
-          primary: 'from-orange-500 via-red-500 to-green-600',
-          hover: 'hover:from-orange-50 hover:to-red-50',
-          focus: 'focus:ring-orange-500 focus:border-orange-500',
-          text: 'text-orange-600'
-        }
-      case 'corporate':
-        return {
-          primary: 'from-blue-600 to-purple-600',
-          hover: 'hover:from-blue-50 hover:to-purple-50',
-          focus: 'focus:ring-blue-500 focus:border-blue-500',
-          text: 'text-blue-600'
-        }
-      default:
-        return {
-          primary: 'from-gray-600 to-gray-800',
-          hover: 'hover:from-gray-50 hover:to-gray-50',
-          focus: 'focus:ring-gray-500 focus:border-gray-500',
-          text: 'text-gray-600'
-        }
-    }
-  }
-
-  const theme = headerConfig?.theme || 'indian'
-  const colors = getThemeColors(theme)
+  const filteredNav = navigation.filter(item => {
+    if (mode === 'public') return true
+    if (isAdmin) return item.roles.includes('admin')
+    return item.roles.includes('user')
+  })
 
   if (loading) {
     return (
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="animate-pulse bg-gray-200 h-8 w-32 rounded"></div>
-            <div className="animate-pulse bg-gray-200 h-8 w-8 rounded-full"></div>
+            <div className="animate-pulse bg-gray-100 h-8 w-32 rounded"></div>
+            <div className="animate-pulse bg-gray-100 h-8 w-8 rounded-full"></div>
           </div>
         </div>
       </header>
@@ -153,16 +126,16 @@ export default function UnifiedHeader({
   }
 
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <header className="bg-white border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Title */}
           <div className="flex items-center">
             {headerConfig?.logo && (
-              <img src={headerConfig.logo} alt="Logo" className="h-8 w-8 mr-3" />
+              <img src={headerConfig.logo} alt="Logo" className="h-8 w-8 mr-3 object-contain" />
             )}
             <Link href={mode === 'admin' ? '/dashboard/admin' : '/dashboard'} className="flex items-center">
-              <h1 className={cn("text-xl font-bold bg-gradient-to-r", colors.primary, "bg-clip-text text-transparent")}>
+              <h1 className="text-xl font-bold text-blue-600">
                 {customTitle || headerConfig?.title || 'JewelMatrix'}
               </h1>
             </Link>
@@ -176,8 +149,8 @@ export default function UnifiedHeader({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    pathname === item.href && "bg-gray-100 text-gray-900"
+                    "text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    pathname === item.href && "text-blue-600 bg-blue-50"
                   )}
                 >
                   {item.name}
@@ -194,10 +167,10 @@ export default function UnifiedHeader({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowHeaderConfig(!showHeaderConfig)}
-                className="hidden md:flex"
+                className="hidden md:flex border-gray-300 text-gray-700"
               >
                 <Palette className="h-4 w-4 mr-2" />
-                Customize
+                Customize UI
               </Button>
             )}
 
@@ -206,30 +179,30 @@ export default function UnifiedHeader({
               <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 text-gray-400 hover:text-gray-500 relative"
+                  className="p-2 text-gray-400 hover:text-blue-600 relative transition-colors"
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border z-50">
-                    <div className="p-4 border-b">
-                      <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50 overflow-hidden">
+                    <div className="p-4 border-b bg-gray-50">
+                      <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">No notifications</div>
+                        <div className="p-8 text-center text-gray-500 text-sm">No new notifications</div>
                       ) : (
                         notifications.slice(0, 5).map((notification) => (
-                          <div key={notification.id} className="p-4 border-b hover:bg-gray-50">
-                            <p className="text-sm text-gray-900">{notification.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(notification.createdAt?.toDate?.() || notification.createdAt).toLocaleDateString()}
+                          <div key={notification.id} className="p-4 border-b last:border-0 hover:bg-gray-50 transition-colors cursor-pointer">
+                            <p className="text-sm text-gray-800 leading-snug">{notification.message}</p>
+                            <p className="text-xs text-gray-400 mt-1.5 flex items-center capitalize">
+                              {new Date(notification.createdAt?.toDate?.() || notification.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </p>
                           </div>
                         ))
@@ -245,32 +218,32 @@ export default function UnifiedHeader({
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100"
+                  className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                 >
-                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium bg-gradient-to-r", colors.primary)}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-blue-600 ring-2 ring-white">
                     {getInitials(userData.fullName)}
                   </div>
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-50">
-                    <div className="p-4 border-b">
-                      <p className="text-sm font-medium text-gray-900">{userData.fullName}</p>
-                      <p className="text-xs text-gray-500">{userData.email}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border z-50 overflow-hidden">
+                    <div className="p-4 border-b bg-gray-50">
+                      <p className="text-sm font-bold text-gray-900 truncate">{userData.fullName}</p>
+                      <p className="text-xs text-gray-500 truncate">{userData.email}</p>
                     </div>
                     <div className="py-1">
-                      <Link href="/dashboard/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <User className="h-4 w-4 mr-3" />
-                        Profile
+                      <Link href="/dashboard/profile" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <User className="h-4 w-4 mr-3 text-gray-400" />
+                        My Profile
                       </Link>
-                      <Link href="/dashboard/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <Settings className="h-4 w-4 mr-3" />
+                      <Link href="/dashboard/settings" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <Settings className="h-4 w-4 mr-3 text-gray-400" />
                         Settings
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <LogOut className="h-4 w-4 mr-3" />
                         Sign out
@@ -284,26 +257,26 @@ export default function UnifiedHeader({
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-gray-400 hover:text-gray-500"
+              className="md:hidden p-2 text-gray-500 hover:text-blue-600 transition-colors"
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && mode !== 'public' && (
-          <div className="md:hidden border-t bg-white">
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="md:hidden border-t bg-white animate-in slide-in-from-top duration-200">
+            <div className="px-2 pt-2 pb-6 space-y-1">
               {filteredNav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium",
+                    "block px-4 py-3 rounded-lg text-base font-medium transition-colors",
                     pathname === item.href
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -316,47 +289,35 @@ export default function UnifiedHeader({
 
         {/* Admin Header Configuration Panel */}
         {mode === 'admin' && showHeaderConfig && (
-          <div className="absolute top-full left-0 right-0 bg-white border-t shadow-lg z-40" ref={configRef}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="absolute top-full left-0 right-0 bg-white border-t border-b shadow-xl z-40" ref={configRef}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Logo URL</label>
                   <input
                     type="text"
                     value={headerConfig?.logo || ''}
-                    onChange={(e) => setHeaderConfig(prev => prev ? {...prev, logo: e.target.value} : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    onChange={(e) => setHeaderConfig(prev => prev ? { ...prev, logo: e.target.value } : null)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="https://example.com/logo.png"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Dashboard Title</label>
                   <input
                     type="text"
                     value={headerConfig?.title || ''}
-                    onChange={(e) => setHeaderConfig(prev => prev ? {...prev, title: e.target.value} : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    onChange={(e) => setHeaderConfig(prev => prev ? { ...prev, title: e.target.value } : null)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
-                  <select
-                    value={headerConfig?.theme || 'indian'}
-                    onChange={(e) => setHeaderConfig(prev => prev ? {...prev, theme: e.target.value as any} : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="indian">Indian</option>
-                    <option value="corporate">Corporate</option>
-                    <option value="default">Default</option>
-                  </select>
-                </div>
               </div>
-              <div className="mt-4 flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowHeaderConfig(false)}>
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button variant="ghost" onClick={() => setShowHeaderConfig(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => handleHeaderConfigUpdate(headerConfig!)}>
-                  Save Changes
+                <Button onClick={() => handleHeaderConfigUpdate(headerConfig!)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Save Appearance
                 </Button>
               </div>
             </div>

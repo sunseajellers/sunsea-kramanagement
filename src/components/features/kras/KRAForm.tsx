@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Loader2, X, Calendar, Target, FileText, Type } from 'lucide-react'
 import { getAllUsers } from '@/lib/userService'
 import { getAllTeams } from '@/lib/teamService'
-import { userHasPermission } from '@/lib/rbacService'
 
 interface Props {
     initialData?: KRA | null
@@ -33,15 +32,14 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
         teamIds: [] as string[],
         startDate: '',
         endDate: '',
+        progress: 0,
     })
 
     useEffect(() => {
         // Load users and teams for assignment (admin/manager only)
         const checkPermission = async () => {
             if (userData?.uid) {
-                const hasAdminAccess = await userHasPermission(userData.uid, 'admin', 'access');
-                const hasManagerAccess = await userHasPermission(userData.uid, 'kra', 'manage');
-                const hasPermission = hasAdminAccess || hasManagerAccess;
+                const hasPermission = !!userData.isAdmin;
                 setHasAssignmentPermission(hasPermission);
                 if (hasPermission) {
                     Promise.all([
@@ -76,6 +74,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                 teamIds: initialData.teamIds || [],
                 startDate: formatDate(initialData.startDate.toString()),
                 endDate: formatDate(initialData.endDate.toString()),
+                progress: initialData.progress || 0,
             })
         }
     }, [initialData])
@@ -113,6 +112,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                 ...form,
                 startDate: new Date(form.startDate),
                 endDate: new Date(form.endDate),
+                progress: form.progress,
                 assignedTo: form.assignedTo.length > 0 ? form.assignedTo : [user.uid],
                 teamIds: form.teamIds,
                 createdBy: user.uid,
@@ -154,214 +154,233 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                 {/* Form */}
                 <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    {/* Title */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Goal Title</label>
-                        <div className="relative">
-                            <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                            <input
-                                name="title"
-                                required
-                                placeholder="e.g., Q4 Sales Targets"
-                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                value={form.title}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
-                        <div className="relative">
-                            <FileText className="absolute left-4 top-4 w-4 h-4 text-gray-400 z-10" />
-                            <textarea
-                                name="description"
-                                required
-                                placeholder="Describe the objectives and scope..."
-                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 h-24 resize-none"
-                                value={form.description}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Target */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Goal</label>
-                        <div className="relative">
-                            <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                            <input
-                                name="target"
-                                required
-                                placeholder="e.g., Increase revenue by 20%"
-                                className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                value={form.target}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Type and Priority Row */}
-                    <div className="grid grid-cols-2 gap-4">
+                        {/* Title */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Type
-                            </label>
-                            <select
-                                name="type"
-                                value={form.type}
-                                onChange={handleChange}
-                                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                required
-                            >
-                                <option value="daily">📅 Daily</option>
-                                <option value="weekly">📆 Weekly</option>
-                                <option value="monthly">🗓️ Monthly</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Priority
-                            </label>
-                            <select
-                                name="priority"
-                                value={form.priority}
-                                onChange={handleChange}
-                                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                required
-                            >
-                                <option value="low">🟢 Low</option>
-                                <option value="medium">🟡 Medium</option>
-                                <option value="high">🟠 High</option>
-                                <option value="critical">🔴 Critical</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
-                        <select
-                            name="status"
-                            value={form.status}
-                            onChange={handleChange}
-                            className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                            required
-                        >
-                            <option value="not_started">⚪ Not Started</option>
-                            <option value="in_progress">🔵 In Progress</option>
-                            <option value="completed">✅ Completed</option>
-                        </select>
-                    </div>
-
-                    {/* Dates */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Start Date</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Goal Title</label>
                             <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                 <input
-                                    type="date"
-                                    name="startDate"
+                                    name="title"
                                     required
+                                    placeholder="e.g., Q4 Sales Targets"
                                     className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                    value={form.startDate}
+                                    value={form.title}
                                     onChange={handleChange}
                                 />
                             </div>
                         </div>
+
+                        {/* Description */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">End Date</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
                             <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                                <input
-                                    type="date"
-                                    name="endDate"
+                                <FileText className="absolute left-4 top-4 w-4 h-4 text-gray-400 z-10" />
+                                <textarea
+                                    name="description"
                                     required
-                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                    value={form.endDate}
+                                    placeholder="Describe the objectives and scope..."
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 h-24 resize-none"
+                                    value={form.description}
                                     onChange={handleChange}
                                 />
                             </div>
                         </div>
-                    </div>
 
-                    {/* Assign to Users (Admin/Manager only) */}
-                    {hasAssignmentPermission && users.length > 0 && (
+                        {/* Target */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Assign To
-                            </label>
-                            <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-                                {users.map(u => (
-                                    <label key={u.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.assignedTo.includes(u.id)}
-                                            onChange={() => handleAssignmentChange(u.id)}
-                                            className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                                        />
-                                        <span className="text-sm text-gray-700">{u.fullName} ({u.role})</span>
-                                    </label>
-                                ))}
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Goal</label>
+                            <div className="relative">
+                                <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                <input
+                                    name="target"
+                                    required
+                                    placeholder="e.g., Increase revenue by 20%"
+                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    value={form.target}
+                                    onChange={handleChange}
+                                />
                             </div>
                         </div>
-                    )}
 
-                    {/* Assign to Teams (Admin/Manager only) */}
-                    {hasAssignmentPermission && teams.length > 0 && (
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Assign to Teams
-                            </label>
-                            <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-                                {teams.map(team => (
-                                    <label key={team.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.teamIds.includes(team.id)}
-                                            onChange={() => handleTeamAssignmentChange(team.id)}
-                                            className="w-4 h-4 text-secondary-600 rounded focus:ring-secondary-500"
-                                        />
-                                        <div className="flex-1">
-                                            <span className="text-sm font-medium text-gray-700">{team.name}</span>
-                                            <span className="text-xs text-gray-500 ml-2">({team.memberIds.length} members)</span>
-                                        </div>
-                                    </label>
-                                ))}
+                        {/* Type and Priority Row */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                    Type
+                                </label>
+                                <select
+                                    name="type"
+                                    value={form.type}
+                                    onChange={handleChange}
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    required
+                                >
+                                    <option value="daily">📅 Daily</option>
+                                    <option value="weekly">📆 Weekly</option>
+                                    <option value="monthly">🗓️ Monthly</option>
+                                </select>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Team assignments will automatically include all current team members
-                            </p>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                    Priority
+                                </label>
+                                <select
+                                    name="priority"
+                                    value={form.priority}
+                                    onChange={handleChange}
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    required
+                                >
+                                    <option value="low">🟢 Low</option>
+                                    <option value="medium">🟡 Medium</option>
+                                    <option value="high">🟠 High</option>
+                                    <option value="critical">🔴 Critical</option>
+                                </select>
+                            </div>
                         </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-5 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary flex items-center px-6 py-2.5"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                isEdit ? 'Save Changes' : 'Create Goal'
-                            )}
-                        </button>
-                    </div>
-                </form>
+                        {/* Status and Progress */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
+                                <select
+                                    name="status"
+                                    value={form.status}
+                                    onChange={handleChange}
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    required
+                                >
+                                    <option value="not_started">⚪ Not Started</option>
+                                    <option value="in_progress">🔵 In Progress</option>
+                                    <option value="completed">✅ Completed</option>
+                                </select>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-xs font-bold text-gray-700">Goal Progress</label>
+                                    <span className="text-xs font-black text-primary-600 bg-white px-2 py-0.5 rounded shadow-sm">
+                                        {form.progress}%
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    name="progress"
+                                    value={form.progress}
+                                    onChange={(e) => setForm(prev => ({ ...prev, progress: parseInt(e.target.value) }))}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Dates */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Start Date</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <input
+                                        type="date"
+                                        name="startDate"
+                                        required
+                                        className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                        value={form.startDate}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">End Date</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <input
+                                        type="date"
+                                        name="endDate"
+                                        required
+                                        className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                        value={form.endDate}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Assign to Users (Admin/Manager only) */}
+                        {hasAssignmentPermission && users.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Assign To
+                                </label>
+                                <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                                    {users.map(u => (
+                                        <label key={u.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                            <input
+                                                type="checkbox"
+                                                checked={form.assignedTo.includes(u.id)}
+                                                onChange={() => handleAssignmentChange(u.id)}
+                                                className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                                            />
+                                            <span className="text-sm text-gray-700">{u.fullName} ({u.role})</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Assign to Teams (Admin/Manager only) */}
+                        {hasAssignmentPermission && teams.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Assign to Teams
+                                </label>
+                                <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                                    {teams.map(team => (
+                                        <label key={team.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                            <input
+                                                type="checkbox"
+                                                checked={form.teamIds.includes(team.id)}
+                                                onChange={() => handleTeamAssignmentChange(team.id)}
+                                                className="w-4 h-4 text-secondary-600 rounded focus:ring-secondary-500"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium text-gray-700">{team.name}</span>
+                                                <span className="text-xs text-gray-500 ml-2">({team.memberIds.length} members)</span>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Team assignments will automatically include all current team members
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-5 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-primary flex items-center px-6 py-2.5"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    isEdit ? 'Save Changes' : 'Create Goal'
+                                )}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserTasks, getTaskStats } from '@/lib/taskService';
-import { withRBAC } from '@/lib/rbacMiddleware';
+import { withAdmin } from '@/lib/authMiddleware';
 import { adminDb } from '@/lib/firebase-admin';
-import { timestampToDate } from '@/lib/utils';
 import { Task } from '@/types';
+
+// Helper to convert Firestore Timestamp to Date
+const timestampToDate = (timestamp: any): Date | null => {
+    if (!timestamp) return null;
+    if (timestamp.toDate) return timestamp.toDate();
+    if (timestamp._seconds) return new Date(timestamp._seconds * 1000);
+    return new Date(timestamp);
+};
 
 // GET /api/tasks - Get user tasks and stats
 export async function GET(request: NextRequest) {
-    return withRBAC(request, 'tasks', 'view', async (_request: NextRequest, userId: string) => {
+    return withAdmin(request, async (_request: NextRequest, userId: string) => {
         const tasksSnap = await adminDb.collection('tasks').where('assignedTo', 'array-contains', userId).get();
         const tasks = tasksSnap.docs.map((doc) => {
             const data = doc.data();

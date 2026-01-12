@@ -1,18 +1,27 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Rajdhani, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { PermissionsProvider } from '@/contexts/PermissionsContext'
 import { Toaster } from 'react-hot-toast'
 import { ErrorBoundary } from '@/components/common'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const rajdhani = Rajdhani({
+    weight: ['400', '500', '600', '700'],
+    subsets: ['latin'],
+    variable: '--font-rajdhani',
+    display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+    weight: ['400', '700'],
+    subsets: ['latin'],
+    variable: '--font-mono',
+    display: 'swap',
+})
 
 export const metadata: Metadata = {
-    title: 'JewelMatrix - Task Delegation & Performance Tracking',
-    description: 'A comprehensive platform for setting KRAs, delegating tasks, monitoring progress, and generating automatic performance reports with scoring.',
-    keywords: 'JewelMatrix, KRA, task management, performance tracking, team collaboration, productivity',
-    authors: [{ name: 'JewelMatrix' }],
+    title: 'Dot Panel - JewelMatrix',
+    description: 'JewelMatrix Admin Panel - Task Delegation & Performance Tracking',
 }
 
 export const viewport: Viewport = {
@@ -26,38 +35,24 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
-            <body className={inter.className}>
+        <html lang="en" suppressHydrationWarning className={`${rajdhani.variable} ${jetbrainsMono.variable}`}>
+            <body suppressHydrationWarning className="min-h-screen bg-white text-slate-900 font-sans selection:bg-purple-500 selection:text-white antialiased">
                 <ErrorBoundary>
                     <AuthProvider>
-                        <PermissionsProvider>
-                            {children}
-                            <Toaster
-                                position="top-right"
-                                toastOptions={{
-                                    duration: 4000,
-                                    style: {
-                                        background: '#fff',
-                                        color: '#363636',
-                                        padding: '16px',
-                                        borderRadius: '12px',
-                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                                    },
-                                    success: {
-                                        iconTheme: {
-                                            primary: '#10B981',
-                                            secondary: '#fff',
-                                        },
-                                    },
-                                    error: {
-                                        iconTheme: {
-                                            primary: '#EF4444',
-                                            secondary: '#fff',
-                                        },
-                                    },
-                                }}
-                            />
-                        </PermissionsProvider>
+                        {children}
+                        <Toaster
+                            position="top-right"
+                            toastOptions={{
+                                duration: 4000,
+                                style: {
+                                    background: '#fff',
+                                    color: '#363636',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                },
+                            }}
+                        />
                     </AuthProvider>
                 </ErrorBoundary>
             </body>

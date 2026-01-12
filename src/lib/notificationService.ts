@@ -80,6 +80,22 @@ export async function getUserNotifications(
     }
 }
 
+/**
+ * Create a notification for a user
+ */
+export async function createNotification(notificationData: Omit<Notification, 'id'>): Promise<string> {
+    try {
+        const docRef = await addDoc(collection(db, 'notifications'), {
+            ...notificationData,
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    } catch (error) {
+        handleError(error, 'Failed to create notification');
+        throw error;
+    }
+}
+
 // ===== ADMIN NOTIFICATION MANAGEMENT =====
 
 /**

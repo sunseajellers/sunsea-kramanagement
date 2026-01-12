@@ -4,18 +4,15 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
-import { userHasPermission } from '@/lib/rbacService'
 
 interface ProtectedRouteProps {
     children: React.ReactNode
     requireAdmin?: boolean
-    requireManager?: boolean
 }
 
 export default function ProtectedRoute({
     children,
-    requireAdmin = false,
-    requireManager = false
+    requireAdmin = false
 }: ProtectedRouteProps) {
     const { user, userData, loading } = useAuth()
     const router = useRouter()
@@ -35,18 +32,8 @@ export default function ProtectedRoute({
             }
 
             // Check admin access
-            if (requireAdmin && userData?.uid) {
-                const hasAdminAccess = await userHasPermission(userData.uid, 'admin', 'access');
-                if (!hasAdminAccess) {
-                    router.push('/dashboard')
-                    return
-                }
-            }
-
-            // Check manager access
-            if (requireManager && userData?.uid) {
-                const hasManagerAccess = await userHasPermission(userData.uid, 'kra', 'manage');
-                if (!hasManagerAccess) {
+            if (requireAdmin) {
+                if (!userData.isAdmin) {
                     router.push('/dashboard')
                     return
                 }
@@ -57,7 +44,7 @@ export default function ProtectedRoute({
         }
 
         checkAccess()
-    }, [user, userData, loading, router, pathname, requireAdmin, requireManager])
+    }, [user, userData, loading, router, pathname, requireAdmin])
 
     // Show loading state
     if (loading) {

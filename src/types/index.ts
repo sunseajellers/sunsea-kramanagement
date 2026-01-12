@@ -13,8 +13,9 @@ export type UserRole = SystemRole
 
 // COMMON TYPES
 export type Priority = 'low' | 'medium' | 'high' | 'critical'
-export type TaskStatus = 'not_started' | 'assigned' | 'in_progress' | 'blocked' | 'completed' | 'cancelled' | 'on_hold'
+export type TaskStatus = 'not_started' | 'assigned' | 'in_progress' | 'blocked' | 'completed' | 'cancelled' | 'on_hold' | 'pending_review' | 'revision_requested'
 export type KRAStatus = 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold'
+export type RevisionStatus = 'pending' | 'resolved' | 'rejected'
 
 // KRA Types
 export type KRAType = 'daily' | 'weekly' | 'monthly'
@@ -85,10 +86,11 @@ export interface User {
     id: string
     fullName: string
     email: string
-    roleIds: string[] // RBAC role IDs
+    roleIds: string[] // RBAC role IDs (legacy, can be removed)
     avatar?: string
     teamId?: string
     isActive?: boolean // Whether user account is active
+    isAdmin?: boolean // Admin access flag
     lastLogin?: Date // Last login timestamp
     createdAt: Date
     updatedAt: Date
@@ -107,6 +109,26 @@ export interface Team {
     updatedAt: Date
 }
 
+// KPI Interface - For weekly tracking within a KRA
+export interface KPI {
+    id: string
+    kraId: string // Parent KRA this KPI belongs to
+    userId: string // Employee this KPI is tracking
+    userName: string
+    name: string // e.g., "% work not done", "% delay in work done"
+    benchmark: number // Target percentage or value
+    // Weekly tracking
+    lastWeekActual: number
+    currentWeekPlanned: number
+    currentWeekActual: number
+    nextWeekTarget: number
+    weekStartDate: Date // Start of the current tracking week
+    previousWeekCommitment?: string // Notes on what was committed last week
+    updatedBy: string
+    createdAt: Date
+    updatedAt: Date
+}
+
 // KRA Interface
 export interface KRA {
     id: string
@@ -119,9 +141,11 @@ export interface KRA {
     teamIds?: string[] // Team IDs for team-wide assignments
     createdBy: string
     status: KRAStatus
+    progress: number // Percentage 0-100
     startDate: Date
     endDate: Date
     attachments?: string[]
+    kpiIds?: string[] // IDs of KPIs linked to this KRA
     createdAt: Date
     updatedAt: Date
 }
@@ -138,9 +162,139 @@ export interface Task {
     assignedBy: string   // User ID who assigned the task
     teamId?: string      // Team this task belongs to
     dueDate: Date
+    progress: number // Percentage 0-100
     attachments?: string[] // File URLs
+    revisionCount?: number // Number of times task has been revised
+    lastRevisionId?: string // ID of the most recent revision request
     createdAt: Date
     updatedAt: Date
+}
+
+// Task Update Interface - Employee status updates (replicates "Tasks Update" sheets)
+export interface TaskUpdate {
+    id: string
+    taskId: string
+    taskTitle: string // Denormalized for display
+    userId: string
+    userName: string
+    statusUpdate: string // Current status/progress description
+    revisionDate?: Date // Requested new due date
+    remarks?: string // Additional notes
+    timestamp: Date
+}
+
+// Task Revision Interface
+export interface TaskRevision {
+    id: string
+    taskId: string
+    requestedBy: string // Manager/Admin who requested revision
+    requestedByName: string
+    requestedAt: Date
+    reason: string // Why revision is needed
+    status: RevisionStatus
+    resolvedBy?: string // Employee who resolved the revision
+    resolvedByName?: string
+    resolvedAt?: Date
+    resolutionNotes?: string // Employee's notes on what was fixed
+    rejectedBy?: string // If revision was rejected
+    rejectedAt?: Date
+    rejectionReason?: string
+}
+
+// Task Template Interface - For reusable task configurations
+export interface TaskTemplate {
+    id: string
+    name: string
+    description: string
+    templateTitle: string // Default title for tasks created from this template
+    templateDescription: string // Default description
+    priority: Priority
+    defaultDueDate?: number // Days from creation
+    defaultAssignees?: string[] // Default user IDs
+    teamId?: string
+    checklist?: string[] // Default checklist items
+    tags?: string[]
+    createdBy: string
+    isPublic: boolean // Can other users use this template?
+    usageCount: number // How many times this template has been used
+    createdAt: Date
+    updatedAt: Date
+}
+
+// Bulk Task Operation Interface - For tracking bulk operations
+export interface BulkTaskOperation {
+    id: string
+    name: string
+    createdBy: string
+    createdByName: string
+    taskIds: string[] // IDs of tasks created in this operation
+    totalTasks: number
+    successfulTasks: number
+    failedTasks: number
+    status: 'pending' | 'processing' | 'completed' | 'failed'
+    errors?: string[] // Error messages for failed tasks
+    source: 'csv' | 'template' | 'manual' // How tasks were created
+    createdAt: Date
+    completedAt?: Date
+}
+
+// Performance Parameter Interface - For defining scoring criteria
+export interface PerformanceParameter {
+    id: string
+    name: string
+    description: string
+    weight: number // Percentage weight (0-100)
+    category: 'quality' | 'timeliness' | 'accuracy' | 'completeness' | 'efficiency' | 'custom'
+    minScore: number // Minimum score value
+    maxScore: number // Maximum score value
+    isActive: boolean
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
+}
+
+// Performance Score Interface - For individual task/KRA scores
+export interface PerformanceScore {
+    id: string
+    taskId?: string // Task being scored
+    kraId?: string // KRA being scored
+    userId: string // User being scored
+    userName: string
+    parameterId: string // Performance parameter
+    parameterName: string
+    score: number // Actual score value
+    maxScore: number // Maximum possible score
+    percentage: number // Score as percentage
+    notes?: string // Evaluator notes
+    evaluatedBy: string // Who gave the score
+    evaluatedByName: string
+    evaluatedAt: Date
+    period?: string // e.g., "2024-W01" for weekly scores
+}
+
+// MIS Report Interface - Aggregated performance data
+export interface MISReport {
+    id: string
+    userId: string
+    userName: string
+    teamId?: string
+    period: string // e.g., "2024-W01", "2024-01"
+    periodType: 'daily' | 'weekly' | 'monthly'
+    totalTasks: number
+    completedTasks: number
+    onTimeTasks: number
+    delayedTasks: number
+    completionRate: number // Percentage
+    onTimeRate: number // Percentage
+    averageScore: number // Overall average score
+    parameterScores: {
+        parameterId: string
+        parameterName: string
+        averageScore: number
+        weight: number
+    }[]
+    weightedScore: number // Final weighted score
+    generatedAt: Date
 }
 
 // Task-related data stored in SUBCOLLECTIONS (not embedded)
@@ -257,7 +411,9 @@ export interface DashboardStats {
     completedTasks: number
     pendingTasks: number
     overdueTasks: number
-    activeKRAs: number
+    totalKRAs: number
+    completedKRAs: number
+    activeKRAs?: number
     completionRate: number
     weeklyScore: number
 }
@@ -318,7 +474,7 @@ export interface TeamWeeklyReport {
 export interface NavigationItem {
     name: string
     href: string
-    roles: UserRole[]
+    roles: RoleName[]
 }
 
 export type HeaderTheme = 'default' | 'indian' | 'corporate'
