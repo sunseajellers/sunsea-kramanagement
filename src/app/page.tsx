@@ -104,7 +104,7 @@ export default function LoginPage() {
                     <div className="flex justify-center">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200">
                             <Shield className="h-4 w-4 text-purple-600" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-700">Admin Restricted Area</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-purple-700">Admin Restricted Area</span>
                         </div>
                     </div>
 
@@ -121,7 +121,7 @@ export default function LoginPage() {
                 <CardContent className="space-y-6 pt-4">
                     {/* Error Message */}
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[10px] font-bold uppercase tracking-wide">
+                        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">
                             {error}
                         </div>
                     )}
@@ -129,7 +129,7 @@ export default function LoginPage() {
                     {/* Email/Password Form */}
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-slate-700 text-[10px] font-black uppercase tracking-widest">Email</Label>
+                            <Label htmlFor="email" className="text-slate-600 text-xs font-semibold uppercase tracking-wide">Email</Label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <Input
@@ -145,7 +145,7 @@ export default function LoginPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="text-slate-700 text-[10px] font-black uppercase tracking-widest">Password</Label>
+                            <Label htmlFor="password" className="text-slate-600 text-xs font-semibold uppercase tracking-wide">Password</Label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <Input
@@ -169,7 +169,7 @@ export default function LoginPage() {
 
                         <Button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-black uppercase tracking-widest h-11 shadow-lg shadow-purple-500/20"
+                            className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-bold tracking-wide h-11 shadow-lg shadow-purple-500/20"
                             disabled={loginLoading}
                         >
                             {loginLoading ? (
@@ -185,7 +185,7 @@ export default function LoginPage() {
 
                     {/* Security Notice */}
                     <div className="pt-4 border-t border-slate-100">
-                        <p className="text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                        <p className="text-center text-xs text-slate-400 font-medium">
                             🔒 Encryption Active | v2.4.0 High-Density Secure Node
                         </p>
                     </div>

@@ -9,22 +9,26 @@ import { Button } from '@/components/ui/button'
 // Analytics page without card imports as custom divs are used
 
 export default function AdminAnalyticsPage() {
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const [analytics, setAnalytics] = useState<any>(null)
     const [teamDetails, setTeamDetails] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'users' | 'reports'>('overview')
 
     useEffect(() => {
-        loadAnalytics()
-    }, [])
+        // Wait for auth to load and user to be available
+        if (!authLoading && user) {
+            loadAnalytics()
+        }
+    }, [authLoading, user])
 
     const loadAnalytics = async () => {
+        if (!user) return
         try {
             setLoading(true)
             const result = await authenticatedJsonFetch('/api/analytics', {
                 headers: {
-                    'x-user-id': user!.uid
+                    'x-user-id': user.uid
                 }
             })
             if (result.success && result.data) {
@@ -40,10 +44,11 @@ export default function AdminAnalyticsPage() {
     }
 
     const loadTeamDetails = async (teamId: string) => {
+        if (!user) return
         try {
             const result = await authenticatedJsonFetch(`/api/analytics?type=team&teamId=${teamId}`, {
                 headers: {
-                    'x-user-id': user!.uid
+                    'x-user-id': user.uid
                 }
             })
             if (result.success && result.data) {
@@ -57,10 +62,14 @@ export default function AdminAnalyticsPage() {
     }
 
     const exportReport = async (reportType: string) => {
+        if (!user) return
         try {
             const result = await authenticatedJsonFetch('/api/analytics/reports', {
                 method: 'POST',
                 body: JSON.stringify({ reportType }),
+                headers: {
+                    'x-user-id': user.uid
+                }
             });
             if (result.success && result.data) {
                 const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
@@ -96,8 +105,8 @@ export default function AdminAnalyticsPage() {
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Strategic Intelligence</h1>
-                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+                    <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
                         <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
                         Performance analytics & reporting
                     </p>
@@ -106,35 +115,34 @@ export default function AdminAnalyticsPage() {
                     <Button
                         variant="ghost"
                         onClick={() => loadAnalytics()}
-                        className="h-12 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100"
+                        className="h-10 px-5 rounded-lg font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all border border-gray-200 hover:border-blue-200"
                     >
-                        <Activity className="h-4 w-4 mr-3" />
-                        Refresh Engine
+                        <Activity className="h-4 w-4 mr-2" />
+                        Refresh
                     </Button>
                 </div>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex gap-2 p-1.5 bg-gray-50 rounded-3xl w-fit">
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
                 {[
-                    { id: 'overview', label: 'OVERVIEW', icon: Activity },
-                    { id: 'teams', label: 'TEAMS', icon: Users },
-                    { id: 'users', label: 'USERS', icon: Target },
-                    { id: 'reports', label: 'REPORTS', icon: FileText }
+                    { id: 'overview', label: 'Overview', icon: Activity },
+                    { id: 'teams', label: 'Teams', icon: Users },
+                    { id: 'users', label: 'Users', icon: Target },
+                    { id: 'reports', label: 'Reports', icon: FileText }
                 ].map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl text-[10px] font-black tracking-widest transition-all ${activeTab === tab.id
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                             ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-400 hover:text-gray-600'
+                            : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         <tab.icon className="w-4 h-4" />
                         {tab.label}
                     </button>
-                ))}
-            </div>
+                ))}             </div>
 
             {/* Content based on active tab */}
             {activeTab === 'overview' && analytics && (

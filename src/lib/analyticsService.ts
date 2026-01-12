@@ -1,12 +1,64 @@
 // src/lib/analyticsService.ts
 import 'server-only'
 import { DashboardStats, Task, KRA } from '@/types';
-import { getUserTasks } from './taskService';
-import { getUserKRAs } from './kraService';
 import { getAllUsers } from './server/userService';
 import { getAllTeams } from './server/teamService';
 import { handleError, timestampToDate } from './utils';
 import { adminDb } from './firebase-admin';
+
+// Server-side helper: Get user tasks using admin SDK
+async function getServerUserTasks(uid: string): Promise<Task[]> {
+    const tasksSnap = await adminDb.collection('tasks').where('assignedTo', 'array-contains', uid).get();
+    return tasksSnap.docs.map((doc) => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            dueDate: timestampToDate(data.dueDate),
+            createdAt: timestampToDate(data.createdAt),
+            updatedAt: timestampToDate(data.updatedAt)
+        } as Task;
+    });
+}
+
+// Server-side helper: Get user KRAs using admin SDK
+async function getServerUserKRAs(uid: string, teamId?: string): Promise<KRA[]> {
+    const kraMap = new Map<string, KRA>();
+
+    // Get KRAs assigned directly to user
+    const userSnap = await adminDb.collection('kras').where('assignedTo', 'array-contains', uid).get();
+    userSnap.docs.forEach((doc) => {
+        const data = doc.data();
+        kraMap.set(doc.id, {
+            id: doc.id,
+            ...data,
+            startDate: timestampToDate(data.startDate),
+            endDate: timestampToDate(data.endDate),
+            createdAt: timestampToDate(data.createdAt),
+            updatedAt: timestampToDate(data.updatedAt)
+        } as KRA);
+    });
+
+    // Get team KRAs if user has a team
+    if (teamId) {
+        const teamSnap = await adminDb.collection('kras').where('teamIds', 'array-contains', teamId).get();
+        teamSnap.docs.forEach((doc) => {
+            if (!kraMap.has(doc.id)) {
+                const data = doc.data();
+                kraMap.set(doc.id, {
+                    id: doc.id,
+                    ...data,
+                    startDate: timestampToDate(data.startDate),
+                    endDate: timestampToDate(data.endDate),
+                    createdAt: timestampToDate(data.createdAt),
+                    updatedAt: timestampToDate(data.updatedAt)
+                } as KRA);
+            }
+        });
+    }
+
+    return Array.from(kraMap.values());
+}
 
 /**
  * Simple aggregation for a user's dashboard.
@@ -193,8 +245,8 @@ export async function getAdminDashboardAnalytics() {
         ]);
 
         // Get all tasks and KRAs for comprehensive analysis
-        const allTasksPromises = users.map(user => getUserTasks(user.id));
-        const allKRAsPromises = users.map(user => getUserKRAs(user.id));
+        const allTasksPromises = users.map(user => getServerUserTasks(user.id));
+        const allKRAsPromises = users.map(user => getServerUserKRAs(user.id, user.teamId));
 
         const [allTasksArrays, allKRAsArrays] = await Promise.all([
             Promise.all(allTasksPromises),
@@ -335,8 +387,8 @@ export async function getTeamDetailedAnalytics(teamId: string) {
         const teamMembers = users.filter(u => u.teamId === teamId);
 
         // Get all tasks and KRAs for team members
-        const memberTasksPromises = teamMembers.map(user => getUserTasks(user.id));
-        const memberKRAsPromises = teamMembers.map(user => getUserKRAs(user.id));
+        const memberTasksPromises = teamMembers.map(user => getServerUserTasks(user.id));
+        const memberKRAsPromises = teamMembers.map(user => getServerUserKRAs(user.id, user.teamId));
 
         const [memberTasksArrays, memberKRAsArrays] = await Promise.all([
             Promise.all(memberTasksPromises),

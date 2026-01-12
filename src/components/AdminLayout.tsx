@@ -59,11 +59,6 @@ const menuItems = [
         icon: Award,
     },
     {
-        href: '/admin/notifications',
-        label: 'Notifications',
-        icon: Bell,
-    },
-    {
         href: '/admin/system',
         label: 'System',
         icon: Server,
@@ -145,7 +140,10 @@ export default function AdminLayout({
                         {/* Desktop Navigation - All Items Distributed */}
                         <div className="hidden lg:flex items-center gap-1 flex-1 justify-between w-full">
                             {menuItems.map((item) => {
-                                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                                // Special handling for dashboard - only exact match
+                                const isActive = item.href === '/admin'
+                                    ? pathname === '/admin'
+                                    : pathname === item.href || pathname.startsWith(item.href + '/');
                                 return (
                                     <Link
                                         key={item.href}

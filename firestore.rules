@@ -150,5 +150,37 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated();
     }
+    
+    // ========================================
+    // NOTIFICATION RULES (Admin Config)
+    // ========================================
+    match /notificationRules/{ruleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // NOTIFICATION ANALYTICS
+    // ========================================
+    match /notificationAnalytics/{analyticsId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // SCORING CONFIGURATION
+    // ========================================
+    match /scoringConfig/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // SCORING WEIGHTS
+    // ========================================
+    match /scoringWeights/{weightId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
   }
 }

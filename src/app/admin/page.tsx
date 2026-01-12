@@ -74,14 +74,6 @@ export default function AdminHome() {
             stats: analytics ? `${analytics.overview?.totalTasks || 0} Tasks` : '...',
         },
         {
-            href: '/admin/notifications',
-            icon: Bell,
-            title: 'Notifications',
-            description: 'Notification rules and templates',
-            bgColor: 'bg-rose-50',
-            iconColor: 'text-rose-600',
-        },
-        {
             href: '/admin/reports',
             icon: FileText,
             title: 'Reports',
@@ -183,8 +175,8 @@ export default function AdminHome() {
             {/* Dashboard Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">System Overview</h1>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900">System Overview</h1>
+                    <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
                         <Activity className="h-3 w-3 text-blue-500" />
                         Live platform monitoring & management
                     </p>
@@ -220,10 +212,10 @@ export default function AdminHome() {
                                 <div className={`w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center ${stat.color}`}>
                                     <stat.icon className="h-5 w-5" />
                                 </div>
-                                <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">{stat.trend}</span>
+                                <span className="text-xs font-semibold text-green-500">{stat.trend}</span>
                             </div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">{stat.label}</p>
-                            <h3 className="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tighter">{stat.value}</h3>
+                            <p className="text-xs font-medium text-gray-500 leading-none">{stat.label}</p>
+                            <h3 className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</h3>
                         </CardContent>
                     </Card>
                 ))}
@@ -234,7 +226,7 @@ export default function AdminHome() {
                 {/* Main Modules */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Management Modules</h2>
+                        <h2 className="text-sm font-semibold text-gray-700">Management Modules</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {adminCards.map((card, index) => (
@@ -244,10 +236,10 @@ export default function AdminHome() {
                                         <card.icon className="h-6 w-6" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{card.title}</h3>
-                                        <p className="text-gray-400 text-[10px] leading-relaxed mt-1 line-clamp-2 font-bold">{card.description}</p>
+                                        <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{card.title}</h3>
+                                        <p className="text-gray-500 text-xs leading-relaxed mt-1 line-clamp-2">{card.description}</p>
                                         {card.stats && (
-                                            <div className="inline-block mt-3 px-2 py-0.5 bg-gray-50 rounded text-[9px] font-black text-blue-600 uppercase tracking-widest">
+                                            <div className="inline-block mt-3 px-2 py-0.5 bg-gray-100 rounded text-xs font-medium text-blue-600">
                                                 {card.stats}
                                             </div>
                                         )}
@@ -260,11 +252,11 @@ export default function AdminHome() {
 
                 {/* Side Analytics */}
                 <div className="space-y-6">
-                    <h2 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Live Insights</h2>
+                    <h2 className="text-sm font-semibold text-gray-700">Live Insights</h2>
 
                     <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
                         <CardHeader className="pb-2 border-b border-gray-50 flex flex-row items-center justify-between">
-                            <CardTitle className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Task Distribution</CardTitle>
+                            <CardTitle className="text-xs font-semibold text-gray-500">Task Distribution</CardTitle>
                             <Activity className="h-3 w-3 text-blue-500" />
                         </CardHeader>
                         <CardContent className="p-6">
@@ -276,8 +268,8 @@ export default function AdminHome() {
                                     blocked: 0
                                 }} />
                             ) : (
-                                <div className="h-40 flex items-center justify-center text-[10px] font-black text-gray-300 uppercase italic">
-                                    Syncing data...
+                                <div className="h-40 flex items-center justify-center text-sm text-gray-400">
+                                    Loading data...
                                 </div>
                             )}
                         </CardContent>
@@ -285,15 +277,15 @@ export default function AdminHome() {
 
                     <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
                         <CardHeader className="pb-2 border-b border-gray-50 flex flex-row items-center justify-between">
-                            <CardTitle className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Priority Levels</CardTitle>
+                            <CardTitle className="text-xs font-semibold text-gray-500">Priority Levels</CardTitle>
                             <Shield className="h-3 w-3 text-amber-500" />
                         </CardHeader>
                         <CardContent className="p-6">
                             {analytics ? (
                                 <TaskPriorityChart data={analytics.distributions?.priority || { low: 0, medium: 0, high: 0, critical: 0 }} />
                             ) : (
-                                <div className="h-40 flex items-center justify-center text-[10px] font-black text-gray-300 uppercase italic">
-                                    Syncing data...
+                                <div className="h-40 flex items-center justify-center text-sm text-gray-400">
+                                    Loading data...
                                 </div>
                             )}
                         </CardContent>
@@ -307,14 +299,14 @@ export default function AdminHome() {
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Database Linked</span>
+                            <span className="text-xs text-gray-500">Database Linked</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-blue-500" />
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">API v1.02 Ready</span>
+                            <span className="text-xs text-gray-500">API v1.02 Ready</span>
                         </div>
                     </div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">© 2026 Admin Control Panel</p>
+                    <p className="text-xs text-gray-400">© 2026 Admin Control Panel</p>
                 </div>
             </div>
         </div>
