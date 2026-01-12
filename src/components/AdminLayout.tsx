@@ -130,10 +130,10 @@ export default function AdminLayout({
                     <div className="flex h-14 items-center gap-1">
                         {/* Logo */}
                         <div className="flex-shrink-0">
-                            <Link href="/admin/dashboard" className="flex items-center">
+                            <Link href="/admin" className="flex items-center">
                                 <img
                                     src="/logo.png"
-                                    alt="DotDefence Logo"
+                                    alt="SunSeaJwellers Logo"
                                     className="h-24 w-auto -my-5"
                                 />
                             </Link>
@@ -168,7 +168,7 @@ export default function AdminLayout({
 
                             {/* View Site */}
                             <a
-                                href={process.env.NEXT_PUBLIC_SITE_URL || 'https://dotdefence.in'}
+                                href="#"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap"

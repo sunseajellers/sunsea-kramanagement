@@ -30,11 +30,11 @@ interface DbStats {
 }
 
 export default function AdminHome() {
-    const { user } = useAuth();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
     const [dbStats, setDbStats] = useState<DbStats | null>(null);
     const [analytics, setAnalytics] = useState<any>(null);
-    const [, setLoading] = useState(true);
+    const [, setDataLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const adminCards = [
@@ -111,12 +111,15 @@ export default function AdminHome() {
     ];
 
     useEffect(() => {
-        loadDashboardData();
-    }, []);
+        // Only fetch data when auth is ready and user is admin
+        if (!authLoading && user && isAdmin) {
+            loadDashboardData();
+        }
+    }, [authLoading, user, isAdmin]);
 
     const loadDashboardData = async () => {
         try {
-            setLoading(true);
+            setDataLoading(true);
             setError(null);
             const [healthData, statsData, analyticsResult] = await Promise.all([
                 getSystemHealth(),
@@ -134,15 +137,46 @@ export default function AdminHome() {
             if (analyticsResult.success && analyticsResult.data) {
                 setAnalytics(analyticsResult.data);
             } else {
-                throw new Error(analyticsResult.error || 'Failed to load analytics');
+                // Don't throw error, just log it - permission issues are handled gracefully
+                console.warn('Analytics fetch returned:', analyticsResult.error);
             }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
-            setError('Failed to load dashboard data. Please try again.');
+            setError('Failed to load some dashboard data. Check your admin permissions.');
         } finally {
-            setLoading(false);
+            setDataLoading(false);
         }
     };
+
+    // Show loading state while auth is initializing
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+                    <p className="text-sm text-gray-500">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show message if user is not admin
+    if (!isAdmin) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="max-w-md text-center p-8 bg-amber-50 border border-amber-200 rounded-2xl">
+                    <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Access Required</h2>
+                    <p className="text-gray-600 text-sm mb-4">
+                        Your account doesn&apos;t have admin privileges. Please contact the system administrator to get access.
+                    </p>
+                    <p className="text-xs text-gray-400">
+                        User ID: {user?.uid?.slice(0, 8)}...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10 pb-12">
