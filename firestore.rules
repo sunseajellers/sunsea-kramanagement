@@ -182,5 +182,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
+    
+    // ========================================
+    // CONFIG COLLECTION (General Settings)
+    // ========================================
+    match /config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
   }
 }

@@ -4,7 +4,6 @@ import { db } from './firebase';
 import { TaskRevision } from '@/types';
 import { timestampToDate, handleError } from './utils';
 import { updateTask } from './taskService';
-import { createNotification } from './notificationService';
 
 /**
  * Request a revision for a task
@@ -40,25 +39,6 @@ export async function requestTaskRevision(
             revisionCount: (await getTaskRevisionCount(taskId)) + 1,
             updatedAt: new Date()
         });
-
-        // Get task details to notify assignees
-        const taskDoc = await getDocs(query(collection(db, 'tasks'), where('__name__', '==', taskId)));
-        if (!taskDoc.empty) {
-            const task = taskDoc.docs[0].data();
-
-            // Notify all assignees
-            for (const assigneeId of task.assignedTo || []) {
-                await createNotification({
-                    userId: assigneeId,
-                    type: 'task_updated',
-                    title: 'Revision Requested',
-                    message: `${requestedByName} requested a revision for task: ${task.title}`,
-                    link: `/dashboard/tasks/${taskId}`,
-                    read: false,
-                    createdAt: new Date()
-                });
-            }
-        }
 
         return docRef.id;
     } catch (error) {
@@ -101,17 +81,6 @@ export async function resolveTaskRevision(
             await updateTask(revision.taskId, {
                 status: 'pending_review',
                 updatedAt: new Date()
-            });
-
-            // Notify the person who requested the revision
-            await createNotification({
-                userId: revision.requestedBy,
-                type: 'task_updated',
-                title: 'Revision Completed',
-                message: `${resolvedByName} has completed the requested revision`,
-                link: `/dashboard/tasks/${revision.taskId}`,
-                read: false,
-                createdAt: new Date()
             });
         }
     } catch (error) {

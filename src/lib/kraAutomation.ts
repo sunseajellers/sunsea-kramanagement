@@ -3,7 +3,6 @@ import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { KRA, KRAType } from '@/types';
 import { timestampToDate, handleError } from './utils';
-import { createNotification } from './notificationService';
 
 /**
  * KRA Template for automation
@@ -152,19 +151,6 @@ export async function generateScheduledKRAs(): Promise<{ generated: number; erro
                     lastGenerated: new Date(),
                     updatedAt: new Date()
                 });
-
-                // Notify assignees
-                for (const userId of template.assignedTo) {
-                    await createNotification({
-                        userId,
-                        type: 'kra_assigned',
-                        title: `New ${template.type} KRA`,
-                        message: `New KRA assigned: ${template.title}`,
-                        link: `/dashboard/kras`,
-                        read: false,
-                        createdAt: new Date()
-                    });
-                }
 
                 results.generated++;
             } catch (error: any) {

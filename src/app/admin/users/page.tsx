@@ -1,9 +1,5 @@
-import { UserManagement } from '@/components/features/users'
+import UserManagement from '@/components/features/users/UserManagement';
 
 export default function UsersPage() {
-    return (
-        <div className="container mx-auto py-6">
-            <UserManagement />
-        </div>
-    )
+    return <UserManagement />;
 }

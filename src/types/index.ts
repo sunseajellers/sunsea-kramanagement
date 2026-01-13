@@ -20,21 +20,6 @@ export type RevisionStatus = 'pending' | 'resolved' | 'rejected'
 // KRA Types
 export type KRAType = 'daily' | 'weekly' | 'monthly'
 
-// NOTIFICATION TYPES
-export type NotificationType =
-    | 'task_assigned'
-    | 'task_updated'
-    | 'task_overdue'
-    | 'kra_assigned'
-    | 'kra_updated'
-    | 'kra_deadline'
-    | 'team_update'
-    | 'system_alert'
-    | 'performance_alert'
-    | 'report_ready';
-
-export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
-
 // RBAC Types - Supports both system and custom roles
 export interface Role {
     id: string
@@ -162,10 +147,13 @@ export interface Task {
     assignedBy: string   // User ID who assigned the task
     teamId?: string      // Team this task belongs to
     dueDate: Date
+    finalTargetDate?: Date // Extended deadline (if revised)
     progress: number // Percentage 0-100
     attachments?: string[] // File URLs
     revisionCount?: number // Number of times task has been revised
     lastRevisionId?: string // ID of the most recent revision request
+    kpiScore?: number // Performance score (0-100)
+    category?: string // Task category/type
     createdAt: Date
     updatedAt: Date
 }
@@ -359,50 +347,6 @@ export interface ScoreBreakdown {
     qualityScore: number
     kraAlignmentScore: number
     totalScore: number
-}
-
-// Notification Interface
-export interface Notification {
-    id: string
-    userId: string
-    type: NotificationType
-    title: string
-    message: string
-    link?: string
-    read: boolean
-    createdAt: Date
-}
-
-// Notification Rule Interface (Admin Management)
-export interface NotificationRule {
-    id: string
-    name: string
-    description: string
-    type: NotificationType
-    conditions: {
-        trigger: string
-        threshold?: number
-        filters?: any
-    }
-    template: {
-        title: string
-        message: string
-        priority: Priority
-    }
-    recipients: {
-        roles: string[]
-        teams?: string[]
-        users?: string[]
-    }
-    schedule: {
-        enabled: boolean
-        frequency?: 'immediate' | 'daily' | 'weekly'
-        time?: string
-    }
-    isActive: boolean
-    createdBy: string
-    createdAt: Date
-    updatedAt: Date
 }
 
 // Dashboard Stats Interface

@@ -99,16 +99,6 @@ export function NoSearchResultsEmptyState({ onClear }: { onClear?: () => void })
     );
 }
 
-export function NoNotificationsEmptyState() {
-    return (
-        <EmptyState
-            icon={require('lucide-react').Bell}
-            title="All caught up!"
-            description="You don't have any notifications right now. We'll notify you when something important happens."
-        />
-    );
-}
-
 export function NoReportsEmptyState({ onGenerate }: { onGenerate?: () => void }) {
     return (
         <EmptyState

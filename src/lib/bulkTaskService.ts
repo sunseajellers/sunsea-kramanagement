@@ -4,7 +4,6 @@ import { db } from './firebase';
 import { BulkTaskOperation, Task, Priority, TaskStatus } from '@/types';
 import { handleError } from './utils';
 import { createTask } from './taskService';
-import { createNotification } from './notificationService';
 
 /**
  * CSV Task Data Interface
@@ -149,21 +148,6 @@ export async function createBulkTasksFromCSV(
                 const taskId = await createTask(taskData);
                 taskIds.push(taskId);
 
-                // Notify assignee
-                try {
-                    await createNotification({
-                        userId: csvTask.assignedTo,
-                        type: 'task_assigned',
-                        title: 'New Task Assigned',
-                        message: `You have been assigned a new task: ${csvTask.title}`,
-                        link: `/dashboard/tasks/${taskId}`,
-                        read: false,
-                        createdAt: new Date()
-                    });
-                } catch (notifError) {
-                    console.error('Failed to send notification:', notifError);
-                    // Don't fail the whole operation for notification errors
-                }
             } catch (error: any) {
                 errors.push(`Row ${i + 2}: ${error.message}`);
             }

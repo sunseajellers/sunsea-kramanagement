@@ -6,8 +6,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { Users, Settings, BarChart3, Award, FileText, Bell, Server, Activity, Database, Shield, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, BarChart3, Award, FileText, Server, Activity, Database, Shield, AlertTriangle, TrendingUp, Zap, ArrowRight } from 'lucide-react';
 import { TaskStatusChart, TaskPriorityChart } from '@/components/features/analytics'
 
 interface SystemHealth {
@@ -39,67 +38,45 @@ export default function AdminHome() {
 
     const adminCards = [
         {
-            href: '/admin/users',
-            icon: Users,
-            title: 'Users',
-            description: 'Manage users and platform access',
-            bgColor: 'bg-blue-50',
+            href: '/admin/organization',
+            icon: Shield,
+            title: 'Organization Hub',
+            description: 'Manage workforce, teams, and performance monitoring',
+            bgColor: 'from-blue-500 to-cyan-500',
+            iconBg: 'bg-blue-50',
             iconColor: 'text-blue-600',
-            stats: dbStats ? `${dbStats.users} Total` : '...',
+            stats: dbStats ? `${dbStats.users} Users / ${dbStats.teams} Teams` : '...',
         },
         {
-            href: '/admin/teams',
-            icon: Settings,
-            title: 'Teams',
-            description: 'Create and manage organizational teams',
-            bgColor: 'bg-indigo-50',
-            iconColor: 'text-indigo-600',
-            stats: dbStats ? `${dbStats.teams} Total` : '...',
-        },
-        {
-            href: '/admin/scoring',
-            icon: Award,
-            title: 'Scoring',
-            description: 'Configure performance scoring weights',
-            bgColor: 'bg-green-50',
-            iconColor: 'text-green-600',
-        },
-        {
-            href: '/admin/analytics',
-            icon: BarChart3,
-            title: 'Analytics',
-            description: 'System-wide performance analytics',
-            bgColor: 'bg-amber-50',
-            iconColor: 'text-amber-600',
-            stats: analytics ? `${analytics.overview?.totalTasks || 0} Tasks` : '...',
-        },
-        {
-            href: '/admin/reports',
+            href: '/admin/operations',
             icon: FileText,
-            title: 'Reports',
-            description: 'View and manage team reports',
-            bgColor: 'bg-sky-50',
-            iconColor: 'text-sky-600',
-            stats: dbStats ? `${dbStats.reports} Total` : '...',
+            title: 'Operations Hub',
+            description: 'Global task management and KRA automation engine',
+            bgColor: 'from-purple-500 to-fuchsia-500',
+            iconBg: 'bg-purple-50',
+            iconColor: 'text-purple-600',
+            stats: dbStats ? `${dbStats.tasks} Active Tasks` : '...',
+        },
+        {
+            href: '/admin/performance',
+            icon: BarChart3,
+            title: 'Performance Hub',
+            description: 'Analytics, scoring algorithms, and historical archives',
+            bgColor: 'from-amber-500 to-orange-500',
+            iconBg: 'bg-amber-50',
+            iconColor: 'text-amber-600',
+            stats: analytics ? `${analytics.overview?.overallCompletionRate}% Comp. Rate` : '...',
         },
         {
             href: '/admin/system',
             icon: Server,
-            title: 'System',
-            description: 'Advanced administration & config',
-            bgColor: 'bg-red-50',
+            title: 'System Config',
+            description: 'Platform configuration and administration tools',
+            bgColor: 'from-rose-500 to-pink-500',
+            iconBg: 'bg-red-50',
             iconColor: 'text-red-600',
             stats: systemHealth ? `${systemHealth.uptime}% Uptime` : '...',
         },
-        {
-            href: '/admin/team-hub',
-            icon: Users,
-            title: 'Team Hub',
-            description: 'Employee task overview & quick assignment',
-            bgColor: 'bg-violet-50',
-            iconColor: 'text-violet-600',
-            stats: dbStats ? `${dbStats.users} Employees` : '...',
-        }
     ];
 
     useEffect(() => {
@@ -143,10 +120,12 @@ export default function AdminHome() {
     // Show loading state while auth is initializing
     if (authLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="page-container flex-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
-                    <p className="text-sm text-gray-500">Loading...</p>
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center animate-pulse">
+                        <Activity className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Loading dashboard...</p>
                 </div>
             </div>
         );
@@ -155,15 +134,17 @@ export default function AdminHome() {
     // Show message if user is not admin
     if (!isAdmin) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="max-w-md text-center p-8 bg-amber-50 border border-amber-200 rounded-2xl">
-                    <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <div className="page-container flex-center">
+                <div className="max-w-md text-center p-8 glass-card">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-50 flex items-center justify-center">
+                        <AlertTriangle className="h-8 w-8 text-amber-500" />
+                    </div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Access Required</h2>
-                    <p className="text-gray-600 text-sm mb-4">
+                    <p className="text-gray-500 text-sm mb-4">
                         Your account doesn&apos;t have admin privileges. Please contact the system administrator to get access.
                     </p>
-                    <p className="text-xs text-gray-400">
-                        User ID: {user?.uid?.slice(0, 8)}...
+                    <p className="text-xs text-gray-400 font-mono bg-gray-50 rounded-lg px-3 py-2">
+                        User ID: {user?.uid?.slice(0, 12)}...
                     </p>
                 </div>
             </div>
@@ -171,143 +152,150 @@ export default function AdminHome() {
     }
 
     return (
-        <div className="space-y-10 pb-12">
-            {/* Dashboard Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="page-container">
+            {/* Page Header - Compact */}
+            <div className="flex items-center justify-between mb-5">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">System Overview</h1>
-                    <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
-                        <Activity className="h-3 w-3 text-blue-500" />
+                    <h1 className="text-xl font-bold text-gray-900">System Overview</h1>
+                    <p className="text-gray-400 text-xs font-medium flex items-center gap-1.5 mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                         Live platform monitoring & management
                     </p>
                 </div>
 
-                <div className="flex items-center gap-4 bg-white p-1.5 rounded-xl border border-gray-100 shadow-sm">
-                    <div className="flex -space-x-2">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[8px] font-black text-gray-400`}>U{i}</div>
-                        ))}
+                {error && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <span>{error}</span>
                     </div>
-                </div>
+                )}
             </div>
 
-            {error && (
-                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 text-xs font-bold uppercase tracking-wide">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{error}</span>
-                </div>
-            )}
-
-            {/* Top Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                    { label: 'Total Users', value: dbStats?.users || 0, icon: Users, color: 'text-blue-500', trend: '+12%' },
-                    { label: 'Active Teams', value: dbStats?.teams || 0, icon: Shield, color: 'text-indigo-500', trend: 'Stable' },
-                    { label: 'Active Tasks', value: dbStats?.tasks || 0, icon: Activity, color: 'text-green-500', trend: '+5%' },
-                    { label: 'Cloud Health', value: '99.9%', icon: Database, color: 'text-amber-500', trend: 'Optimal' }
-                ].map((stat, i) => (
-                    <Card key={i} className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center ${stat.color}`}>
-                                    <stat.icon className="h-5 w-5" />
+            {/* Main Grid - Fills Remaining Space */}
+            <div className="page-grid" style={{ gridTemplateRows: 'auto 1fr', gridTemplateColumns: '1fr 320px' }}>
+                {/* Top Stats Row - Spans Full Width */}
+                <div className="col-span-2 grid grid-cols-4 gap-4">
+                    {[
+                        { label: 'Total Users', value: dbStats?.users || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
+                        { label: 'Active Teams', value: dbStats?.teams || 0, icon: Shield, color: 'text-indigo-600', bg: 'bg-indigo-50', trend: 'Stable', trendUp: null },
+                        { label: 'Active Tasks', value: dbStats?.tasks || 0, icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50', trend: '+5%', trendUp: true },
+                        { label: 'Cloud Health', value: '99.9%', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50', trend: 'Optimal', trendUp: true }
+                    ].map((stat, i) => (
+                        <div key={i} className="stat-card group">
+                            <div className="flex flex-col gap-1">
+                                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{stat.label}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
+                                    <span className={`text-[10px] font-semibold ${stat.trendUp === true ? 'text-green-500' : stat.trendUp === false ? 'text-red-500' : 'text-gray-400'}`}>
+                                        {stat.trend}
+                                    </span>
                                 </div>
-                                <span className="text-xs font-semibold text-green-500">{stat.trend}</span>
                             </div>
-                            <p className="text-xs font-medium text-gray-500 leading-none">{stat.label}</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</h3>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                            <div className={`icon-box icon-box-md ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
+                                <stat.icon className="h-5 w-5" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
-            {/* Management Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Modules */}
-                <div className="lg:col-span-2 space-y-6">
+                {/* Left Column - Management Modules */}
+                <div className="flex flex-col gap-4 min-h-0">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-gray-700">Management Modules</h2>
+                        <h2 className="text-sm font-semibold text-gray-700">Quick Access</h2>
+                        <span className="text-[10px] text-gray-400 font-medium">6 modules</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 flex-1 scroll-panel pr-1">
                         {adminCards.map((card, index) => (
                             <Link key={index} href={card.href} className="group">
-                                <div className="bg-white border border-gray-100 rounded-2xl p-5 hover:border-blue-500 transition-all flex items-start gap-4">
-                                    <div className={`w-12 h-12 shrink-0 rounded-2xl ${card.bgColor} ${card.iconColor} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-                                        <card.icon className="h-6 w-6" />
+                                <div className="module-card h-full flex flex-col">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className={`icon-box icon-box-md ${card.iconBg} ${card.iconColor} group-hover:scale-110 transition-transform`}>
+                                            <card.icon className="h-5 w-5" />
+                                        </div>
+                                        <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{card.title}</h3>
-                                        <p className="text-gray-500 text-xs leading-relaxed mt-1 line-clamp-2">{card.description}</p>
-                                        {card.stats && (
-                                            <div className="inline-block mt-3 px-2 py-0.5 bg-gray-100 rounded text-xs font-medium text-blue-600">
-                                                {card.stats}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1">{card.title}</h3>
+                                    <p className="text-[11px] text-gray-400 leading-relaxed mb-3 line-clamp-2 flex-1">{card.description}</p>
+                                    {card.stats && (
+                                        <div className="inline-flex self-start px-2.5 py-1 bg-gray-50 rounded-md text-[10px] font-semibold text-purple-600">
+                                            {card.stats}
+                                        </div>
+                                    )}
                                 </div>
                             </Link>
                         ))}
                     </div>
                 </div>
 
-                {/* Side Analytics */}
-                <div className="space-y-6">
+                {/* Right Column - Live Insights */}
+                <div className="flex flex-col gap-4 min-h-0">
                     <h2 className="text-sm font-semibold text-gray-700">Live Insights</h2>
+                    <div className="flex-1 flex flex-col gap-3 scroll-panel pr-1">
+                        {/* Task Distribution Chart */}
+                        <div className="glass-card p-4 flex-1 min-h-0">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-xs font-semibold text-gray-500">Task Distribution</h3>
+                                <Zap className="h-3.5 w-3.5 text-blue-500" />
+                            </div>
+                            <div className="h-[calc(100%-28px)]">
+                                {analytics ? (
+                                    <TaskStatusChart data={{
+                                        pending: analytics.overview?.totalTasks - analytics.overview?.completedTasks - analytics.overview?.inProgressTasks || 0,
+                                        'in-progress': analytics.overview?.inProgressTasks || 0,
+                                        completed: analytics.overview?.completedTasks || 0,
+                                        blocked: 0
+                                    }} />
+                                ) : (
+                                    <div className="h-full flex items-center justify-center">
+                                        <div className="empty-state py-6">
+                                            <div className="empty-state-icon w-10 h-10">
+                                                <BarChart3 className="w-5 h-5" />
+                                            </div>
+                                            <p className="text-xs text-gray-400">No task data available</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
-                    <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                        <CardHeader className="pb-2 border-b border-gray-50 flex flex-row items-center justify-between">
-                            <CardTitle className="text-xs font-semibold text-gray-500">Task Distribution</CardTitle>
-                            <Activity className="h-3 w-3 text-blue-500" />
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            {analytics ? (
-                                <TaskStatusChart data={{
-                                    pending: analytics.overview?.totalTasks - analytics.overview?.completedTasks - analytics.overview?.inProgressTasks || 0,
-                                    'in-progress': analytics.overview?.inProgressTasks || 0,
-                                    completed: analytics.overview?.completedTasks || 0,
-                                    blocked: 0
-                                }} />
-                            ) : (
-                                <div className="h-40 flex items-center justify-center text-sm text-gray-400">
-                                    Loading data...
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                        <CardHeader className="pb-2 border-b border-gray-50 flex flex-row items-center justify-between">
-                            <CardTitle className="text-xs font-semibold text-gray-500">Priority Levels</CardTitle>
-                            <Shield className="h-3 w-3 text-amber-500" />
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            {analytics ? (
-                                <TaskPriorityChart data={analytics.distributions?.priority || { low: 0, medium: 0, high: 0, critical: 0 }} />
-                            ) : (
-                                <div className="h-40 flex items-center justify-center text-sm text-gray-400">
-                                    Loading data...
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                        {/* Priority Levels Chart */}
+                        <div className="glass-card p-4 flex-1 min-h-0">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-xs font-semibold text-gray-500">Priority Levels</h3>
+                                <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
+                            </div>
+                            <div className="h-[calc(100%-28px)]">
+                                {analytics ? (
+                                    <TaskPriorityChart data={analytics.distributions?.priority || { low: 0, medium: 0, high: 0, critical: 0 }} />
+                                ) : (
+                                    <div className="h-full flex items-center justify-center">
+                                        <div className="empty-state py-6">
+                                            <div className="empty-state-icon w-10 h-10">
+                                                <Award className="w-5 h-5" />
+                                            </div>
+                                            <p className="text-xs text-gray-400">No priority data available</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Footer Status */}
-            <div className="pt-10 border-t border-gray-100">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-xs text-gray-500">Database Linked</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500" />
-                            <span className="text-xs text-gray-500">API v1.02 Ready</span>
-                        </div>
+            {/* Footer Status Bar */}
+            <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-200" />
+                        <span className="text-[11px] text-gray-400 font-medium">Database Connected</span>
                     </div>
-                    <p className="text-xs text-gray-400">© 2026 Admin Control Panel</p>
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
+                        <span className="text-[11px] text-gray-400 font-medium">API v1.02</span>
+                    </div>
                 </div>
+                <p className="text-[11px] text-gray-300">© 2026 Admin Control Panel</p>
             </div>
         </div>
     );

@@ -146,7 +146,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
     }
 
     const getDefaultRoute = () => {
-        return '/admin'
+        // Non-admin users go to employee dashboard, admins go to admin panel
+        return isAdmin ? '/admin' : '/dashboard'
     }
 
     const value = {

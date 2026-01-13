@@ -1,12 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell, Menu, X, ChevronDown, LogOut, User, Settings, Palette } from 'lucide-react'
+import { Menu, X, ChevronDown, LogOut, User, Settings, Palette } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { getInitials, cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { getHeaderConfig, updateHeaderConfig, getDefaultHeaderConfig } from '@/lib/headerService'
-import { getUserNotifications } from '@/lib/notificationService'
 import { HeaderConfig } from '@/types'
 import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -29,24 +28,14 @@ export default function UnifiedHeader({
   showAdminControls = false
 }: UnifiedHeaderProps) {
   const { userData, loading, logout, isAdmin } = useAuth()
-  const [showNotifications, setShowNotifications] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showHeaderConfig, setShowHeaderConfig] = useState(false)
-  const [notifications, setNotifications] = useState<any[]>([])
   const [headerConfig, setHeaderConfig] = useState<HeaderConfig | null>(null)
   const pathname = usePathname()
   const router = useRouter()
-  const notificationRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const configRef = useRef<HTMLDivElement>(null)
-
-  // Load notifications for the logged-in user
-  useEffect(() => {
-    if (userData?.uid && mode !== 'public') {
-      getUserNotifications(userData.uid).then(setNotifications).catch(console.error)
-    }
-  }, [userData, mode])
 
   // Load header configuration
   useEffect(() => {
@@ -64,9 +53,6 @@ export default function UnifiedHeader({
   // Handle click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
-        setShowNotifications(false)
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false)
       }
@@ -97,8 +83,6 @@ export default function UnifiedHeader({
       onHeaderConfigChange?.(newConfig)
     }
   }
-
-  const unreadCount = notifications.filter(n => !n.read).length
 
   const getNavigation = () => {
     if (customNavigation) return customNavigation
@@ -172,45 +156,6 @@ export default function UnifiedHeader({
                 <Palette className="h-4 w-4 mr-2" />
                 Customize UI
               </Button>
-            )}
-
-            {/* Notifications - Only for authenticated users */}
-            {mode !== 'public' && userData && (
-              <div className="relative" ref={notificationRef}>
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 text-gray-400 hover:text-blue-600 relative transition-colors"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50 overflow-hidden">
-                    <div className="p-4 border-b bg-gray-50">
-                      <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">No new notifications</div>
-                      ) : (
-                        notifications.slice(0, 5).map((notification) => (
-                          <div key={notification.id} className="p-4 border-b last:border-0 hover:bg-gray-50 transition-colors cursor-pointer">
-                            <p className="text-sm text-gray-800 leading-snug">{notification.message}</p>
-                            <p className="text-xs text-gray-400 mt-1.5 flex items-center capitalize">
-                              {new Date(notification.createdAt?.toDate?.() || notification.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
             )}
 
             {/* User Menu */}

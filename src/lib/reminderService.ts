@@ -2,7 +2,6 @@
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import { timestampToDate, handleError } from './utils';
-import { createNotification } from './notificationService';
 
 /**
  * Reminder Interface
@@ -158,17 +157,6 @@ export async function processDueReminders(): Promise<{ sent: number; errors: str
             const reminder = { id: docSnap.id, ...docSnap.data() } as Reminder;
 
             try {
-                // Send notification
-                await createNotification({
-                    userId: reminder.userId,
-                    type: 'system_alert',
-                    title: `Reminder: ${reminder.title}`,
-                    message: reminder.message,
-                    link: reminder.relatedId ? `/dashboard/${reminder.type}s/${reminder.relatedId}` : '/dashboard',
-                    read: false,
-                    createdAt: new Date()
-                });
-
                 // Mark as sent
                 await updateDoc(doc(db, 'reminders', reminder.id), {
                     status: 'sent',

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
             return NextResponse.json({
                 success: true,
-                config
+                data: config
             });
         } catch (error) {
             console.error('Failed to get scoring config:', error);

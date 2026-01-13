@@ -16,7 +16,6 @@ export interface SystemHealth {
 export interface SystemSettings {
     maintenanceMode: boolean;
     allowRegistration: boolean;
-    emailNotifications: boolean;
     backupFrequency: 'daily' | 'weekly' | 'monthly';
     logRetention: number;
     maxFileSize: number;
@@ -82,7 +81,6 @@ export async function getSystemSettings(): Promise<SystemSettings> {
         return {
             maintenanceMode: false,
             allowRegistration: true,
-            emailNotifications: true,
             backupFrequency: 'daily',
             logRetention: 30,
             maxFileSize: 10,

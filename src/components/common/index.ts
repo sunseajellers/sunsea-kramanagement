@@ -21,7 +21,6 @@ export {
   NoTasksEmptyState,
   NoKRAsEmptyState,
   NoSearchResultsEmptyState,
-  NoNotificationsEmptyState,
   NoReportsEmptyState,
   ErrorEmptyState,
   NoPermissionEmptyState,

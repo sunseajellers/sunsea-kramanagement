@@ -21,6 +21,10 @@ interface TaskFormData {
     kraId?: string
     assignedTo: string
     dueDate: string
+    category: string
+    kpiScore: number
+    revisionCount: number
+    finalTargetDate?: string
 }
 
 export default function TaskForm({ initialData, onClose, onSaved }: Props) {
@@ -28,6 +32,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
     const isEdit = !!initialData
     const [loading, setLoading] = useState(false)
     const [kras, setKras] = useState<any[]>([])
+    const [users, setUsers] = useState<any[]>([])
 
     const [form, setForm] = useState<TaskFormData>({
         title: '',
@@ -35,30 +40,41 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         status: 'assigned',
         priority: 'medium',
         kraId: '',
-        assignedTo: user?.uid || '',
+        assignedTo: '',
         dueDate: '',
+        category: 'General',
+        kpiScore: 100,
+        revisionCount: 0,
+        finalTargetDate: ''
     })
 
     useEffect(() => {
-        // Load KRAs for dropdown
-        const loadKRAs = async () => {
-            if (user) {
-                try {
-                    const data = await fetchKRAs(user.uid)
-                    setKras(data)
-                } catch (error) {
-                    console.error('Failed to load KRAs', error)
+        const loadInitialData = async () => {
+            try {
+                // Load all users for the "Assigned To" dropdown (Admin view)
+                const { getAllUsers } = await import('@/lib/userService')
+                const allUsers = await getAllUsers()
+                setUsers(allUsers)
+
+                // Load KRAs
+                if (user) {
+                    const kraData = await fetchKRAs(user.uid)
+                    setKras(kraData)
                 }
+            } catch (error) {
+                console.error('Failed to load initial data', error)
             }
         }
-        loadKRAs()
+        loadInitialData()
     }, [user])
 
     useEffect(() => {
         if (initialData) {
-            const formatDate = (dateString: string) => {
+            const formatDate = (date: any) => {
+                if (!date) return ''
                 try {
-                    return new Date(dateString).toISOString().split('T')[0]
+                    const d = date.toDate ? date.toDate() : new Date(date)
+                    return d.toISOString().split('T')[0]
                 } catch (e) {
                     return ''
                 }
@@ -71,7 +87,11 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 priority: initialData.priority,
                 kraId: initialData.kraId || '',
                 assignedTo: initialData.assignedTo[0] || '',
-                dueDate: formatDate(initialData.dueDate.toString()),
+                dueDate: formatDate(initialData.dueDate),
+                category: initialData.category || 'General',
+                kpiScore: initialData.kpiScore || 100,
+                revisionCount: initialData.revisionCount || 0,
+                finalTargetDate: formatDate(initialData.finalTargetDate)
             })
         }
     }, [initialData])
@@ -79,7 +99,8 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
-        setForm({ ...form, [e.target.name]: e.target.value })
+        const value = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value
+        setForm({ ...form, [e.target.name]: value })
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -89,25 +110,30 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         setLoading(true)
 
         try {
-            const taskData = {
-                ...form,
+            const taskData: any = {
+                title: form.title,
+                description: form.description,
+                status: form.status,
+                priority: form.priority,
+                kraId: form.kraId || null,
                 assignedTo: [form.assignedTo],
                 assignedBy: user.uid,
                 dueDate: new Date(form.dueDate),
-                progress: 0,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                checklist: [],
-                comments: [],
-                activityLog: []
+                category: form.category,
+                kpiScore: form.kpiScore,
+                revisionCount: form.revisionCount,
+                progress: isEdit ? initialData?.progress : 0,
+                updatedAt: new Date()
+            }
+
+            if (form.finalTargetDate) {
+                taskData.finalTargetDate = new Date(form.finalTargetDate)
             }
 
             if (isEdit && initialData) {
-                await updateTask(initialData.id, {
-                    ...taskData,
-                    updatedAt: new Date()
-                })
+                await updateTask(initialData.id, taskData)
             } else {
+                taskData.createdAt = new Date()
                 await createTask(taskData)
             }
             onSaved()
@@ -168,15 +194,57 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             </div>
                         </div>
 
-                        {/* Priority and Status */}
+                        {/* Grid for User, Category, Priority, Status */}
                         <div className="grid grid-cols-2 gap-4">
+                            {/* Assigned To */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Assigned To</label>
+                                <div className="relative">
+                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <select
+                                        name="assignedTo"
+                                        required
+                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white"
+                                        value={form.assignedTo}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="">Select User</option>
+                                        {users.map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.fullName || u.email}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Category */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
+                                <div className="relative">
+                                    <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <select
+                                        name="category"
+                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white"
+                                        value={form.category}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="General">General</option>
+                                        <option value="Recurring">Recurring</option>
+                                        <option value="One-time">One-time</option>
+                                        <option value="Urgent">Urgent</option>
+                                        <option value="Delegated">Delegated</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
                                 <div className="relative">
                                     <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                     <select
                                         name="priority"
-                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
+                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white"
                                         value={form.priority}
                                         onChange={handleChange}
                                     >
@@ -185,11 +253,6 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                                         <option value="high">High</option>
                                         <option value="critical">Critical</option>
                                     </select>
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
                                 </div>
                             </div>
 
@@ -197,7 +260,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
                                 <select
                                     name="status"
-                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white"
                                     value={form.status}
                                     onChange={handleChange}
                                 >
@@ -218,7 +281,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                                 <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                 <select
                                     name="kraId"
-                                    className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none"
+                                    className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white"
                                     value={form.kraId}
                                     onChange={handleChange}
                                 >
@@ -229,27 +292,64 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                                         </option>
                                     ))}
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
                             </div>
                         </div>
 
-                        {/* Due Date */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Due Date</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                        {/* KPI Score and Revision Count */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">KPI Score (0-100)</label>
                                 <input
-                                    type="date"
-                                    name="dueDate"
-                                    required
-                                    className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                    value={form.dueDate}
+                                    type="number"
+                                    name="kpiScore"
+                                    min="0"
+                                    max="100"
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    value={form.kpiScore}
                                     onChange={handleChange}
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">No. of Revisions</label>
+                                <input
+                                    type="number"
+                                    name="revisionCount"
+                                    min="0"
+                                    className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                    value={form.revisionCount}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Dates Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Due Date</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <input
+                                        type="date"
+                                        name="dueDate"
+                                        required
+                                        className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                        value={form.dueDate}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Final Target Date (Revision)</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <input
+                                        type="date"
+                                        name="finalTargetDate"
+                                        className="w-full py-3 pl-12 pr-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
+                                        value={form.finalTargetDate}
+                                        onChange={handleChange}
+                                    />
+                                </div>
                             </div>
                         </div>
 

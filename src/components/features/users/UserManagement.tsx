@@ -4,12 +4,11 @@ import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { User } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
-import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users } from 'lucide-react'
+import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,13 +19,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getAllUsers, createUser, updateUser } from '@/lib/userService'
 
-
+const ITEMS_PER_PAGE = 8;
 
 export default function UserManagement() {
     const { user } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+    const [currentPage, setCurrentPage] = useState(1)
 
     // Create user dialog state
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -98,9 +98,16 @@ export default function UserManagement() {
         return filtered
     }, [users, searchTerm, statusFilter, sortBy, sortOrder])
 
+    // Pagination
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)
+    const paginatedUsers = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE
+        return filteredUsers.slice(start, start + ITEMS_PER_PAGE)
+    }, [filteredUsers, currentPage])
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedUsers(new Set(filteredUsers.map(u => u.id)))
+            setSelectedUsers(new Set(paginatedUsers.map(u => u.id)))
         } else {
             setSelectedUsers(new Set())
         }
@@ -138,8 +145,6 @@ export default function UserManagement() {
         window.URL.revokeObjectURL(url)
     }
 
-
-
     const handleCreateUser = async () => {
         if (!user) {
             toast.error('You must be logged in to create users')
@@ -159,9 +164,7 @@ export default function UserManagement() {
         setCreateLoading(true)
 
         try {
-            // Get the current user's ID token for authentication
             const idToken = await user.getIdToken()
-
             await createUser(newUserEmail, newUserPassword, newUserName, [], idToken)
 
             toast.success(`User ${newUserName} created successfully!`)
@@ -179,235 +182,308 @@ export default function UserManagement() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-96 py-20">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Personnel...</p>
+            <div className="page-container flex-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center animate-pulse">
+                        <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Loading users...</p>
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="space-y-10 pb-12">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+        <div className="page-container">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Personnel Hub</h1>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-gray-900">User Management</h1>
+                    <p className="text-gray-400 text-xs font-medium flex items-center gap-1.5 mt-0.5">
                         <UserCheck className="h-3 w-3 text-blue-500" />
                         Manage platform users and access levels
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button onClick={() => setCreateDialogOpen(true)} className="bg-gray-900 hover:bg-black h-11 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm">
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => setCreateDialogOpen(true)}
+                        className="bg-gray-900 hover:bg-black h-9 px-4 rounded-xl font-semibold text-xs"
+                    >
                         <UserPlus className="h-4 w-4 mr-2" />
-                        New User
+                        Add User
                     </Button>
-                    <Button variant="outline" onClick={exportUsers} className="h-11 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest border-gray-100 text-gray-400 hover:bg-white transition-all">
+                    <Button
+                        variant="outline"
+                        onClick={exportUsers}
+                        className="h-9 w-9 p-0 rounded-xl border-gray-200"
+                    >
                         <Download className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
 
-            {/* Controls Bar */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4">
+            {/* Filters Bar */}
+            <div className="glass-card p-3 mb-4 flex items-center gap-3">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
                     <Input
-                        placeholder="SEARCH BY NAME OR EMAIL..."
+                        placeholder="Search by name or email..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-12 h-12 border-none bg-gray-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest placeholder:text-gray-300"
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        className="pl-10 h-9 border-none bg-gray-50/50 rounded-lg text-sm"
                     />
                 </div>
-                <div className="flex items-center gap-2">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-12 px-6 bg-gray-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none border-none pr-10 relative cursor-pointer"
-                    >
-                        <option value="all">Status: All</option>
-                        <option value="active">Status: Active</option>
-                        <option value="inactive">Status: Inactive</option>
-                    </select>
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="h-12 px-6 bg-gray-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none border-none pr-10 cursor-pointer"
-                    >
-                        <option value="name">Sort: Name</option>
-                        <option value="email">Sort: Email</option>
-                        <option value="joined">Sort: Joined</option>
-                    </select>
-                    <Button
-                        variant="ghost"
-                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className="h-12 w-12 rounded-xl bg-gray-50/50 text-gray-400 hover:text-blue-600"
-                    >
-                        {sortOrder === 'asc' ? '↑' : '↓'}
-                    </Button>
-                </div>
+                <select
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                    className="h-9 px-3 bg-gray-50/50 rounded-lg text-xs font-medium text-gray-600 border-none focus:ring-1 focus:ring-purple-200"
+                >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="h-9 px-3 bg-gray-50/50 rounded-lg text-xs font-medium text-gray-600 border-none focus:ring-1 focus:ring-purple-200"
+                >
+                    <option value="name">Sort: Name</option>
+                    <option value="email">Sort: Email</option>
+                    <option value="joined">Sort: Joined</option>
+                </select>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="h-9 w-9 p-0 rounded-lg bg-gray-50/50"
+                >
+                    {sortOrder === 'asc' ? '↑' : '↓'}
+                </Button>
             </div>
 
-            {/* Users Content */}
-            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                <CardHeader className="border-b border-gray-50 px-8 py-6 flex flex-row items-center justify-between bg-white">
-                    <CardTitle className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Listing {filteredUsers.length} records</CardTitle>
-                    <div className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-xl px-4">
+            {/* Users Table */}
+            <div className="glass-card flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                    <span className="text-xs font-semibold text-gray-400">{filteredUsers.length} users</span>
+                    <div className="flex items-center gap-2">
                         <Checkbox
-                            checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                            checked={selectedUsers.size === paginatedUsers.length && paginatedUsers.length > 0}
                             onCheckedChange={handleSelectAll}
-                            className="w-4 h-4 border-gray-200"
+                            className="w-4 h-4"
                         />
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Select All</span>
+                        <span className="text-[10px] text-gray-400 font-medium">Select All</span>
                     </div>
-                </CardHeader>
-                <div className="divide-y divide-gray-50">
-                    {filteredUsers.length > 0 ? (
-                        filteredUsers.map((user) => (
-                            <div key={user.id} className="group hover:bg-blue-50/20 transition-all px-8 py-6 flex items-center justify-between">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex items-center gap-8">
-                                        <Checkbox
-                                            checked={selectedUsers.has(user.id)}
-                                            onCheckedChange={(checked: boolean) => handleSelectUser(user.id, checked)}
-                                            className="w-4 h-4 border-gray-100 group-hover:border-blue-200"
-                                        />
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all font-black text-xs uppercase text-gray-400">
-                                                {user.fullName.substring(0, 2)}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{user.fullName}</h3>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{user.email}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="h-8 w-[1px] bg-gray-50 hidden md:block mx-2" />
-                                    <div className="hidden lg:flex items-center gap-2">
-                                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${user.isActive !== false ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                                            {user.isActive !== false ? 'Active Status' : 'Inactive Status'}
-                                        </span>
-                                        {user.isAdmin && (
-                                            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[8px] font-black uppercase tracking-widest border border-blue-100">
-                                                Administrator
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-10">
-                                    <div className="hidden xl:block text-right">
-                                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Enrolled On</p>
-                                        <p className="text-[10px] font-black text-gray-900 mt-0.5 uppercase tracking-tighter">{user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                                    </div>
-
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-100 text-gray-400">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-gray-100 shadow-xl">
-                                            <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-300 px-3 py-2">Quick Actions</DropdownMenuLabel>
-                                            <DropdownMenuSeparator className="bg-gray-50" />
-                                            <DropdownMenuItem
-                                                onClick={() => updateUser(user.id, { isAdmin: !user.isAdmin })}
-                                                className="cursor-pointer rounded-xl h-10 text-[10px] font-black uppercase tracking-widest focus:bg-blue-50 focus:text-blue-600"
-                                            >
-                                                <Shield className="h-3.5 w-3.5 mr-3 opacity-50" />
-                                                {user.isAdmin ? 'Revoke Admin' : 'Assign Admin'}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => updateUser(user.id, { isActive: user.isActive === false })}
-                                                className={`cursor-pointer rounded-xl h-10 text-[10px] font-black uppercase tracking-widest ${user.isActive === false ? 'focus:bg-green-50 focus:text-green-600' : 'focus:bg-red-50 focus:text-red-600'}`}
-                                            >
-                                                <Activity className="h-3.5 w-3.5 mr-3 opacity-50" />
-                                                {user.isActive === false ? 'Activate User' : 'Suspend Account'}
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="py-20 text-center">
-                            <Users className="h-10 w-10 text-gray-100 mx-auto mb-4" />
-                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">No records found matching criteria</p>
-                        </div>
-                    )}
                 </div>
-            </Card>
 
-            {/* Minimal Create User Dialog */}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
-                    <div className="bg-gray-900 px-8 py-10 text-white">
-                        <h2 className="text-2xl font-black uppercase tracking-tighter">New Personnel</h2>
-                        <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Initialize system access</p>
+                <div className="flex-1 overflow-hidden">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th className="w-10"></th>
+                                <th>User</th>
+                                <th className="text-center">Status</th>
+                                <th className="text-center">Role</th>
+                                <th className="text-center">Joined</th>
+                                <th className="w-12"></th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div className="scroll-panel" style={{ height: 'calc(100% - 44px)' }}>
+                        <table className="data-table">
+                            <tbody>
+                                {paginatedUsers.length > 0 ? (
+                                    paginatedUsers.map((u) => (
+                                        <tr key={u.id} className="group">
+                                            <td className="w-10">
+                                                <Checkbox
+                                                    checked={selectedUsers.has(u.id)}
+                                                    onCheckedChange={(checked: boolean) => handleSelectUser(u.id, checked)}
+                                                    className="w-4 h-4"
+                                                />
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xs">
+                                                        {u.fullName.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-gray-900">{u.fullName}</p>
+                                                        <p className="text-[11px] text-gray-400">{u.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className={`badge ${u.isActive !== false ? 'badge-success' : 'badge-danger'}`}>
+                                                    {u.isActive !== false ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td className="text-center">
+                                                {u.isAdmin ? (
+                                                    <span className="badge badge-info">Admin</span>
+                                                ) : (
+                                                    <span className="badge badge-neutral">Employee</span>
+                                                )}
+                                            </td>
+                                            <td className="text-center">
+                                                <span className="text-xs text-gray-500">
+                                                    {u.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                                                </span>
+                                            </td>
+                                            <td className="w-12">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl">
+                                                        <DropdownMenuLabel className="text-[10px] font-semibold text-gray-400 px-2 py-1">Actions</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => updateUser(u.id, { isAdmin: !u.isAdmin })}
+                                                            className="rounded-lg text-xs"
+                                                        >
+                                                            <Shield className="h-3.5 w-3.5 mr-2 opacity-50" />
+                                                            {u.isAdmin ? 'Revoke Admin' : 'Make Admin'}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => updateUser(u.id, { isActive: u.isActive === false })}
+                                                            className="rounded-lg text-xs"
+                                                        >
+                                                            <Activity className="h-3.5 w-3.5 mr-2 opacity-50" />
+                                                            {u.isActive === false ? 'Activate' : 'Suspend'}
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6}>
+                                            <div className="empty-state my-8">
+                                                <div className="empty-state-icon">
+                                                    <Users className="w-6 h-6" />
+                                                </div>
+                                                <p className="empty-state-title">No users found</p>
+                                                <p className="empty-state-description">Try adjusting your search or filter criteria</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                    <div className="p-8 space-y-6">
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Identity Profile</label>
-                                <Input
-                                    placeholder="FULL LEGAL NAME"
-                                    value={newUserName}
-                                    onChange={(e) => setNewUserName(e.target.value)}
-                                    disabled={createLoading}
-                                    className="h-14 bg-gray-50 border-none rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest placeholder:text-gray-200"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Authentication Email</label>
-                                <Input
-                                    type="email"
-                                    placeholder="CORPORATE EMAIL ADDRESS"
-                                    value={newUserEmail}
-                                    onChange={(e) => setNewUserEmail(e.target.value)}
-                                    disabled={createLoading}
-                                    className="h-14 bg-gray-50 border-none rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest placeholder:text-gray-200"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Security Key (MIN 6 CHARACTERS)</label>
-                                <div className="relative">
-                                    <Input
-                                        type={showPassword ? 'text' : 'password'}
-                                        placeholder="ENCRYPTED ACCESS KEY"
-                                        value={newUserPassword}
-                                        onChange={(e) => setNewUserPassword(e.target.value)}
-                                        disabled={createLoading}
-                                        className="h-14 bg-gray-50 border-none rounded-2xl px-6 pr-14 text-[10px] font-black uppercase tracking-widest placeholder:text-gray-200"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-6 flex items-center"
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                        <span className="text-xs text-gray-400">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="h-8 w-8 p-0 rounded-lg"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                const page = i + 1
+                                return (
+                                    <Button
+                                        key={page}
+                                        variant={currentPage === page ? "default" : "ghost"}
+                                        size="sm"
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`h-8 w-8 p-0 rounded-lg text-xs ${currentPage === page ? 'bg-purple-600' : ''}`}
                                     >
-                                        {showPassword ? (
-                                            <EyeOff className="h-4 w-4 text-gray-300" />
-                                        ) : (
-                                            <Eye className="h-4 w-4 text-gray-300" />
-                                        )}
-                                    </button>
-                                </div>
+                                        {page}
+                                    </Button>
+                                )
+                            })}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="h-8 w-8 p-0 rounded-lg"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Create User Dialog */}
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden border-none rounded-2xl shadow-2xl">
+                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-6 text-white">
+                        <h2 className="text-lg font-bold">Create New User</h2>
+                        <p className="text-gray-400 text-xs mt-1">Add a new user to the platform</p>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-500">Full Name</label>
+                            <Input
+                                placeholder="Enter full name"
+                                value={newUserName}
+                                onChange={(e) => setNewUserName(e.target.value)}
+                                disabled={createLoading}
+                                className="h-11 rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-500">Email Address</label>
+                            <Input
+                                type="email"
+                                placeholder="Enter email address"
+                                value={newUserEmail}
+                                onChange={(e) => setNewUserEmail(e.target.value)}
+                                disabled={createLoading}
+                                className="h-11 rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-500">Password</label>
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Min. 6 characters"
+                                    value={newUserPassword}
+                                    onChange={(e) => setNewUserPassword(e.target.value)}
+                                    disabled={createLoading}
+                                    className="h-11 rounded-xl pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                                </button>
                             </div>
                         </div>
-                        <div className="flex gap-3 pt-4">
+                        <div className="flex gap-3 pt-2">
                             <Button
                                 variant="outline"
                                 onClick={() => setCreateDialogOpen(false)}
                                 disabled={createLoading}
-                                className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest border-gray-100 text-gray-400"
+                                className="flex-1 h-11 rounded-xl"
                             >
-                                ABORT
+                                Cancel
                             </Button>
                             <Button
                                 onClick={handleCreateUser}
                                 disabled={createLoading}
-                                className="flex-1 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-200"
+                                className="flex-1 h-11 bg-purple-600 hover:bg-purple-700 rounded-xl"
                             >
-                                {createLoading ? <Loader2 className="animate-spin h-5 w-5" /> : 'AUTHORIZE USER'}
+                                {createLoading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Create User'}
                             </Button>
                         </div>
                     </div>

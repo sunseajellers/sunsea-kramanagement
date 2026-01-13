@@ -11,9 +11,9 @@ import {
     FileText,
     Award,
     Server,
-    Bell,
     Users2,
     Loader2,
+    Shield
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -29,38 +29,23 @@ const menuItems = [
         icon: LayoutDashboard,
     },
     {
-        href: '/admin/users',
-        label: 'Users',
-        icon: Users,
+        href: '/admin/organization',
+        label: 'Organization',
+        icon: Shield,
     },
     {
-        href: '/admin/teams',
-        label: 'Teams',
-        icon: Users2,
-    },
-    {
-        href: '/admin/team-hub',
-        label: 'Team Hub',
-        icon: Users,
-    },
-    {
-        href: '/admin/analytics',
-        label: 'Analytics',
-        icon: BarChart3,
-    },
-    {
-        href: '/admin/reports',
-        label: 'Reports',
+        href: '/admin/operations',
+        label: 'Operations',
         icon: FileText,
     },
     {
-        href: '/admin/scoring',
-        label: 'Scoring',
-        icon: Award,
+        href: '/admin/performance',
+        label: 'Performance',
+        icon: BarChart3,
     },
     {
         href: '/admin/system',
-        label: 'System',
+        label: 'System Config',
         icon: Server,
     },
 ];
@@ -92,10 +77,13 @@ export default function AdminLayout({
     // Show loading state
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="admin-root flex-center">
                 <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-                    <p className="text-slate-500 text-sm">Loading...</p>
+                    <div className="relative">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 animate-pulse" />
+                        <Loader2 className="absolute inset-0 m-auto h-6 w-6 animate-spin text-white" />
+                    </div>
+                    <p className="text-slate-400 text-xs font-medium tracking-wide">Loading...</p>
                 </div>
             </div>
         );
@@ -104,10 +92,13 @@ export default function AdminLayout({
     // Redirect if not authenticated
     if (!user) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="admin-root flex-center">
                 <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-                    <p className="text-slate-500 text-sm">Redirecting to login...</p>
+                    <div className="relative">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 animate-pulse" />
+                        <Loader2 className="absolute inset-0 m-auto h-6 w-6 animate-spin text-white" />
+                    </div>
+                    <p className="text-slate-400 text-xs font-medium tracking-wide">Redirecting to login...</p>
                 </div>
             </div>
         );
@@ -118,27 +109,27 @@ export default function AdminLayout({
     const initials = displayName.charAt(0).toUpperCase();
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Top Navigation Bar */}
-            <nav className="relative top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
-                <div className="px-4 lg:px-6">
-                    <div className="flex h-14 items-center gap-1">
-                        {/* Logo */}
+        <div className="admin-root">
+            {/* Top Navigation Bar - Taller Header */}
+            <nav className="admin-header">
+                <div className="h-full px-4 lg:px-6">
+                    <div className="flex h-full items-center gap-2">
+                        {/* Logo - Properly sized */}
                         <div className="flex-shrink-0">
                             <Link href="/admin" className="flex items-center">
                                 <img
                                     src="/logo.png"
                                     alt="SunSeaJwellers Logo"
-                                    className="h-24 w-auto -my-5"
+                                    className="h-14 w-auto object-contain"
                                 />
                             </Link>
                         </div>
 
                         {/* Separator */}
-                        <div className="hidden lg:block h-5 w-px bg-slate-200 mx-2"></div>
+                        <div className="hidden lg:block h-8 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent mx-3" />
 
                         {/* Desktop Navigation - All Items Distributed */}
-                        <div className="hidden lg:flex items-center gap-1 flex-1 justify-between w-full">
+                        <div className="hidden lg:flex items-center gap-1 flex-1">
                             {menuItems.map((item) => {
                                 // Special handling for dashboard - only exact match
                                 const isActive = item.href === '/admin'
@@ -149,10 +140,10 @@ export default function AdminLayout({
                                         key={item.href}
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap",
+                                            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap",
                                             isActive
                                                 ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/20"
-                                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/80"
                                         )}
                                     >
                                         <item.icon className="h-4 w-4" />
@@ -160,16 +151,19 @@ export default function AdminLayout({
                                     </Link>
                                 );
                             })}
+                        </div>
 
+                        {/* Right Section */}
+                        <div className="hidden lg:flex items-center gap-2 ml-auto">
                             {/* Separator */}
-                            <div className="h-5 w-px bg-slate-200 mx-2"></div>
+                            <div className="h-8 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent mx-2" />
 
                             {/* View Site */}
                             <a
                                 href="#"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 transition-all whitespace-nowrap"
                             >
                                 <Home className="h-4 w-4" />
                                 <span>View Site</span>
@@ -178,31 +172,33 @@ export default function AdminLayout({
                             {/* Logout Button */}
                             <Button
                                 variant="ghost"
-                                size="sm"
                                 onClick={handleLogout}
-                                className="flex text-slate-600 hover:text-red-500 hover:bg-red-50 gap-1.5 px-3 py-1.5 h-auto text-sm font-medium"
+                                className="flex text-slate-500 hover:text-red-500 hover:bg-red-50 gap-2 px-4 py-2.5 h-auto text-sm font-semibold rounded-xl"
                             >
                                 <LogOut className="h-4 w-4" />
                                 <span>Logout</span>
                             </Button>
 
-                            {/* User Avatar */}
-                            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100 ml-1">
-                                <Avatar className="h-7 w-7 border border-purple-300">
+                            {/* User Avatar with Glassmorphism */}
+                            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200/50 ml-1">
+                                <Avatar className="h-8 w-8 border-2 border-purple-200 shadow-sm">
                                     <AvatarImage src={user.photoURL || ''} alt={displayName} />
-                                    <AvatarFallback className="bg-purple-100 text-purple-700 text-xs font-bold">
+                                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white text-xs font-bold">
                                         {initials}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span className="text-sm text-slate-900 font-medium">{displayName}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-sm text-slate-900 font-semibold leading-tight">{displayName}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium">Administrator</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </nav>
 
-            {/* Main Content */}
-            <main className="min-h-[calc(100vh-4rem)]">
+            {/* Main Content - Fixed Height */}
+            <main className="admin-content">
                 {children}
             </main>
         </div>

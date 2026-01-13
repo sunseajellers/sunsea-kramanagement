@@ -1,9 +1,10 @@
 'use client'
 
 import { Task } from '@/types'
-import { Calendar, Flag, Edit, Trash2, CheckCircle2, Circle } from 'lucide-react'
+import { Calendar, Flag, Edit, Trash2, CheckCircle2, Circle, RotateCcw, TrendingUp, Tag } from 'lucide-react'
 import { updateTask } from '@/lib/taskService'
 import { useState } from 'react'
+import { format, isPast, isToday } from 'date-fns'
 
 interface TaskCardProps {
     task: Task
@@ -34,7 +35,10 @@ const statusColors = {
 export default function TaskCard({ task, onEdit, onDelete, onUpdate }: TaskCardProps) {
     const [updating, setUpdating] = useState(false)
 
-    const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
+    // Use finalTargetDate if set, otherwise use dueDate
+    const effectiveDueDate = task.finalTargetDate || task.dueDate
+    const isOverdue = isPast(new Date(effectiveDueDate)) && !isToday(new Date(effectiveDueDate)) && task.status !== 'completed'
+    const hasExtendedDeadline = task.finalTargetDate && new Date(task.finalTargetDate).getTime() !== new Date(task.dueDate).getTime()
 
     const handleStatusToggle = async () => {
         setUpdating(true)
@@ -126,14 +130,49 @@ export default function TaskCard({ task, onEdit, onDelete, onUpdate }: TaskCardP
                     {task.status.replace('_', ' ')}
                 </span>
 
-                {/* Due date */}
+                {/* Revision count badge */}
+                {task.revisionCount && task.revisionCount > 0 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter bg-pink-50 text-pink-700 border-pink-200">
+                        <RotateCcw className="w-3 h-3 mr-1" />
+                        {task.revisionCount} revision{task.revisionCount > 1 ? 's' : ''}
+                    </span>
+                )}
+
+                {/* Category badge */}
+                {task.category && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter bg-slate-50 text-slate-600 border-slate-200">
+                        <Tag className="w-3 h-3 mr-1" />
+                        {task.category}
+                    </span>
+                )}
+
+                {/* KPI Score badge */}
+                {task.kpiScore !== undefined && task.kpiScore !== null && (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter ${task.kpiScore >= 80 ? 'bg-green-50 text-green-700 border-green-200' :
+                            task.kpiScore >= 60 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                'bg-red-50 text-red-700 border-red-200'
+                        }`}>
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        KPI: {task.kpiScore}%
+                    </span>
+                )}
+
+                {/* Due date - shows both original and final if different */}
                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter ${isOverdue ? 'bg-red-50 text-red-700 border-red-200' : 'bg-gray-50 text-gray-500 border-gray-100'
                     }`}>
                     <Calendar className="w-3 h-3 mr-1" />
-                    {new Date(task.dueDate).toLocaleDateString()}
+                    {format(new Date(effectiveDueDate), 'dd MMM yyyy')}
                     {isOverdue && <span className="ml-1">(Overdue)</span>}
                 </span>
+
+                {/* Extended deadline indicator */}
+                {hasExtendedDeadline && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter bg-amber-50 text-amber-700 border-amber-200">
+                        Extended from {format(new Date(task.dueDate), 'dd MMM')}
+                    </span>
+                )}
             </div>
         </div>
     )
 }
+

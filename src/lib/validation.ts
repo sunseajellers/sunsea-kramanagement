@@ -122,22 +122,6 @@ export const reassignmentSchema = z.object({
     reason: z.string().max(500, 'Reason is too long').optional(),
 });
 
-// Notification validation
-export const notificationSchema = z.object({
-    title: z.string().min(1).max(200),
-    message: z.string().min(1).max(1000),
-    type: z.enum([
-        'task_assigned',
-        'task_updated',
-        'comment_added',
-        'due_date_reminder',
-        'overdue',
-        'report_ready',
-        'reassignment',
-    ]),
-    link: z.string().url().optional(),
-});
-
 // Helper function to validate data
 export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; errors: string[] } {
     try {
@@ -170,4 +154,3 @@ export type CommentInput = z.infer<typeof commentSchema>;
 export type ScoringConfigInput = z.infer<typeof scoringConfigSchema>;
 export type SearchQueryInput = z.infer<typeof searchQuerySchema>;
 export type ReassignmentInput = z.infer<typeof reassignmentSchema>;
-export type NotificationInput = z.infer<typeof notificationSchema>;

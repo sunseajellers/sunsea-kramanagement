@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isUserAdmin } from './server/authService';
+import { adminAuth } from './firebase-admin';
+
+/**
+ * Get user ID from Firebase token in Authorization header
+ */
+async function getUserFromToken(request: NextRequest): Promise<string | null> {
+    try {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
+            // Fallback to x-user-id header for backwards compatibility
+            return request.headers.get('x-user-id');
+        }
+
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        return null;
+    }
+}
+
+/**
+ * Authenticated user middleware (any logged-in user)
+ */
+export async function withAuth(
+    request: NextRequest,
+    handler: (request: NextRequest, userId: string) => Promise<NextResponse>
+): Promise<NextResponse> {
+    try {
+        const userId = await getUserFromToken(request);
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Authentication required' },
+                { status: 401 }
+            );
+        }
+
+        return await handler(request, userId);
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
+    }
+}
 
 /**
  * Admin-only Middleware for API routes
@@ -9,8 +57,7 @@ export async function withAdmin(
     handler: (request: NextRequest, userId: string) => Promise<NextResponse>
 ): Promise<NextResponse> {
     try {
-        // Get user ID from middleware (authenticated requests)
-        const userId = request.headers.get('x-user-id');
+        const userId = await getUserFromToken(request);
 
         if (!userId) {
             return NextResponse.json(
