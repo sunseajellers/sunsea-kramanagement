@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     return withAuth(request, async (_request: NextRequest, userId: string) => {
         const { searchParams } = new URL(request.url);
         const filterUserId = searchParams.get('userId');
+        const assignedByUserId = searchParams.get('assignedBy');
         const showAll = searchParams.get('all') === 'true';
 
         // Check if user is admin
@@ -24,7 +25,10 @@ export async function GET(request: NextRequest) {
 
         let query: any = adminDb.collection('tasks');
 
-        if (isAdmin && showAll) {
+        if (assignedByUserId) {
+            // Fetch tasks that this user has assigned to others
+            query = adminDb.collection('tasks').where('assignedBy', '==', assignedByUserId);
+        } else if (isAdmin && showAll) {
             // Fetch all tasks for admin
             query = adminDb.collection('tasks');
         } else if (isAdmin && filterUserId) {

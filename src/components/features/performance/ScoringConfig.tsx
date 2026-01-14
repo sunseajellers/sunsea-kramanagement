@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast'
 
 export default function ScoringConfig() {
     const { user, loading: authLoading } = useAuth()
-    const [config, setConfig] = useState<IScoringConfig | null>(null)
+    const [, setConfig] = useState<IScoringConfig | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [formData, setFormData] = useState({

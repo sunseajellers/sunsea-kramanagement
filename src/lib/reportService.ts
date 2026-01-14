@@ -1,21 +1,9 @@
 // src/lib/reportService.ts
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    addDoc,
-    doc,
-    getDoc,
-    setDoc,
-    orderBy,
-    limit
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { adminDb } from './firebase-admin';
 import { WeeklyReport, ScoringConfig, TeamWeeklyReport } from '@/types';
 import { timestampToDate, handleError } from './utils';
-import { getUserTasks } from './taskService';
-import { ScoringService } from './scoringService';
+import { getUserTasks } from './server/taskService';
+import { ScoringService } from './server/scoringService';
 
 /**
  * Get the default scoring configuration
@@ -37,11 +25,10 @@ export function getDefaultScoringConfig(): ScoringConfig {
  */
 export async function getScoringConfig(): Promise<ScoringConfig> {
     try {
-        const docRef = doc(db, 'config', 'scoring');
-        const docSnap = await getDoc(docRef);
+        const docSnap = await adminDb.collection('config').doc('scoring').get();
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+        if (docSnap.exists) {
+            const data = docSnap.data()!;
             return {
                 id: docSnap.id,
                 ...data,
@@ -64,8 +51,7 @@ export async function updateScoringConfig(
     adminId: string
 ): Promise<void> {
     try {
-        const docRef = doc(db, 'config', 'scoring');
-        await setDoc(docRef, {
+        await adminDb.collection('config').doc('scoring').set({
             ...config,
             updatedBy: adminId,
             updatedAt: new Date()
@@ -124,7 +110,7 @@ export async function generateWeeklyReport(
 
         // Add user name and save to Firestore
         report.userName = userName;
-        await addDoc(collection(db, 'weeklyReports'), report);
+        await adminDb.collection('weeklyReports').add(report);
 
         return report;
     } catch (error) {
@@ -141,14 +127,12 @@ export async function getUserWeeklyReports(
     limitCount: number = 10
 ): Promise<WeeklyReport[]> {
     try {
-        const q = query(
-            collection(db, 'weeklyReports'),
-            where('userId', '==', userId),
-            orderBy('weekStartDate', 'desc'),
-            limit(limitCount)
-        );
+        const snap = await adminDb.collection('weeklyReports')
+            .where('userId', '==', userId)
+            .orderBy('weekStartDate', 'desc')
+            .limit(limitCount)
+            .get();
 
-        const snap = await getDocs(q);
         return snap.docs.map(doc => {
             const data = doc.data();
             return {
@@ -180,17 +164,15 @@ export async function generateTeamWeeklyReport(
 
         for (const memberId of memberIds) {
             // Try to fetch existing report or generate new one
-            const q = query(
-                collection(db, 'weeklyReports'),
-                where('userId', '==', memberId),
-                where('weekStartDate', '==', weekStart),
-                limit(1)
-            );
+            const snap = await adminDb.collection('weeklyReports')
+                .where('userId', '==', memberId)
+                .where('weekStartDate', '==', weekStart)
+                .limit(1)
+                .get();
 
-            const snap = await getDocs(q);
             if (snap.empty) {
                 // Generate new report
-                const userDoc = await getDoc(doc(db, 'users', memberId));
+                const userDoc = await adminDb.collection('users').doc(memberId).get();
                 const userName = userDoc.data()?.fullName || 'Unknown';
                 const report = await generateWeeklyReport(memberId, userName, weekStart, weekEnd);
                 memberReports.push(report);
@@ -233,7 +215,7 @@ export async function generateTeamWeeklyReport(
         };
 
         // Save to Firestore
-        await addDoc(collection(db, 'teamWeeklyReports'), teamReport);
+        await adminDb.collection('teamWeeklyReports').add(teamReport);
 
         return teamReport;
     } catch (error) {

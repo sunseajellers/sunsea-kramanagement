@@ -3,20 +3,26 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { KRATemplate, getAllKRATemplates, createKRATemplate, toggleKRATemplateStatus, deleteKRATemplate, generateScheduledKRAs } from '@/lib/kraAutomation'
-import { Plus, Trash2, Play, Clock, Calendar, Loader2, X } from 'lucide-react'
+import { Plus, Trash2, Play, Clock, Calendar, Loader2, X, Activity, Copy } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import toast from 'react-hot-toast'
+import { useBulkSelection, executeBulkKRAAction } from '@/lib/bulkUtils'
+import BulkActionBar from '@/components/features/bulk/BulkActionBar'
 
 export default function KRAScheduler() {
-    const { user } = useAuth()
+    const { } = useAuth()
     const [templates, setTemplates] = useState<KRATemplate[]>([])
     const [loading, setLoading] = useState(true)
     const [showCreate, setShowCreate] = useState(false)
     const [generating, setGenerating] = useState(false)
+    const [bulkActionLoading, setBulkActionLoading] = useState(false)
+
+    // Bulk selection
+    const bulkSelection = useBulkSelection(templates)
 
     useEffect(() => {
         loadTemplates()
@@ -67,6 +73,49 @@ export default function KRAScheduler() {
             toast.error('Generation failed')
         } finally {
             setGenerating(false)
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`Delete ${bulkSelection.selectedCount} templates?`)) return
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkKRAAction('delete', bulkSelection.selectedIds)
+            toast.success(`Deleted ${result.success} templates`)
+            bulkSelection.clearSelection()
+            loadTemplates()
+        } catch (error) {
+            toast.error('Bulk delete failed')
+        } finally {
+            setBulkActionLoading(false)
+        }
+    }
+
+    const handleBulkToggleStatus = async () => {
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkKRAAction('toggleStatus', bulkSelection.selectedIds)
+            toast.success(`Updated ${result.success} templates`)
+            bulkSelection.clearSelection()
+            loadTemplates()
+        } catch (error) {
+            toast.error('Bulk update failed')
+        } finally {
+            setBulkActionLoading(false)
+        }
+    }
+
+    const handleBulkDuplicate = async () => {
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkKRAAction('duplicate', bulkSelection.selectedIds)
+            toast.success(`Duplicated ${result.success} templates`)
+            bulkSelection.clearSelection()
+            loadTemplates()
+        } catch (error) {
+            toast.error('Bulk duplicate failed')
+        } finally {
+            setBulkActionLoading(false)
         }
     }
 
@@ -126,6 +175,17 @@ export default function KRAScheduler() {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-gray-50/20 border-b border-gray-50 text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                                <th className="px-8 py-4 text-left w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        checked={bulkSelection.isAllSelected}
+                                        ref={el => {
+                                            if (el) el.indeterminate = bulkSelection.isSomeSelected;
+                                        }}
+                                        onChange={bulkSelection.toggleAll}
+                                    />
+                                </th>
                                 <th className="px-8 py-4 text-left">Protocol Identity</th>
                                 <th className="px-6 py-4 text-center">Cycle</th>
                                 <th className="px-6 py-4 text-center">Urgency</th>
@@ -138,7 +198,7 @@ export default function KRAScheduler() {
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="py-20 text-center">
+                                    <td colSpan={8} className="py-20 text-center">
                                         <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-500 mb-4 opacity-20" />
                                         <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Synchronizing Registry...</p>
                                     </td>
@@ -155,7 +215,15 @@ export default function KRAScheduler() {
                                 </tr>
                             ) : (
                                 templates.map((t) => (
-                                    <tr key={t.id} className={`group hover:bg-blue-50/10 transition-all ${!t.isActive && 'opacity-40 grayscale'}`}>
+                                    <tr key={t.id} className={`group hover:bg-blue-50/10 transition-all ${!t.isActive && 'opacity-40 grayscale'} ${bulkSelection.isSelected(t.id) ? 'bg-blue-50/20' : ''}`}>
+                                        <td className="px-8 py-6">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                checked={bulkSelection.isSelected(t.id)}
+                                                onChange={() => bulkSelection.toggleSelection(t.id)}
+                                            />
+                                        </td>
                                         <td className="px-8 py-6">
                                             <p className="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{t.title}</p>
                                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5 line-clamp-1">{t.description}</p>
@@ -216,6 +284,33 @@ export default function KRAScheduler() {
                     </table>
                 </div>
             </Card>
+
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+                selectedCount={bulkSelection.selectedCount}
+                onClear={bulkSelection.clearSelection}
+                actions={[
+                    {
+                        label: 'Toggle State',
+                        icon: Activity,
+                        onClick: handleBulkToggleStatus,
+                        disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Duplicate',
+                        icon: Copy,
+                        onClick: handleBulkDuplicate,
+                        disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Delete',
+                        icon: Trash2,
+                        onClick: handleBulkDelete,
+                        variant: 'destructive',
+                        disabled: bulkActionLoading
+                    }
+                ]}
+            />
         </div>
     )
 }

@@ -11,12 +11,17 @@ import {
     AlertCircle,
     Calendar,
     TrendingUp,
-    ChevronRight,
     FileText,
-    Target,
-    Loader2
+    Loader2,
+    LogOut,
+    Plus,
+    History,
+    Edit3,
+    ClipboardList
 } from 'lucide-react';
-import { isPast, isToday, isTomorrow, differenceInDays } from 'date-fns';
+import { isPast, isToday, isTomorrow, differenceInDays, format } from 'date-fns';
+import TaskForm from '@/components/features/tasks/TaskForm';
+import TaskUpdateForm from '@/components/features/tasks/TaskUpdateForm';
 
 interface TaskWithMeta extends Task {
     // For display purposes
@@ -55,14 +60,16 @@ const statusLabels: Record<TaskStatus, string> = {
 };
 
 export default function EmployeeDashboard() {
-    const { user, isAdmin, loading: authLoading } = useAuth();
+    const { user, isAdmin, loading: authLoading, signOut } = useAuth();
     const router = useRouter();
     const [tasks, setTasks] = useState<TaskWithMeta[]>([]);
+    const [delegatedTasks, setDelegatedTasks] = useState<TaskWithMeta[]>([]);
+    const [taskUpdates, setTaskUpdates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'pending' | 'overdue' | 'completed'>('all');
     const [selectedTask, setSelectedTask] = useState<TaskWithMeta | null>(null);
-    const [updateText, setUpdateText] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+    const [showCreateTask, setShowCreateTask] = useState(false);
+    const [showUpdateForm, setShowUpdateForm] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -71,14 +78,25 @@ export default function EmployeeDashboard() {
         }
 
         if (user) {
-            fetchMyTasks();
+            fetchAllData();
         }
     }, [user, authLoading]);
 
+    const fetchAllData = async () => {
+        setLoading(true);
+        try {
+            await Promise.all([
+                fetchMyTasks(),
+                fetchDelegatedTasks(),
+                fetchTaskUpdates()
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchMyTasks = async () => {
         try {
-            setLoading(true);
-            // Get the Firebase auth token
             const token = await user?.getIdToken();
             const response = await fetch(`/api/tasks?userId=${user?.uid}`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -86,13 +104,42 @@ export default function EmployeeDashboard() {
             if (response.ok) {
                 const data = await response.json();
                 setTasks(data.tasks || []);
-            } else {
-                console.error('Failed to fetch tasks:', response.status);
             }
         } catch (error) {
             console.error('Error fetching tasks:', error);
-        } finally {
-            setLoading(false);
+        }
+    };
+
+    const fetchDelegatedTasks = async () => {
+        try {
+            const token = await user?.getIdToken();
+            const response = await fetch(`/api/tasks?assignedBy=${user?.uid}`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const delegated = (data.tasks || []).filter((t: TaskWithMeta) =>
+                    !t.assignedTo?.includes(user?.uid || '')
+                );
+                setDelegatedTasks(delegated);
+            }
+        } catch (error) {
+            console.error('Error fetching delegated tasks:', error);
+        }
+    };
+
+    const fetchTaskUpdates = async () => {
+        try {
+            const token = await user?.getIdToken();
+            const response = await fetch(`/api/tasks/updates?userId=${user?.uid}`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setTaskUpdates(data.updates || []);
+            }
+        } catch (error) {
+            console.error('Error fetching updates:', error);
         }
     };
 
@@ -140,309 +187,353 @@ export default function EmployeeDashboard() {
         return `Due in ${differenceInDays(dueDate, new Date())} days`;
     };
 
-    const handleStatusUpdate = async (taskId: string, newStatus: TaskStatus) => {
-        try {
-            setSubmitting(true);
-            await fetch(`/api/tasks/${taskId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus }),
-            });
-
-            // Submit task update log
-            if (updateText.trim()) {
-                await fetch('/api/tasks/updates', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        taskId,
-                        statusUpdate: updateText,
-                        userId: user?.uid,
-                        userName: user?.displayName || user?.email,
-                    }),
-                });
-            }
-
-            setUpdateText('');
-            setSelectedTask(null);
-            await fetchMyTasks();
-        } catch (error) {
-            console.error('Error updating task:', error);
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     const stats = getStats();
     const filteredTasks = getFilteredTasks();
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-indigo-50/20">
             {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+            <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900">My Dashboard</h1>
-                            <p className="text-sm text-slate-500">Welcome back, {user?.displayName || user?.email}</p>
+                            <h1 className="text-2xl font-black bg-gradient-to-r from-slate-900 via-indigo-900 to-purple-900 bg-clip-text text-transparent tracking-tight">
+                                Workspace
+                            </h1>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2 mt-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                                {user?.displayName || user?.email?.split('@')[0]}
+                            </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <a
-                                href="/dashboard/kpi"
-                                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-sm font-medium hover:from-purple-600 hover:to-pink-600 transition"
+                            <button
+                                onClick={() => setShowUpdateForm(true)}
+                                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl text-sm font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all flex items-center gap-2 border border-white/20 active:scale-95"
                             >
-                                Weekly KPIs
-                            </a>
-                            <a
-                                href="/dashboard/activity"
-                                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition"
+                                <Edit3 className="w-4 h-4" />
+                                Log Daily Update
+                            </button>
+                            <button
+                                onClick={() => setShowCreateTask(true)}
+                                className="px-5 py-2.5 bg-white text-slate-700 border-2 border-slate-200 rounded-2xl text-sm font-bold hover:border-indigo-200 hover:text-indigo-600 transition-all flex items-center gap-2 active:scale-95"
                             >
-                                Activity Log
-                            </a>
+                                <Plus className="w-4 h-4" />
+                                Delegate Task
+                            </button>
                             {isAdmin && (
                                 <a
                                     href="/admin"
-                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+                                    className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-2xl text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
                                 >
-                                    Admin Panel
+                                    Admin
                                 </a>
                             )}
+                            <button
+                                onClick={() => signOut()}
+                                className="p-2.5 bg-slate-100 text-slate-600 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95"
+                                title="Logout"
+                            >
+                                <LogOut className="w-5 h-5" />
+                            </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     <div
-                        className={`glass-card p-4 cursor-pointer transition ${filter === 'all' ? 'ring-2 ring-purple-500' : ''}`}
+                        className={`group glass-card p-6 cursor-pointer transition-all hover:translate-y-[-4px] ${filter === 'all' ? 'ring-2 ring-indigo-500 shadow-2xl shadow-indigo-500/10' : 'hover:shadow-xl'}`}
                         onClick={() => setFilter('all')}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="icon-box icon-box-md bg-purple-100">
-                                <FileText className="w-5 h-5 text-purple-600" />
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                                <FileText className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-                                <p className="text-xs text-slate-500 uppercase tracking-wide">Total Tasks</p>
+                                <p className="text-3xl font-black text-slate-900 leading-tight">{stats.total}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Total Tasks</p>
                             </div>
                         </div>
                     </div>
 
                     <div
-                        className={`glass-card p-4 cursor-pointer transition ${filter === 'pending' ? 'ring-2 ring-blue-500' : ''}`}
+                        className={`group glass-card p-6 cursor-pointer transition-all hover:translate-y-[-4px] ${filter === 'pending' ? 'ring-2 ring-amber-500 shadow-2xl shadow-amber-500/10' : 'hover:shadow-xl'}`}
                         onClick={() => setFilter('pending')}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="icon-box icon-box-md bg-blue-100">
-                                <Clock className="w-5 h-5 text-blue-600" />
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                                <Clock className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-slate-900">{stats.pending}</p>
-                                <p className="text-xs text-slate-500 uppercase tracking-wide">Pending</p>
+                                <p className="text-3xl font-black text-slate-900 leading-tight">{stats.pending}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Pending</p>
                             </div>
                         </div>
                     </div>
 
                     <div
-                        className={`glass-card p-4 cursor-pointer transition ${filter === 'overdue' ? 'ring-2 ring-red-500' : ''}`}
+                        className={`group glass-card p-6 cursor-pointer transition-all hover:translate-y-[-4px] ${filter === 'overdue' ? 'ring-2 ring-red-500 shadow-2xl shadow-red-500/10' : 'hover:shadow-xl'}`}
                         onClick={() => setFilter('overdue')}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="icon-box icon-box-md bg-red-100">
-                                <AlertCircle className="w-5 h-5 text-red-600" />
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
+                                <AlertCircle className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-slate-900">{stats.overdue}</p>
-                                <p className="text-xs text-slate-500 uppercase tracking-wide">Overdue</p>
+                                <p className="text-3xl font-black text-slate-900 leading-tight">{stats.overdue}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Overdue</p>
                             </div>
                         </div>
                     </div>
 
                     <div
-                        className={`glass-card p-4 cursor-pointer transition ${filter === 'completed' ? 'ring-2 ring-green-500' : ''}`}
+                        className={`group glass-card p-6 cursor-pointer transition-all hover:translate-y-[-4px] ${filter === 'completed' ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/10' : 'hover:shadow-xl'}`}
                         onClick={() => setFilter('completed')}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="icon-box icon-box-md bg-green-100">
-                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                                <CheckCircle2 className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-slate-900">{stats.completed}</p>
-                                <p className="text-xs text-slate-500 uppercase tracking-wide">Completed</p>
+                                <p className="text-3xl font-black text-slate-900 leading-tight">{stats.completed}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Completed</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* KPI Score Card */}
-                {stats.avgKpiScore > 0 && (
-                    <div className="glass-card p-4 mb-8">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="icon-box icon-box-md bg-gradient-to-br from-purple-500 to-pink-500">
-                                    <Target className="w-5 h-5 text-white" />
+                <div className="grid lg:grid-cols-3 gap-8">
+                    {/* Left & Middle Column: Task List */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="glass-card overflow-hidden">
+                            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                    <ClipboardList className="w-4 h-4 text-indigo-500" />
+                                    Active Assignments
+                                </h2>
+                                <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-500">
+                                    {filteredTasks.length} ITEMS
+                                </span>
+                            </div>
+
+                            {filteredTasks.length === 0 ? (
+                                <div className="p-12 text-center">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                                        <CheckCircle2 className="w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-slate-900 font-bold">All clear!</h3>
+                                    <p className="text-slate-500 text-sm mt-1">No tasks to show in this view.</p>
                                 </div>
-                                <div>
-                                    <p className="text-sm text-slate-500">Average KPI Score</p>
-                                    <p className="text-2xl font-bold text-slate-900">{stats.avgKpiScore}%</p>
+                            ) : (
+                                <div className="divide-y divide-slate-100">
+                                    {filteredTasks.map(task => {
+                                        const dueDate = new Date(task.finalTargetDate || task.dueDate);
+                                        const isOverdue = isPast(dueDate) && !isToday(dueDate) && task.status !== 'completed';
+
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                className="group p-5 hover:bg-indigo-50/30 transition-all cursor-pointer"
+                                                onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            {task.taskNumber && (
+                                                                <span className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-300">
+                                                                    {task.taskNumber}
+                                                                </span>
+                                                            )}
+                                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${priorityColors[task.priority]}`}>
+                                                                {task.priority}
+                                                            </span>
+                                                            {task.revisionCount && task.revisionCount > 0 && (
+                                                                <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md text-[10px] font-black uppercase tracking-wider border border-rose-100">
+                                                                    {task.revisionCount} REV
+                                                                </span>
+                                                            )}
+                                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-black uppercase tracking-wider">
+                                                                {task.category || 'General'}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                                                            {task.title}
+                                                        </h3>
+                                                        <p className="text-sm text-slate-500 line-clamp-1 mt-1 font-medium">
+                                                            {task.description}
+                                                        </p>
+
+                                                        <div className="flex items-center gap-4 mt-3">
+                                                            <span className={`flex items-center gap-1.5 text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+                                                                <Calendar className="w-3.5 h-3.5" />
+                                                                {getDueDateLabel(task)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className={`px-3 py-1 rounded-xl text-xs font-bold ${statusColors[task.status]}`}>
+                                                            {statusLabels[task.status]}
+                                                        </span>
+                                                        {task.status === 'completed' && (
+                                                            <span className={`px-2 py-0.5 mt-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${task.verificationStatus === 'verified' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                task.verificationStatus === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                                    'bg-amber-50 text-amber-700 border-amber-200'
+                                                                }`}>
+                                                                {task.verificationStatus === 'verified' ? 'Verified' :
+                                                                    task.verificationStatus === 'rejected' ? 'Rejected' : 'Pending Verify'}
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setShowUpdateForm(true);
+                                                            }}
+                                                            className="p-2 opacity-0 group-hover:opacity-100 hover:bg-indigo-100 text-indigo-600 rounded-xl transition-all"
+                                                        >
+                                                            <Edit3 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Delegated Section */}
+                        {delegatedTasks.length > 0 && (
+                            <div className="glass-card overflow-hidden">
+                                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                        <TrendingUp className="w-4 h-4 text-purple-500" />
+                                        Delegated to Others
+                                    </h2>
+                                </div>
+                                <div className="divide-y divide-slate-100">
+                                    {delegatedTasks.map(task => (
+                                        <div key={task.id} className="p-4 hover:bg-slate-50 transition flex items-center justify-between">
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-bold text-slate-900 truncate">{task.title}</h4>
+                                                <p className="text-xs text-slate-400 font-medium">Assigned to: {task.assignedTo?.length} users</p>
+                                            </div>
+                                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${statusColors[task.status]}`}>
+                                                {statusLabels[task.status]}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="w-32 h-2 bg-slate-200 rounded-full overflow-hidden">
+                        )}
+                    </div>
+
+                    {/* Right Column: Activity Log */}
+                    <div className="space-y-6">
+                        <div className="glass-card flex flex-col h-full bg-slate-900 text-white border-0 shadow-2xl">
+                            <div className="p-5 border-b border-white/10 flex items-center justify-between bg-white/5">
+                                <h2 className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400">
+                                    <History className="w-4 h-4" />
+                                    Activity Feed
+                                </h2>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto max-h-[600px] p-2 space-y-2">
+                                {taskUpdates.length === 0 ? (
+                                    <div className="py-12 text-center text-slate-500 px-4">
+                                        <p className="text-xs font-bold uppercase tracking-widest">No recent activity</p>
+                                        <p className="text-[10px] mt-1 opacity-50">Updates you log will appear here in real-time.</p>
+                                    </div>
+                                ) : (
+                                    taskUpdates.map((update) => (
+                                        <div key={update.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter ${update.isKRA ? 'bg-indigo-500/20 text-indigo-300' : 'bg-purple-500/20 text-purple-300'
+                                                    }`}>
+                                                    {update.isKRA ? 'KRA' : 'TASK'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-500">
+                                                    {format(new Date(update.timestamp), 'MMM d, h:mm a')}
+                                                </span>
+                                            </div>
+                                            <h4 className="text-sm font-bold text-slate-200 line-clamp-1 group-hover:text-white transition-colors">
+                                                {update.taskTitle}
+                                            </h4>
+                                            <p className="mt-1 text-xs text-slate-400 font-medium line-clamp-2 italic">
+                                                "{update.remarks}"
+                                            </p>
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${statusColors[update.statusUpdate as TaskStatus] || 'bg-slate-400'}`}></span>
+                                                <span className="text-[10px] font-black uppercase tracking-wider opacity-60">
+                                                    {statusLabels[update.statusUpdate as TaskStatus] || update.statusUpdate}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-white/5 border-t border-white/10">
+                                <button
+                                    onClick={() => setShowUpdateForm(true)}
+                                    className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95"
+                                >
+                                    Add New Entry
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Summary Card */}
+                        <div className="glass-card p-6 bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-0 shadow-xl shadow-indigo-500/20">
+                            <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-4">Performance Score</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="text-4xl font-black">{stats.avgKpiScore}%</div>
+                                <div className="w-12 h-12 rounded-full border-4 border-white/20 flex items-center justify-center font-bold text-xs">
+                                    API
+                                </div>
+                            </div>
+                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all"
+                                    className="h-full bg-white transition-all duration-1000"
                                     style={{ width: `${stats.avgKpiScore}%` }}
                                 />
                             </div>
+                            <p className="text-[10px] mt-4 font-bold opacity-60 uppercase tracking-tighter">Based on target completion vs delay</p>
                         </div>
                     </div>
-                )}
-
-                {/* Task List */}
-                <div className="glass-card overflow-hidden">
-                    <div className="p-4 border-b border-slate-100">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                {filter === 'all' ? 'All Tasks' :
-                                    filter === 'pending' ? 'Pending Tasks' :
-                                        filter === 'overdue' ? 'Overdue Tasks' : 'Completed Tasks'}
-                            </h2>
-                            <span className="badge badge-neutral">{filteredTasks.length} tasks</span>
-                        </div>
-                    </div>
-
-                    {filteredTasks.length === 0 ? (
-                        <div className="empty-state py-12">
-                            <div className="empty-state-icon">
-                                <CheckCircle2 className="w-8 h-8" />
-                            </div>
-                            <p className="empty-state-title">No tasks found</p>
-                            <p className="empty-state-description">
-                                {filter === 'overdue' ? 'Great job! No overdue tasks.' : 'No tasks match this filter.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-slate-100">
-                            {filteredTasks.map(task => {
-                                const dueDate = new Date(task.finalTargetDate || task.dueDate);
-                                const isOverdue = isPast(dueDate) && !isToday(dueDate) && task.status !== 'completed';
-
-                                return (
-                                    <div
-                                        key={task.id}
-                                        className={`p-4 hover:bg-slate-50 transition cursor-pointer ${selectedTask?.id === task.id ? 'bg-purple-50' : ''
-                                            }`}
-                                        onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`badge ${priorityColors[task.priority]}`}>
-                                                        {task.priority}
-                                                    </span>
-                                                    {task.revisionCount && task.revisionCount > 0 && (
-                                                        <span className="badge badge-warning">
-                                                            {task.revisionCount} revision{task.revisionCount > 1 ? 's' : ''}
-                                                        </span>
-                                                    )}
-                                                    {task.category && (
-                                                        <span className="badge badge-neutral">{task.category}</span>
-                                                    )}
-                                                </div>
-                                                <h3 className="font-medium text-slate-900 truncate">{task.title}</h3>
-                                                <p className="text-sm text-slate-500 line-clamp-2 mt-1">{task.description}</p>
-
-                                                <div className="flex items-center gap-4 mt-2 text-xs">
-                                                    <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-slate-500'
-                                                        }`}>
-                                                        <Calendar className="w-3 h-3" />
-                                                        {getDueDateLabel(task)}
-                                                    </span>
-                                                    {task.kpiScore !== undefined && (
-                                                        <span className="flex items-center gap-1 text-purple-600">
-                                                            <TrendingUp className="w-3 h-3" />
-                                                            KPI: {task.kpiScore}%
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <span className={`badge ${statusColors[task.status]}`}>
-                                                    {statusLabels[task.status]}
-                                                </span>
-                                                <ChevronRight className={`w-4 h-4 text-slate-400 transition ${selectedTask?.id === task.id ? 'rotate-90' : ''
-                                                    }`} />
-                                            </div>
-                                        </div>
-
-                                        {/* Expanded Task Update Panel */}
-                                        {selectedTask?.id === task.id && (
-                                            <div className="mt-4 pt-4 border-t border-slate-200" onClick={e => e.stopPropagation()}>
-                                                <h4 className="text-sm font-medium text-slate-700 mb-2">Update Status</h4>
-                                                <textarea
-                                                    value={updateText}
-                                                    onChange={e => setUpdateText(e.target.value)}
-                                                    placeholder="Enter your progress update..."
-                                                    className="w-full p-3 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                                    rows={3}
-                                                />
-                                                <div className="flex items-center gap-2 mt-3">
-                                                    {task.status !== 'in_progress' && task.status !== 'completed' && (
-                                                        <button
-                                                            onClick={() => handleStatusUpdate(task.id, 'in_progress')}
-                                                            disabled={submitting}
-                                                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                                                        >
-                                                            Start Working
-                                                        </button>
-                                                    )}
-                                                    {task.status === 'in_progress' && (
-                                                        <button
-                                                            onClick={() => handleStatusUpdate(task.id, 'pending_review')}
-                                                            disabled={submitting}
-                                                            className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50"
-                                                        >
-                                                            Submit for Review
-                                                        </button>
-                                                    )}
-                                                    {task.status === 'revision_requested' && (
-                                                        <button
-                                                            onClick={() => handleStatusUpdate(task.id, 'pending_review')}
-                                                            disabled={submitting}
-                                                            className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
-                                                        >
-                                                            Resubmit
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedTask(null);
-                                                            setUpdateText('');
-                                                        }}
-                                                        className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
                 </div>
             </main>
+
+            {/* Modals */}
+            {showCreateTask && (
+                <TaskForm
+                    onClose={() => setShowCreateTask(false)}
+                    onSaved={() => {
+                        setShowCreateTask(false);
+                        fetchAllData();
+                    }}
+                />
+            )}
+
+            {showUpdateForm && (
+                <TaskUpdateForm
+                    onClose={() => setShowUpdateForm(false)}
+                    onSaved={() => {
+                        setShowUpdateForm(false);
+                        fetchAllData();
+                    }}
+                />
+            )}
         </div>
     );
 }

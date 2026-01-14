@@ -53,17 +53,49 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (_request: NextRequest, userId: string) => {
         try {
             const body = await request.json();
-            const { taskId, statusUpdate, remarks, revisionDate } = body;
+            const { taskId, statusUpdate, remarks, revisionDate, isKRA: bodyIsKRA } = body;
 
-            // Get task title for denormalization
-            const taskDoc = await adminDb.collection('tasks').doc(taskId).get();
-            const taskTitle = taskDoc.exists ? taskDoc.data()?.title || 'Unknown Task' : 'Unknown Task';
+            // 1. Determine if it's a KRA or a Task
+            let isKRA = bodyIsKRA;
+            let collectionName = isKRA ? 'kras' : 'tasks';
+            let taskDoc = await adminDb.collection(collectionName).doc(taskId).get();
 
-            // Get user name
+            // Fallback if isKRA wasn't provided or was wrong (common in migrations)
+            if (!taskDoc.exists) {
+                isKRA = !isKRA;
+                collectionName = isKRA ? 'kras' : 'tasks';
+                taskDoc = await adminDb.collection(collectionName).doc(taskId).get();
+            }
+
+            if (!taskDoc.exists) {
+                return NextResponse.json({ error: 'Task or KRA not found' }, { status: 404 });
+            }
+
+            const taskData = taskDoc.data();
+            const taskTitle = taskData?.title || 'Unknown';
+
+            // 2. Update the status and target date (if revision) on the original document
+            const updates: any = {
+                status: statusUpdate,
+                updatedAt: new Date()
+            };
+
+            if (revisionDate) {
+                updates.finalTargetDate = new Date(revisionDate);
+                // Increment revision count if it's a task
+                if (!isKRA) {
+                    updates.revisionCount = (taskData?.revisionCount || 0) + 1;
+                }
+            }
+
+            await adminDb.collection(collectionName).doc(taskId).update(updates);
+
+            // 3. Get user name for the log
             const userDoc = await adminDb.collection('users').doc(userId).get();
             const userName = userDoc.exists ? userDoc.data()?.fullName || 'Unknown User' : 'Unknown User';
 
-            const update = {
+            // 4. Create the update log entry (TaskUpdateEntry)
+            const updateEntry = {
                 taskId,
                 taskTitle,
                 userId,
@@ -71,18 +103,20 @@ export async function POST(request: NextRequest) {
                 statusUpdate,
                 remarks: remarks || null,
                 revisionDate: revisionDate ? new Date(revisionDate) : null,
+                isKRA,
                 timestamp: new Date()
             };
 
-            const docRef = await adminDb.collection('taskUpdates').add(update);
+            const docRef = await adminDb.collection('taskUpdates').add(updateEntry);
 
             return NextResponse.json({
                 success: true,
-                id: docRef.id
+                id: docRef.id,
+                isKRA
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating update:', error);
-            return NextResponse.json({ error: 'Failed to create update' }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to create update: ' + error.message }, { status: 500 });
         }
     });
 }

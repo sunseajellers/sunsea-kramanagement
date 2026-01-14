@@ -18,6 +18,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getAllUsers, createUser, updateUser } from '@/lib/userService'
+import { useBulkSelection, executeBulkUserAction } from '@/lib/bulkUtils'
+import BulkActionBar from '@/components/features/bulk/BulkActionBar'
 
 const ITEMS_PER_PAGE = 8;
 
@@ -25,8 +27,8 @@ export default function UserManagement() {
     const { user } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
-    const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
     const [currentPage, setCurrentPage] = useState(1)
+    const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
     // Create user dialog state
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -105,22 +107,35 @@ export default function UserManagement() {
         return filteredUsers.slice(start, start + ITEMS_PER_PAGE)
     }, [filteredUsers, currentPage])
 
-    const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            setSelectedUsers(new Set(paginatedUsers.map(u => u.id)))
-        } else {
-            setSelectedUsers(new Set())
+    // Simplified selection
+    const bulkSelection = useBulkSelection(filteredUsers)
+
+    const handleBulkDeactivate = async (active: boolean) => {
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkUserAction('toggleActive', bulkSelection.selectedIds)
+            toast.success(`${active ? 'Activated' : 'Suspended'} ${result.success} users`)
+            bulkSelection.clearSelection()
+            loadUsers()
+        } catch (error) {
+            toast.error('Bulk update failed')
+        } finally {
+            setBulkActionLoading(false)
         }
     }
 
-    const handleSelectUser = (userId: string, checked: boolean) => {
-        const newSelected = new Set(selectedUsers)
-        if (checked) {
-            newSelected.add(userId)
-        } else {
-            newSelected.delete(userId)
+    const handleBulkRoleChange = async (isAdmin: boolean) => {
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkUserAction('updateRole', bulkSelection.selectedIds, { isAdmin })
+            toast.success(`Updated ${result.success} users`)
+            bulkSelection.clearSelection()
+            loadUsers()
+        } catch (error) {
+            toast.error('Bulk role update failed')
+        } finally {
+            setBulkActionLoading(false)
         }
-        setSelectedUsers(newSelected)
     }
 
     const exportUsers = () => {
@@ -265,10 +280,10 @@ export default function UserManagement() {
             <div className="glass-card flex-1 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                     <span className="text-xs font-semibold text-gray-400">{filteredUsers.length} users</span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mr-2">
                         <Checkbox
-                            checked={selectedUsers.size === paginatedUsers.length && paginatedUsers.length > 0}
-                            onCheckedChange={handleSelectAll}
+                            checked={bulkSelection.isAllSelected}
+                            onCheckedChange={() => bulkSelection.toggleAll()}
                             className="w-4 h-4"
                         />
                         <span className="text-[10px] text-gray-400 font-medium">Select All</span>
@@ -288,16 +303,16 @@ export default function UserManagement() {
                             </tr>
                         </thead>
                     </table>
-                    <div className="scroll-panel" style={{ height: 'calc(100% - 44px)' }}>
+                    <div className="scroll-panel flex-1">
                         <table className="data-table">
                             <tbody>
                                 {paginatedUsers.length > 0 ? (
                                     paginatedUsers.map((u) => (
-                                        <tr key={u.id} className="group">
+                                        <tr key={u.id} className={`group ${bulkSelection.isSelected(u.id) ? 'bg-purple-50/30' : ''}`}>
                                             <td className="w-10">
                                                 <Checkbox
-                                                    checked={selectedUsers.has(u.id)}
-                                                    onCheckedChange={(checked: boolean) => handleSelectUser(u.id, checked)}
+                                                    checked={bulkSelection.isSelected(u.id)}
+                                                    onCheckedChange={() => bulkSelection.toggleSelection(u.id)}
                                                     className="w-4 h-4"
                                                 />
                                             </td>
@@ -419,6 +434,32 @@ export default function UserManagement() {
                     </div>
                 )}
             </div>
+
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+                selectedCount={bulkSelection.selectedCount}
+                onClear={bulkSelection.clearSelection}
+                actions={[
+                    {
+                        label: 'Suspend Users',
+                        icon: EyeOff,
+                        onClick: () => handleBulkDeactivate(false),
+                        disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Make Admin',
+                        icon: Shield,
+                        onClick: () => handleBulkRoleChange(true),
+                        disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Make Employee',
+                        icon: UserCheck,
+                        onClick: () => handleBulkRoleChange(false),
+                        disabled: bulkActionLoading
+                    }
+                ]}
+            />
 
             {/* Create User Dialog */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>

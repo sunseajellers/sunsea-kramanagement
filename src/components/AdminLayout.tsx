@@ -6,12 +6,9 @@ import {
     LayoutDashboard,
     LogOut,
     Home,
-    Users,
     BarChart3,
     FileText,
-    Award,
     Server,
-    Users2,
     Loader2,
     Shield
 } from 'lucide-react';
@@ -25,27 +22,27 @@ import { useEffect } from 'react';
 const menuItems = [
     {
         href: '/admin',
-        label: 'Dashboard',
+        label: 'Home',
         icon: LayoutDashboard,
     },
     {
         href: '/admin/organization',
-        label: 'Organization',
+        label: 'People & Teams',
         icon: Shield,
     },
     {
         href: '/admin/operations',
-        label: 'Operations',
+        label: 'Tasks & Goals',
         icon: FileText,
     },
     {
         href: '/admin/performance',
-        label: 'Performance',
+        label: 'Reports',
         icon: BarChart3,
     },
     {
         href: '/admin/system',
-        label: 'System Config',
+        label: 'Settings',
         icon: Server,
     },
 ];

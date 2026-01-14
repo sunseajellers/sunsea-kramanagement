@@ -14,7 +14,8 @@ import {
     Edit,
     Trash2,
     Loader2,
-    Users
+    Users,
+    UserPlus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,8 @@ import TaskForm from '@/components/features/tasks/TaskForm'
 import { deleteTask } from '@/lib/taskService'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { useBulkSelection, executeBulkTaskAction } from '@/lib/bulkUtils'
+import BulkActionBar from '@/components/features/bulk/BulkActionBar'
 
 export default function MasterTaskList() {
     return (
@@ -52,6 +55,7 @@ function MasterTaskListContent() {
     // Form states
     const [isFormOpen, setIsFormOpen] = useState(!!initialAssignTo)
     const [editingTask, setEditingTask] = useState<Task | null>(null)
+    const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
     useEffect(() => {
         loadData()
@@ -110,6 +114,42 @@ function MasterTaskListContent() {
         if (!userIds || userIds.length === 0) return 'Unassigned'
         const user = users.find(u => u.id === userIds[0])
         return user ? user.fullName || user.email : 'Unknown User'
+    }
+
+    // Bulk selection hook (after filteredTasks is defined)
+    const bulkSelection = useBulkSelection(filteredTasks)
+
+    // Bulk action handlers
+    const handleBulkDelete = async () => {
+        if (!confirm(`Delete ${bulkSelection.selectedCount} tasks?`)) return
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkTaskAction('delete', bulkSelection.selectedIds)
+            toast.success(`Deleted ${result.success} tasks`)
+            if (result.failed > 0) toast.error(`Failed: ${result.failed}`)
+            bulkSelection.clearSelection()
+            loadData() // Reload
+        } catch (error) {
+            toast.error('Bulk delete failed')
+        } finally {
+            setBulkActionLoading(false)
+        }
+    }
+
+    const handleBulkReassign = async () => {
+        const selectedUser = prompt('Enter user ID to reassign to:')
+        if (!selectedUser) return
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkTaskAction('reassign', bulkSelection.selectedIds, { assignedTo: [selectedUser] })
+            toast.success(`Reassigned ${result.success} tasks`)
+            bulkSelection.clearSelection()
+            loadData()
+        } catch (error) {
+            toast.error('Bulk reassign failed')
+        } finally {
+            setBulkActionLoading(false)
+        }
     }
 
     return (
@@ -182,6 +222,17 @@ function MasterTaskListContent() {
                     <table className="w-full text-left border-collapse min-w-[1000px]">
                         <thead className="sticky top-0 bg-white z-20 border-b border-gray-100">
                             <tr>
+                                <th className="px-6 py-4 w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                        checked={bulkSelection.isAllSelected}
+                                        ref={el => {
+                                            if (el) el.indeterminate = bulkSelection.isSomeSelected;
+                                        }}
+                                        onChange={bulkSelection.toggleAll}
+                                    />
+                                </th>
                                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Task Details</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Assignee</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
@@ -194,20 +245,28 @@ function MasterTaskListContent() {
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="py-20 text-center">
+                                    <td colSpan={8} className="py-20 text-center">
                                         <Loader2 className="w-10 h-10 animate-spin text-purple-600 mx-auto mb-4" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Syncing with database...</p>
                                     </td>
                                 </tr>
                             ) : filteredTasks.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="py-20 text-center">
+                                    <td colSpan={8} className="py-20 text-center">
                                         <p className="text-gray-400 font-medium">No tasks found matching your criteria</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredTasks.map(task => (
-                                    <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
+                                    <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${bulkSelection.isSelected(task.id) ? 'bg-purple-50/30' : ''}`}>
+                                        <td className="px-6 py-4">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                                checked={bulkSelection.isSelected(task.id)}
+                                                onChange={() => bulkSelection.toggleSelection(task.id)}
+                                            />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="max-w-xs">
                                                 <div className="flex items-center gap-2 mb-1">
@@ -289,6 +348,27 @@ function MasterTaskListContent() {
                     </table>
                 </div>
             </div>
+
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+                selectedCount={bulkSelection.selectedCount}
+                onClear={bulkSelection.clearSelection}
+                actions={[
+                    {
+                        label: 'Reassign',
+                        icon: UserPlus,
+                        onClick: handleBulkReassign,
+                        disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Delete',
+                        icon: Trash2,
+                        onClick: handleBulkDelete,
+                        variant: 'destructive',
+                        disabled: bulkActionLoading
+                    }
+                ]}
+            />
 
             {/* Task Form Modal */}
             {isFormOpen && (

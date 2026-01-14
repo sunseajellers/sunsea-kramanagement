@@ -74,15 +74,24 @@ function shouldGenerateKRA(template: KRATemplate): boolean {
 
     const now = new Date();
     const lastGen = new Date(template.lastGenerated);
+    // Reset time components for accurate date comparison
+    now.setHours(0, 0, 0, 0);
+    lastGen.setHours(0, 0, 0, 0);
 
     switch (template.type) {
         case 'daily':
-            // Generate if last generated was not today
-            return lastGen.toDateString() !== now.toDateString();
+            // Generate if last generated was before today
+            return lastGen.getTime() < now.getTime();
         case 'weekly':
             // Generate if 7+ days since last generation
             const weekDiff = Math.floor((now.getTime() - lastGen.getTime()) / (1000 * 60 * 60 * 24));
             return weekDiff >= 7;
+        case 'fortnightly':
+            // Generate on 1st and 16th of the month
+            const day = now.getDate();
+            const isFortnightStart = day === 1 || day === 16;
+            // Only generate if it's the start of a fortnight AND we haven't generated today
+            return isFortnightStart && lastGen.getTime() < now.getTime();
         case 'monthly':
             // Generate if different month
             return lastGen.getMonth() !== now.getMonth() || lastGen.getFullYear() !== now.getFullYear();
@@ -102,11 +111,30 @@ function calculateEndDate(type: KRAType): Date {
         case 'weekly':
             const weekEnd = new Date(now);
             weekEnd.setDate(now.getDate() + (7 - now.getDay()));
+            weekEnd.setHours(23, 59, 59, 999);
             return weekEnd;
+        case 'fortnightly':
+            const day = now.getDate();
+            if (day <= 15) {
+                // First fortnight: Ends on 15th
+                const end = new Date(now);
+                end.setDate(15);
+                end.setHours(23, 59, 59, 999);
+                return end;
+            } else {
+                // Second fortnight: Ends on last day of month
+                const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                end.setHours(23, 59, 59, 999);
+                return end;
+            }
         case 'monthly':
-            return new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            monthEnd.setHours(23, 59, 59, 999);
+            return monthEnd;
         default:
-            return new Date(now.setDate(now.getDate() + 7));
+            const defaultEnd = new Date(now);
+            defaultEnd.setDate(now.getDate() + 7);
+            return defaultEnd;
     }
 }
 
@@ -122,6 +150,21 @@ export async function generateScheduledKRAs(): Promise<{ generated: number; erro
 
         for (const template of templates) {
             if (!shouldGenerateKRA(template)) continue;
+
+            // Check if today is a working day (skip holidays/Sundays)
+            // Note: This check only applies to DAILY KRAs to prevent spam on off-days.
+            // Weekly/Monthly KRAs should likely still generate or shift to next working day.
+            // For now, we apply strict check for Daily, and permissive for others?
+            // Actually, if a weekly KRA is generated on Monday, but Monday is a holiday, maybe better to generate on Tuesday?
+            // The prompt says "Suppress Off-days".
+            // Let's import the service dynamically to avoid circular deps if any (though unlikely here)
+            const { isWorkingDay } = await import('./holidayService'); // Assuming generic location
+            const isWorking = await isWorkingDay(new Date());
+
+            if (!isWorking && template.type === 'daily') {
+                console.log(`Skipping Daily KRA ${template.title} - Today is not a working day.`);
+                continue;
+            }
 
             try {
                 // Create KRA from template

@@ -1,8 +1,33 @@
-// src/lib/taskService.ts
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, limit, getDoc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import { Task, TaskStats, ChecklistItem } from '@/types';
 import { timestampToDate, handleError } from './utils';
+import { authenticatedJsonFetch } from './apiClient';
+
+/**
+ * Verify a task (Admin action)
+ */
+export async function verifyTask(taskId: string, status: 'verified' | 'rejected', reason?: string): Promise<void> {
+    try {
+        const { auth } = await import('./firebase');
+        const user = auth.currentUser;
+
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        await authenticatedJsonFetch('/api/tasks/verify', {
+            method: 'POST',
+            headers: {
+                'x-user-id': user.uid
+            },
+            body: JSON.stringify({ taskId, status, reason })
+        });
+    } catch (error) {
+        handleError(error, 'Failed to verify task');
+        throw error;
+    }
+}
 
 /**
  * Fetch tasks assigned to a specific user.

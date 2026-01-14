@@ -19,14 +19,21 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
+
+    function isManager() {
+      // For now, treating admins as managers, or checking a specific role if we add it
+      return isAdmin() || (
+        isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true
+      );
+    }
     
     // ========================================
     // USERS COLLECTION
     // ========================================
     match /users/{userId} {
-      // Any authenticated user can read their own document
-      // Admins can read all user documents
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isAuthenticated();
       allow create: if (isOwner(userId) && request.resource.data.isAdmin == false) || isAdmin();
       allow update: if isOwner(userId) && 
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'roleIds', 'isActive']);
@@ -38,7 +45,12 @@ service cloud.firestore {
     // ========================================
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.assignedTo ||
+        request.auth.uid == resource.data.assignedBy ||
+        isAdmin() || isManager()
+      );
       allow delete: if isAdmin();
     }
     
@@ -47,8 +59,7 @@ service cloud.firestore {
     // ========================================
     match /kras/{kraId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
-      allow delete: if isAdmin();
+      allow write: if isAdmin() || isManager();
     }
     
     // ========================================
@@ -60,135 +71,87 @@ service cloud.firestore {
     }
     
     // ========================================
-    // NOTIFICATIONS COLLECTION
+    // NOTIFICATIONS & REMINDERS
     // ========================================
-    match /notifications/{notificationId} {
-      allow read, write: if isAuthenticated();
-    }
+    match /notifications/{id} { allow read, write: if isAuthenticated(); }
+    match /reminders/{id} { allow read, write: if isAuthenticated(); }
     
     // ========================================
-    // REMINDERS COLLECTION
+    // TEMPLATES
     // ========================================
-    match /reminders/{reminderId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // ========================================
-    // TEMPLATES COLLECTION
-    // ========================================
-    match /taskTemplates/{templateId} {
+    match /taskTemplates/{id} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
-    
-    // ========================================
-    // KRA TEMPLATES
-    // ========================================
-    match /kraTemplates/{templateId} {
+    match /kraTemplates/{id} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
     
     // ========================================
-    // PERFORMANCE PARAMETERS
+    // PERFORMANCE & CONFIG
     // ========================================
-    match /performanceParameters/{paramId} {
+    match /performanceParameters/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /scoringConfig/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /scoringWeights/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /config/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /header_config/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    
+    // ========================================
+    // HOLIDAYS
+    // ========================================
+    match /holidays/{id} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
-    
+
     // ========================================
-    // FILTER PRESETS
+    // TASK REVISIONS
     // ========================================
-    match /filterPresets/{presetId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // ========================================
-    // WEEKLY REPORTS
-    // ========================================
-    match /weeklyReports/{reportId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // ========================================
-    // LEGACY COLLECTIONS
-    // ========================================
-    match /roles/{roleId} { allow read, write: if isAdmin(); }
-    match /permissions/{permissionId} { allow read, write: if isAdmin(); }
-    match /role_permissions/{rpId} { allow read, write: if isAdmin(); }
-    
-    // ========================================
-    // TASK UPDATES (Employee Status Updates)
-    // ========================================
-    match /taskUpdates/{updateId} {
+    match /taskRevisions/{id} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
-    }
-    
-    // ========================================
-    // KPIs (Weekly Performance Metrics)
-    // ========================================
-    match /kpis/{kpiId} {
-      allow read, write: if isAuthenticated();
+      allow create: if isAdmin() || isManager();
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.resolvedBy || 
+        isAdmin() || isManager()
+      );
       allow delete: if isAdmin();
     }
-    
-    // ========================================
-    // HEADER CONFIG
-    // ========================================
-    match /header_config/{configId} {
+
+    // = [NEW] BULK OPERATIONS =
+    match /bulkTaskOperations/{id} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == resource.data.createdBy || isAdmin());
+    }
+
+    // = [NEW] SCORES & REPORTS =
+    match /performanceScores/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isManager();
+    }
+    match /misReports/{id} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
-    
-    // ========================================
-    // ADMIN LOGS
-    // ========================================
-    match /admin_logs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAuthenticated();
-    }
-    
-    // ========================================
-    // NOTIFICATION RULES (Admin Config)
-    // ========================================
-    match /notificationRules/{ruleId} {
+    match /weeklyReports/{id} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isManager();
     }
-    
+
     // ========================================
-    // NOTIFICATION ANALYTICS
+    // UTILS & TRACKING
     // ========================================
-    match /notificationAnalytics/{analyticsId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    
+    match /filterPresets/{id} { allow read, write: if isAuthenticated(); }
+    match /taskUpdates/{id} { allow read, write: if isAuthenticated(); }
+    match /kpis/{id} { allow read, write: if isAuthenticated(); }
+    match /admin_logs/{id} { allow read: if isAdmin(); allow create: if isAuthenticated(); }
+    match /notificationRules/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /notificationAnalytics/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+
     // ========================================
-    // SCORING CONFIGURATION
+    // LEGACY
     // ========================================
-    match /scoringConfig/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    
-    // ========================================
-    // SCORING WEIGHTS
-    // ========================================
-    match /scoringWeights/{weightId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    
-    // ========================================
-    // CONFIG COLLECTION (General Settings)
-    // ========================================
-    match /config/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
+    match /roles/{id} { allow read, write: if isAdmin(); }
+    match /permissions/{id} { allow read, write: if isAdmin(); }
+    match /role_permissions/{id} { allow read, write: if isAdmin(); }
   }
 }

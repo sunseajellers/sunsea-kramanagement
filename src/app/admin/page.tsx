@@ -1,24 +1,15 @@
 // src/app/admin/page.tsx
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { Users, BarChart3, Award, FileText, Server, Activity, Database, Shield, AlertTriangle, TrendingUp, Zap, ArrowRight } from 'lucide-react';
+import { Users, BarChart3, Award, Activity, Database, Shield, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
 import { TaskStatusChart, TaskPriorityChart } from '@/components/features/analytics'
+import AdminVerificationQueue from '@/components/admin/AdminVerificationQueue';
 
-interface SystemHealth {
-    database: 'healthy' | 'warning' | 'error';
-    firestore: 'healthy' | 'warning' | 'error';
-    authentication: 'healthy' | 'warning' | 'error';
-    storage: 'healthy' | 'warning' | 'error';
-    lastBackup: Date | null;
-    uptime: number;
-    activeUsers: number;
-    totalUsers: number;
-}
+
 
 interface DbStats {
     users: number;
@@ -30,54 +21,12 @@ interface DbStats {
 
 export default function AdminHome() {
     const { user, isAdmin, loading: authLoading } = useAuth();
-    const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
+    // const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
     const [dbStats, setDbStats] = useState<DbStats | null>(null);
     const [analytics, setAnalytics] = useState<any>(null);
+    const [allTasks, setAllTasks] = useState<any[]>([]);
     const [, setDataLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const adminCards = [
-        {
-            href: '/admin/organization',
-            icon: Shield,
-            title: 'Organization Hub',
-            description: 'Manage workforce, teams, and performance monitoring',
-            bgColor: 'from-blue-500 to-cyan-500',
-            iconBg: 'bg-blue-50',
-            iconColor: 'text-blue-600',
-            stats: dbStats ? `${dbStats.users} Users / ${dbStats.teams} Teams` : '...',
-        },
-        {
-            href: '/admin/operations',
-            icon: FileText,
-            title: 'Operations Hub',
-            description: 'Global task management and KRA automation engine',
-            bgColor: 'from-purple-500 to-fuchsia-500',
-            iconBg: 'bg-purple-50',
-            iconColor: 'text-purple-600',
-            stats: dbStats ? `${dbStats.tasks} Active Tasks` : '...',
-        },
-        {
-            href: '/admin/performance',
-            icon: BarChart3,
-            title: 'Performance Hub',
-            description: 'Analytics, scoring algorithms, and historical archives',
-            bgColor: 'from-amber-500 to-orange-500',
-            iconBg: 'bg-amber-50',
-            iconColor: 'text-amber-600',
-            stats: analytics ? `${analytics.overview?.overallCompletionRate}% Comp. Rate` : '...',
-        },
-        {
-            href: '/admin/system',
-            icon: Server,
-            title: 'System Config',
-            description: 'Platform configuration and administration tools',
-            bgColor: 'from-rose-500 to-pink-500',
-            iconBg: 'bg-red-50',
-            iconColor: 'text-red-600',
-            stats: systemHealth ? `${systemHealth.uptime}% Uptime` : '...',
-        },
-    ];
 
     useEffect(() => {
         // Only fetch data when auth is ready and user is admin
@@ -90,23 +39,28 @@ export default function AdminHome() {
         try {
             setDataLoading(true);
             setError(null);
-            const [healthData, statsData, analyticsResult] = await Promise.all([
+
+            // Dynamic import to avoid server/client conflicts if any
+            const { getAllTasks } = await import('@/lib/taskService');
+
+            const [, statsData, analyticsResult, tasksData] = await Promise.all([
                 getSystemHealth(),
                 getDatabaseStats(),
                 authenticatedJsonFetch('/api/analytics', {
                     headers: {
                         'x-user-id': user?.uid || ''
                     }
-                })
+                }),
+                getAllTasks(200)
             ]);
 
-            setSystemHealth(healthData);
+            // setSystemHealth(healthData);
             setDbStats(statsData);
+            setAllTasks(tasksData);
 
             if (analyticsResult.success && analyticsResult.data) {
                 setAnalytics(analyticsResult.data);
             } else {
-                // Don't throw error, just log it - permission issues are handled gracefully
                 console.warn('Analytics fetch returned:', analyticsResult.error);
             }
         } catch (error) {
@@ -173,6 +127,8 @@ export default function AdminHome() {
 
             {/* Main Grid - Fills Remaining Space */}
             <div className="page-grid" style={{ gridTemplateRows: 'auto 1fr', gridTemplateColumns: '1fr 320px' }}>
+                {/* ... */}
+
                 {/* Top Stats Row - Spans Full Width */}
                 <div className="col-span-2 grid grid-cols-4 gap-4">
                     {[
@@ -198,32 +154,79 @@ export default function AdminHome() {
                     ))}
                 </div>
 
-                {/* Left Column - Management Modules */}
-                <div className="flex flex-col gap-4 min-h-0">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-gray-700">Quick Access</h2>
-                        <span className="text-[10px] text-gray-400 font-medium">6 modules</span>
+                {/* Verification Queue (Phase 5) */}
+                <div className="col-span-2">
+                    <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-sm">
+                        <AdminVerificationQueue
+                            tasks={allTasks}
+                            onVerificationComplete={loadDashboardData}
+                        />
                     </div>
-                    <div className="grid grid-cols-2 gap-3 flex-1 scroll-panel pr-1">
-                        {adminCards.map((card, index) => (
-                            <Link key={index} href={card.href} className="group">
-                                <div className="module-card h-full flex flex-col">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className={`icon-box icon-box-md ${card.iconBg} ${card.iconColor} group-hover:scale-110 transition-transform`}>
-                                            <card.icon className="h-5 w-5" />
-                                        </div>
-                                        <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
-                                    </div>
-                                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1">{card.title}</h3>
-                                    <p className="text-[11px] text-gray-400 leading-relaxed mb-3 line-clamp-2 flex-1">{card.description}</p>
-                                    {card.stats && (
-                                        <div className="inline-flex self-start px-2.5 py-1 bg-gray-50 rounded-md text-[10px] font-semibold text-purple-600">
-                                            {card.stats}
-                                        </div>
-                                    )}
+                </div>
+
+                {/* Left Column - Metrics & Data */}
+                <div className="flex flex-col gap-4 min-h-0">
+                    {/* Task Summary */}
+                    <div className="glass-card p-4">
+                        <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Task Summary
+                        </h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="text-center p-3 bg-blue-50 rounded-xl">
+                                <p className="text-2xl font-bold text-blue-600">{analytics?.overview?.totalTasks || 0}</p>
+                                <p className="text-[10px] text-gray-500 font-medium">Total</p>
+                            </div>
+                            <div className="text-center p-3 bg-amber-50 rounded-xl">
+                                <p className="text-2xl font-bold text-amber-600">{analytics?.overview?.inProgressTasks || 0}</p>
+                                <p className="text-[10px] text-gray-500 font-medium">In Progress</p>
+                            </div>
+                            <div className="text-center p-3 bg-green-50 rounded-xl">
+                                <p className="text-2xl font-bold text-green-600">{analytics?.overview?.completedTasks || 0}</p>
+                                <p className="text-[10px] text-gray-500 font-medium">Completed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Completion Rate */}
+                    <div className="glass-card p-4">
+                        <h3 className="text-xs font-semibold text-gray-500 mb-3">Overall Completion Rate</h3>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full transition-all"
+                                        style={{ width: `${analytics?.overview?.overallCompletionRate || 0}%` }}
+                                    />
                                 </div>
-                            </Link>
-                        ))}
+                            </div>
+                            <span className="text-xl font-bold text-gray-900">{analytics?.overview?.overallCompletionRate || 0}%</span>
+                        </div>
+                    </div>
+
+                    {/* Database Overview */}
+                    <div className="glass-card p-4 flex-1">
+                        <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-2">
+                            <Database className="w-4 h-4" />
+                            Database Records
+                        </h3>
+                        <div className="space-y-2">
+                            {[
+                                { label: 'Users', count: dbStats?.users || 0, color: 'bg-blue-500' },
+                                { label: 'Teams', count: dbStats?.teams || 0, color: 'bg-indigo-500' },
+                                { label: 'Tasks', count: dbStats?.tasks || 0, color: 'bg-emerald-500' },
+                                { label: 'KRAs', count: dbStats?.kras || 0, color: 'bg-amber-500' },
+                                { label: 'Reports', count: dbStats?.reports || 0, color: 'bg-rose-500' },
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                                        <span className="text-xs font-medium text-gray-600">{item.label}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getSystemHealth, getDatabaseStats, performSystemBackup, toggleMaintenanceMode } from '@/lib/adminService'
-import { Server, Database, Shield, Cloud, Activity, HardDrive, Users, FileText, Save, Settings, Clock, ToggleLeft, ToggleRight, Loader2, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
+import { Server, Database, Shield, Cloud, Activity, HardDrive, Users, FileText, Save, Settings, Clock, ToggleLeft, ToggleRight, Loader2, CheckCircle, AlertTriangle, XCircle, Calendar } from 'lucide-react'
+import HolidayManager from '@/components/admin/HolidayManager'
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
 
@@ -355,6 +356,15 @@ export default function AdminSystemPage() {
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Holiday Manager */}
+                    <div className="glass-card p-5">
+                        <h3 className="text-xs font-semibold text-gray-500 mb-4 flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            Holiday Calendar
+                        </h3>
+                        <HolidayManager />
                     </div>
                 </div>
             </div>

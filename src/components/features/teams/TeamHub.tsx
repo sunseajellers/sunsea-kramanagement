@@ -214,7 +214,7 @@ export default function TeamHub() {
                             </tr>
                         </thead>
                     </table>
-                    <div className="scroll-panel" style={{ height: '500px' }}>
+                    <div className="scroll-panel flex-1">
                         <table className="data-table">
                             <tbody>
                                 {paginatedEmployees.length > 0 ? (

@@ -68,7 +68,7 @@ export default function WeeklyReports() {
         }
     };
 
-    const exportReport = async (format: 'pdf' | 'excel' | 'json' = 'pdf') => {
+    const exportReport = async (format: 'pdf' | 'excel' | 'json' | 'csv' = 'pdf') => {
         if (!report) return;
 
         setGenerating(true);
@@ -77,6 +77,17 @@ export default function WeeklyReports() {
 
             if (!result.success || !result.data) {
                 throw new Error(result.error || 'Failed to generate report');
+            }
+
+            if (format === 'csv') {
+                // For CSV, we probably want to flatten the data or export specific parts
+                // Since report is hierarchical, let's export the top-level fields + basic flattened lists
+                // Using dynamic import to avoid circular dependencies if any, though utils is safe
+                const { exportToCSV } = await import('@/lib/exportUtils');
+                // Create a flat representation or array of 1 item
+                exportToCSV([result.data], `weekly-report-${report.teamName}-${selectedWeek}.csv`);
+                toast.success('Report exported successfully');
+                return;
             }
 
             const blob = new Blob([JSON.stringify(result.data, null, 2)], {
@@ -219,6 +230,15 @@ export default function WeeklyReports() {
                             </p>
                         </div>
                         <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => exportReport('csv')}
+                                disabled={generating}
+                                className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-gray-100"
+                            >
+                                <Download className="h-3.5 w-3.5 mr-1.5" />
+                                CSV
+                            </Button>
                             <Button
                                 variant="outline"
                                 onClick={() => exportReport('json')}

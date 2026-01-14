@@ -18,7 +18,7 @@ export type KRAStatus = 'not_started' | 'in_progress' | 'completed' | 'cancelled
 export type RevisionStatus = 'pending' | 'resolved' | 'rejected'
 
 // KRA Types
-export type KRAType = 'daily' | 'weekly' | 'monthly'
+export type KRAType = 'daily' | 'weekly' | 'fortnightly' | 'monthly'
 
 // RBAC Types - Supports both system and custom roles
 export interface Role {
@@ -131,6 +131,7 @@ export interface KRA {
     endDate: Date
     attachments?: string[]
     kpiIds?: string[] // IDs of KPIs linked to this KRA
+    kraNumber?: string // Auto-incremented ID (e.g., K-001)
     createdAt: Date
     updatedAt: Date
 }
@@ -154,11 +155,31 @@ export interface Task {
     lastRevisionId?: string // ID of the most recent revision request
     kpiScore?: number // Performance score (0-100)
     category?: string // Task category/type
+    taskNumber?: string // Auto-incremented ID (e.g., T-001)
     createdAt: Date
     updatedAt: Date
+
+    // Verification Fields (Phase 5)
+    verificationStatus?: 'pending' | 'verified' | 'rejected'
+    verifiedBy?: string // User ID
+    verifiedAt?: Date
+    rejectionReason?: string
 }
 
 // Task Update Interface - Employee status updates (replicates "Tasks Update" sheets)
+// Task Update Entry (matches spreadsheet log structure)
+export interface TaskUpdateEntry {
+    id: string
+    taskId: string           // Link to Task or KRA
+    userId: string           // Employee ID
+    userName: string
+    timestamp: Date
+    statusUpdate: string
+    revisionDate?: Date      // If delayed
+    remarks?: string
+    isKRA: boolean          // Whether it was a KRA or delegated task
+}
+
 export interface TaskUpdate {
     id: string
     taskId: string
@@ -335,6 +356,8 @@ export interface WeeklyReport {
     onTimePercentage: number
     krasCovered: string[]
     taskDelays: number
+    workNotDoneRate: number
+    delayRate: number
     score: number
     breakdown: ScoreBreakdown
     generatedAt: Date
@@ -428,4 +451,16 @@ export interface HeaderConfig {
     title: string
     navigation: NavigationItem[]
     theme: HeaderTheme
+}
+
+// Holiday Configuration
+export interface Holiday {
+    id: string
+    name: string
+    date: Date
+    type: 'public' | 'company' | 'optional'
+    description?: string
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
 }

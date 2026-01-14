@@ -81,6 +81,33 @@ export async function getUserKRAs(uid: string, maxResults: number = 50): Promise
 // Alias for compatibility
 export const fetchKRAs = getUserKRAs;
 
+/**
+ * Get all KRAs (for managers/admins)
+ */
+export async function getAllKRAs(maxResults: number = 100): Promise<KRA[]> {
+    try {
+        const q = query(
+            collection(db, 'kras'),
+            limit(maxResults)
+        );
+        const snap = await getDocs(q);
+        return snap.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                startDate: timestampToDate(data.startDate),
+                endDate: timestampToDate(data.endDate),
+                createdAt: timestampToDate(data.createdAt),
+                updatedAt: timestampToDate(data.updatedAt)
+            } as KRA;
+        });
+    } catch (error) {
+        handleError(error, 'Failed to fetch all KRAs');
+        throw error;
+    }
+}
+
 export async function createKRA(kraData: Omit<KRA, 'id'>): Promise<string> {
     try {
         const docRef = await addDoc(collection(db, 'kras'), kraData);

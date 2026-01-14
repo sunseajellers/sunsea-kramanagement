@@ -217,6 +217,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
                                 >
                                     <option value="daily">📅 Daily</option>
                                     <option value="weekly">📆 Weekly</option>
+                                    <option value="fortnightly">🌓 Fortnightly (1st & 16th)</option>
                                     <option value="monthly">🗓️ Monthly</option>
                                 </select>
                             </div>
