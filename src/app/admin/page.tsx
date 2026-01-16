@@ -5,11 +5,24 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { Users, BarChart3, Award, Activity, Database, Shield, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
+import { 
+    Users, 
+    BarChart3, 
+    Award, 
+    Activity, 
+    Database, 
+    Shield, 
+    AlertTriangle, 
+    TrendingUp, 
+    Zap,
+    CheckCircle2,
+    Clock,
+    Target
+} from 'lucide-react';
 import { TaskStatusChart, TaskPriorityChart } from '@/components/features/analytics'
 import AdminVerificationQueue from '@/components/admin/AdminVerificationQueue';
-
-
+import { StatCard, PageHeader, SectionCard } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 
 interface DbStats {
     users: number;
@@ -21,7 +34,6 @@ interface DbStats {
 
 export default function AdminHome() {
     const { user, isAdmin, loading: authLoading } = useAuth();
-    // const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
     const [dbStats, setDbStats] = useState<DbStats | null>(null);
     const [analytics, setAnalytics] = useState<any>(null);
     const [allTasks, setAllTasks] = useState<any[]>([]);
@@ -29,7 +41,6 @@ export default function AdminHome() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Only fetch data when auth is ready and user is admin
         if (!authLoading && user && isAdmin) {
             loadDashboardData();
         }
@@ -40,7 +51,6 @@ export default function AdminHome() {
             setDataLoading(true);
             setError(null);
 
-            // Dynamic import to avoid server/client conflicts if any
             const { getAllTasks } = await import('@/lib/taskService');
 
             const [, statsData, analyticsResult, tasksData] = await Promise.all([
@@ -54,7 +64,6 @@ export default function AdminHome() {
                 getAllTasks(200)
             ]);
 
-            // setSystemHealth(healthData);
             setDbStats(statsData);
             setAllTasks(tasksData);
 
@@ -71,234 +80,232 @@ export default function AdminHome() {
         }
     };
 
-    // Show loading state while auth is initializing
     if (authLoading) {
         return (
-            <div className="page-container flex-center">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center animate-pulse">
-                        <Activity className="w-6 h-6 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse shadow-lg">
+                        <Activity className="w-8 h-8 text-white" />
                     </div>
-                    <p className="text-sm text-gray-400 font-medium">Loading dashboard...</p>
+                    <p className="text-sm text-gray-600 font-medium">Loading dashboard...</p>
                 </div>
             </div>
         );
     }
 
-    // Show message if user is not admin
     if (!isAdmin) {
         return (
-            <div className="page-container flex-center">
-                <div className="max-w-md text-center p-8 glass-card">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-50 flex items-center justify-center">
-                        <AlertTriangle className="h-8 w-8 text-amber-500" />
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+                <div className="max-w-md w-full text-center p-8 bg-white rounded-2xl shadow-xl border border-gray-200">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+                        <AlertTriangle className="h-10 w-10 text-amber-600" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Access Required</h2>
-                    <p className="text-gray-500 text-sm mb-4">
-                        Your account doesn&apos;t have admin privileges. Please contact the system administrator to get access.
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">Admin Access Required</h2>
+                    <p className="text-gray-600 mb-6">
+                        Your account doesn&apos;t have admin privileges. Please contact the system administrator for access.
                     </p>
-                    <p className="text-xs text-gray-400 font-mono bg-gray-50 rounded-lg px-3 py-2">
-                        User ID: {user?.uid?.slice(0, 12)}...
-                    </p>
+                    <div className="text-xs text-gray-400 font-mono bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+                        User ID: {user?.uid?.slice(0, 16)}...
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="page-container">
-            {/* Page Header - Compact */}
-            <div className="flex items-center justify-between mb-5">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900">System Overview</h1>
-                    <p className="text-gray-400 text-xs font-medium flex items-center gap-1.5 mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                        Live platform monitoring & management
-                    </p>
-                </div>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* Header */}
+                <PageHeader
+                    icon={Shield}
+                    title="Admin Dashboard"
+                    description="Monitor system performance, manage users, and oversee platform operations"
+                    actions={
+                        <Button onClick={loadDashboardData} variant="outline" size="sm">
+                            <Activity className="h-4 w-4 mr-2" />
+                            Refresh Data
+                        </Button>
+                    }
+                />
 
                 {error && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium">
-                        <AlertTriangle className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                        <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                         <span>{error}</span>
                     </div>
                 )}
-            </div>
 
-            {/* Main Grid - Fills Remaining Space */}
-            <div className="page-grid" style={{ gridTemplateRows: 'auto 1fr', gridTemplateColumns: '1fr 320px' }}>
-                {/* ... */}
-
-                {/* Top Stats Row - Spans Full Width */}
-                <div className="col-span-2 grid grid-cols-4 gap-4">
-                    {[
-                        { label: 'Total Users', value: dbStats?.users || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
-                        { label: 'Active Teams', value: dbStats?.teams || 0, icon: Shield, color: 'text-indigo-600', bg: 'bg-indigo-50', trend: 'Stable', trendUp: null },
-                        { label: 'Active Tasks', value: dbStats?.tasks || 0, icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50', trend: '+5%', trendUp: true },
-                        { label: 'Cloud Health', value: '99.9%', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50', trend: 'Optimal', trendUp: true }
-                    ].map((stat, i) => (
-                        <div key={i} className="stat-card group">
-                            <div className="flex flex-col gap-1">
-                                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{stat.label}</p>
-                                <div className="flex items-baseline gap-2">
-                                    <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
-                                    <span className={`text-[10px] font-semibold ${stat.trendUp === true ? 'text-green-500' : stat.trendUp === false ? 'text-red-500' : 'text-gray-400'}`}>
-                                        {stat.trend}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className={`icon-box icon-box-md ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                                <stat.icon className="h-5 w-5" />
-                            </div>
-                        </div>
-                    ))}
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard
+                        title="Total Users"
+                        value={dbStats?.users || 0}
+                        icon={Users}
+                        color="blue"
+                        subtitle="Active accounts"
+                    />
+                    <StatCard
+                        title="Active Teams"
+                        value={dbStats?.teams || 0}
+                        icon={Shield}
+                        color="purple"
+                        subtitle="Organized groups"
+                    />
+                    <StatCard
+                        title="Tasks"
+                        value={dbStats?.tasks || 0}
+                        icon={CheckCircle2}
+                        color="green"
+                        subtitle={`${analytics?.overview?.completedTasks || 0} completed`}
+                    />
+                    <StatCard
+                        title="KRA Goals"
+                        value={dbStats?.kras || 0}
+                        icon={Target}
+                        color="orange"
+                        subtitle="Performance metrics"
+                    />
                 </div>
 
-                {/* Verification Queue (Phase 5) */}
-                <div className="col-span-2">
-                    <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-sm">
-                        <AdminVerificationQueue
-                            tasks={allTasks}
-                            onVerificationComplete={loadDashboardData}
-                        />
-                    </div>
-                </div>
-
-                {/* Left Column - Metrics & Data */}
-                <div className="flex flex-col gap-4 min-h-0">
-                    {/* Task Summary */}
-                    <div className="glass-card p-4">
-                        <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-2">
-                            <Activity className="w-4 h-4" />
-                            Task Summary
-                        </h3>
-                        <div className="grid grid-cols-3 gap-3">
-                            <div className="text-center p-3 bg-blue-50 rounded-xl">
-                                <p className="text-2xl font-bold text-blue-600">{analytics?.overview?.totalTasks || 0}</p>
-                                <p className="text-[10px] text-gray-500 font-medium">Total</p>
+                {/* Performance Overview */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <SectionCard
+                        icon={TrendingUp}
+                        title="Task Completion"
+                        description={`${analytics?.overview?.overallCompletionRate || 0}% overall rate`}
+                    >
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    Completed
+                                </span>
+                                <span className="font-semibold">{analytics?.overview?.completedTasks || 0}</span>
                             </div>
-                            <div className="text-center p-3 bg-amber-50 rounded-xl">
-                                <p className="text-2xl font-bold text-amber-600">{analytics?.overview?.inProgressTasks || 0}</p>
-                                <p className="text-[10px] text-gray-500 font-medium">In Progress</p>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-blue-500" />
+                                    In Progress
+                                </span>
+                                <span className="font-semibold">{analytics?.overview?.inProgressTasks || 0}</span>
                             </div>
-                            <div className="text-center p-3 bg-green-50 rounded-xl">
-                                <p className="text-2xl font-bold text-green-600">{analytics?.overview?.completedTasks || 0}</p>
-                                <p className="text-[10px] text-gray-500 font-medium">Completed</p>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 flex items-center gap-2">
+                                    <Activity className="h-4 w-4 text-gray-400" />
+                                    Pending
+                                </span>
+                                <span className="font-semibold">
+                                    {(analytics?.overview?.totalTasks || 0) - (analytics?.overview?.completedTasks || 0) - (analytics?.overview?.inProgressTasks || 0)}
+                                </span>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Completion Rate */}
-                    <div className="glass-card p-4">
-                        <h3 className="text-xs font-semibold text-gray-500 mb-3">Overall Completion Rate</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1">
+                            
+                            {/* Progress Bar */}
+                            <div className="pt-2">
                                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full transition-all"
+                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
                                         style={{ width: `${analytics?.overview?.overallCompletionRate || 0}%` }}
                                     />
                                 </div>
                             </div>
-                            <span className="text-xl font-bold text-gray-900">{analytics?.overview?.overallCompletionRate || 0}%</span>
                         </div>
-                    </div>
+                    </SectionCard>
 
-                    {/* Database Overview */}
-                    <div className="glass-card p-4 flex-1">
-                        <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-2">
-                            <Database className="w-4 h-4" />
-                            Database Records
-                        </h3>
-                        <div className="space-y-2">
-                            {[
-                                { label: 'Users', count: dbStats?.users || 0, color: 'bg-blue-500' },
-                                { label: 'Teams', count: dbStats?.teams || 0, color: 'bg-indigo-500' },
-                                { label: 'Tasks', count: dbStats?.tasks || 0, color: 'bg-emerald-500' },
-                                { label: 'KRAs', count: dbStats?.kras || 0, color: 'bg-amber-500' },
-                                { label: 'Reports', count: dbStats?.reports || 0, color: 'bg-rose-500' },
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`w-2 h-2 rounded-full ${item.color}`} />
-                                        <span className="text-xs font-medium text-gray-600">{item.label}</span>
+                    <SectionCard
+                        icon={BarChart3}
+                        title="Task Distribution"
+                        description="By status"
+                    >
+                        <div className="h-56">
+                            {analytics ? (
+                                <TaskStatusChart data={{
+                                    pending: (analytics.overview?.totalTasks || 0) - (analytics.overview?.completedTasks || 0) - (analytics.overview?.inProgressTasks || 0),
+                                    'in-progress': analytics.overview?.inProgressTasks || 0,
+                                    completed: analytics.overview?.completedTasks || 0,
+                                    blocked: 0
+                                }} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-gray-400">
+                                    <div className="text-center">
+                                        <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                                        <p className="text-sm">No data available</p>
                                     </div>
-                                    <span className="text-sm font-bold text-gray-900">{item.count}</span>
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    </div>
-                </div>
+                    </SectionCard>
 
-                {/* Right Column - Live Insights */}
-                <div className="flex flex-col gap-4 min-h-0">
-                    <h2 className="text-sm font-semibold text-gray-700">Live Insights</h2>
-                    <div className="flex-1 flex flex-col gap-3 scroll-panel pr-1">
-                        {/* Task Distribution Chart */}
-                        <div className="glass-card p-4 flex-1 min-h-0">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-semibold text-gray-500">Task Distribution</h3>
-                                <Zap className="h-3.5 w-3.5 text-blue-500" />
-                            </div>
-                            <div className="h-[calc(100%-28px)]">
-                                {analytics ? (
-                                    <TaskStatusChart data={{
-                                        pending: analytics.overview?.totalTasks - analytics.overview?.completedTasks - analytics.overview?.inProgressTasks || 0,
-                                        'in-progress': analytics.overview?.inProgressTasks || 0,
-                                        completed: analytics.overview?.completedTasks || 0,
-                                        blocked: 0
-                                    }} />
-                                ) : (
-                                    <div className="h-full flex items-center justify-center">
-                                        <div className="empty-state py-6">
-                                            <div className="empty-state-icon w-10 h-10">
-                                                <BarChart3 className="w-5 h-5" />
-                                            </div>
-                                            <p className="text-xs text-gray-400">No task data available</p>
-                                        </div>
+                    <SectionCard
+                        icon={Award}
+                        title="Priority Breakdown"
+                        description="Task priorities"
+                    >
+                        <div className="h-56">
+                            {analytics ? (
+                                <TaskPriorityChart data={analytics.distributions?.priority || { low: 0, medium: 0, high: 0, critical: 0 }} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-gray-400">
+                                    <div className="text-center">
+                                        <Award className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                                        <p className="text-sm">No data available</p>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
+                    </SectionCard>
+                </div>
 
-                        {/* Priority Levels Chart */}
-                        <div className="glass-card p-4 flex-1 min-h-0">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-semibold text-gray-500">Priority Levels</h3>
-                                <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
+                {/* Database Stats */}
+                <SectionCard
+                    icon={Database}
+                    title="Database Overview"
+                    description="Collection statistics"
+                >
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {[
+                            { label: 'Users', count: dbStats?.users || 0, color: 'blue', icon: Users },
+                            { label: 'Teams', count: dbStats?.teams || 0, color: 'purple', icon: Shield },
+                            { label: 'Tasks', count: dbStats?.tasks || 0, color: 'green', icon: CheckCircle2 },
+                            { label: 'KRAs', count: dbStats?.kras || 0, color: 'orange', icon: Target },
+                            { label: 'Reports', count: dbStats?.reports || 0, color: 'pink', icon: BarChart3 },
+                        ].map((item, i) => (
+                            <div key={i} className="text-center p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
+                                <div className={`inline-flex p-3 rounded-lg mb-3 bg-${item.color}-50`}>
+                                    <item.icon className={`h-6 w-6 text-${item.color}-600`} />
+                                </div>
+                                <p className="text-2xl font-bold text-gray-900 mb-1">{item.count}</p>
+                                <p className="text-xs text-gray-600 font-medium">{item.label}</p>
                             </div>
-                            <div className="h-[calc(100%-28px)]">
-                                {analytics ? (
-                                    <TaskPriorityChart data={analytics.distributions?.priority || { low: 0, medium: 0, high: 0, critical: 0 }} />
-                                ) : (
-                                    <div className="h-full flex items-center justify-center">
-                                        <div className="empty-state py-6">
-                                            <div className="empty-state-icon w-10 h-10">
-                                                <Award className="w-5 h-5" />
-                                            </div>
-                                            <p className="text-xs text-gray-400">No priority data available</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                        ))}
+                    </div>
+                </SectionCard>
+
+                {/* Verification Queue */}
+                <SectionCard
+                    icon={Zap}
+                    title="Verification Queue"
+                    description="Tasks pending review"
+                >
+                    <AdminVerificationQueue
+                        tasks={allTasks}
+                        onVerificationComplete={loadDashboardData}
+                    />
+                </SectionCard>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-500" />
+                            <span>System Online</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            <span>Database Connected</span>
                         </div>
                     </div>
+                    <p className="text-xs text-gray-400">© 2026 JewelMatrix Admin</p>
                 </div>
-            </div>
-
-            {/* Footer Status Bar */}
-            <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-200" />
-                        <span className="text-[11px] text-gray-400 font-medium">Database Connected</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
-                        <span className="text-[11px] text-gray-400 font-medium">API v1.02</span>
-                    </div>
-                </div>
-                <p className="text-[11px] text-gray-300">© 2026 Admin Control Panel</p>
             </div>
         </div>
     );

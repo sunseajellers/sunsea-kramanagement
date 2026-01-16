@@ -11,3 +11,8 @@ export { Label } from './label'
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 export { Switch } from './switch'
 export { Textarea } from './textarea'
+
+// Custom UI Components
+export { StatCard } from './stat-card'
+export { PageHeader } from './page-header'
+export { SectionCard } from './section-card'

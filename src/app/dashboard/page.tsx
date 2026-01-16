@@ -17,11 +17,18 @@ import {
     Plus,
     History,
     Edit3,
-    ClipboardList
+    ClipboardList,
+    CheckSquare,
+    Square,
+    PlayCircle,
+    PauseCircle,
+    XCircle,
+    Eye
 } from 'lucide-react';
 import { isPast, isToday, isTomorrow, differenceInDays, format } from 'date-fns';
 import TaskForm from '@/components/features/tasks/TaskForm';
 import TaskUpdateForm from '@/components/features/tasks/TaskUpdateForm';
+import ActivityLogViewer from '@/components/features/activity/ActivityLogViewer';
 
 interface TaskWithMeta extends Task {
     // For display purposes
@@ -70,6 +77,9 @@ export default function EmployeeDashboard() {
     const [selectedTask, setSelectedTask] = useState<TaskWithMeta | null>(null);
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [showUpdateForm, setShowUpdateForm] = useState(false);
+    const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+    const [updatingTasks, setUpdatingTasks] = useState<Set<string>>(new Set());
+    const [groupBy, setGroupBy] = useState<'none' | 'priority' | 'status'>('none');
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -187,8 +197,98 @@ export default function EmployeeDashboard() {
         return `Due in ${differenceInDays(dueDate, new Date())} days`;
     };
 
+    const toggleTaskSelection = (taskId: string) => {
+        setSelectedTasks(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(taskId)) {
+                newSet.delete(taskId);
+            } else {
+                newSet.add(taskId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleQuickStatusUpdate = async (taskId: string, newStatus: TaskStatus) => {
+        setUpdatingTasks(prev => new Set(prev).add(taskId));
+        try {
+            const token = await user?.getIdToken();
+            const response = await fetch(`/api/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus, updatedAt: new Date() })
+            });
+
+            if (response.ok) {
+                await fetchAllData();
+            }
+        } catch (error) {
+            console.error('Failed to update task status:', error);
+        } finally {
+            setUpdatingTasks(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(taskId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleBulkComplete = async () => {
+        if (selectedTasks.size === 0) return;
+        
+        const taskIds = Array.from(selectedTasks);
+        for (const taskId of taskIds) {
+            await handleQuickStatusUpdate(taskId, 'completed');
+        }
+        setSelectedTasks(new Set());
+    };
+
+    const handleBulkStatusChange = async (status: TaskStatus) => {
+        if (selectedTasks.size === 0) return;
+        
+        const taskIds = Array.from(selectedTasks);
+        for (const taskId of taskIds) {
+            await handleQuickStatusUpdate(taskId, status);
+        }
+        setSelectedTasks(new Set());
+    };
+
+    const getGroupedTasks = () => {
+        const filtered = getFilteredTasks();
+        
+        if (groupBy === 'none') {
+            return { 'All Tasks': filtered };
+        }
+        
+        if (groupBy === 'priority') {
+            return {
+                'Critical': filtered.filter(t => t.priority === 'critical'),
+                'High': filtered.filter(t => t.priority === 'high'),
+                'Medium': filtered.filter(t => t.priority === 'medium'),
+                'Low': filtered.filter(t => t.priority === 'low'),
+            };
+        }
+        
+        if (groupBy === 'status') {
+            return {
+                'In Progress': filtered.filter(t => t.status === 'in_progress'),
+                'Assigned': filtered.filter(t => t.status === 'assigned'),
+                'Pending Review': filtered.filter(t => t.status === 'pending_review'),
+                'Revision Requested': filtered.filter(t => t.status === 'revision_requested'),
+                'Blocked': filtered.filter(t => t.status === 'blocked'),
+                'Completed': filtered.filter(t => t.status === 'completed'),
+            };
+        }
+        
+        return { 'All Tasks': filtered };
+    };
+
     const stats = getStats();
     const filteredTasks = getFilteredTasks();
+    const groupedTasks = getGroupedTasks();
 
     if (authLoading || loading) {
         return (
@@ -317,13 +417,61 @@ export default function EmployeeDashboard() {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="glass-card overflow-hidden">
                             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                                    <ClipboardList className="w-4 h-4 text-indigo-500" />
-                                    Active Assignments
-                                </h2>
-                                <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-500">
-                                    {filteredTasks.length} ITEMS
-                                </span>
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                        <ClipboardList className="w-4 h-4 text-indigo-500" />
+                                        Active Assignments
+                                    </h2>
+                                    <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-500">
+                                        {filteredTasks.length} ITEMS
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        value={groupBy}
+                                        onChange={(e) => setGroupBy(e.target.value as any)}
+                                        className="text-xs font-bold px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        <option value="none">No Grouping</option>
+                                        <option value="priority">Group by Priority</option>
+                                        <option value="status">Group by Status</option>
+                                    </select>
+                                    {selectedTasks.size > 0 && (
+                                        <div className="flex items-center gap-1 ml-2">
+                                            <span className="text-xs font-bold text-slate-600 mr-2">
+                                                {selectedTasks.size} selected
+                                            </span>
+                                            <button
+                                                onClick={() => handleBulkStatusChange('in_progress')}
+                                                className="px-3 py-1.5 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 transition-colors"
+                                                title="Mark as In Progress"
+                                            >
+                                                <PlayCircle className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={handleBulkComplete}
+                                                className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors"
+                                                title="Mark as Complete"
+                                            >
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleBulkStatusChange('on_hold')}
+                                                className="px-3 py-1.5 bg-yellow-500 text-white text-xs font-bold rounded-lg hover:bg-yellow-600 transition-colors"
+                                                title="Put On Hold"
+                                            >
+                                                <PauseCircle className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedTasks(new Set())}
+                                                className="px-3 py-1.5 bg-slate-500 text-white text-xs font-bold rounded-lg hover:bg-slate-600 transition-colors"
+                                                title="Clear Selection"
+                                            >
+                                                <XCircle className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {filteredTasks.length === 0 ? (
@@ -336,78 +484,214 @@ export default function EmployeeDashboard() {
                                 </div>
                             ) : (
                                 <div className="divide-y divide-slate-100">
-                                    {filteredTasks.map(task => {
-                                        const dueDate = new Date(task.finalTargetDate || task.dueDate);
-                                        const isOverdue = isPast(dueDate) && !isToday(dueDate) && task.status !== 'completed';
-
-                                        return (
-                                            <div
-                                                key={task.id}
-                                                className="group p-5 hover:bg-indigo-50/30 transition-all cursor-pointer"
-                                                onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
-                                            >
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            {task.taskNumber && (
-                                                                <span className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-300">
-                                                                    {task.taskNumber}
-                                                                </span>
-                                                            )}
-                                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${priorityColors[task.priority]}`}>
-                                                                {task.priority}
-                                                            </span>
-                                                            {task.revisionCount && task.revisionCount > 0 && (
-                                                                <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md text-[10px] font-black uppercase tracking-wider border border-rose-100">
-                                                                    {task.revisionCount} REV
-                                                                </span>
-                                                            )}
-                                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-black uppercase tracking-wider">
-                                                                {task.category || 'General'}
-                                                            </span>
-                                                        </div>
-                                                        <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
-                                                            {task.title}
+                                    {Object.entries(groupedTasks).map(([groupName, groupTasks]: [string, TaskWithMeta[]]) => (
+                                        groupTasks.length > 0 && (
+                                            <div key={groupName}>
+                                                {groupBy !== 'none' && (
+                                                    <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                                                        <h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">
+                                                            {groupName} ({groupTasks.length})
                                                         </h3>
-                                                        <p className="text-sm text-slate-500 line-clamp-1 mt-1 font-medium">
-                                                            {task.description}
-                                                        </p>
-
-                                                        <div className="flex items-center gap-4 mt-3">
-                                                            <span className={`flex items-center gap-1.5 text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
-                                                                <Calendar className="w-3.5 h-3.5" />
-                                                                {getDueDateLabel(task)}
-                                                            </span>
-                                                        </div>
                                                     </div>
+                                                )}
+                                                {groupTasks.map(task => {
+                                                    const dueDate = new Date(task.finalTargetDate || task.dueDate);
+                                                    const isOverdue = isPast(dueDate) && !isToday(dueDate) && task.status !== 'completed';
+                                                    const isSelected = selectedTasks.has(task.id);
+                                                    const isUpdating = updatingTasks.has(task.id);
 
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        <span className={`px-3 py-1 rounded-xl text-xs font-bold ${statusColors[task.status]}`}>
-                                                            {statusLabels[task.status]}
-                                                        </span>
-                                                        {task.status === 'completed' && (
-                                                            <span className={`px-2 py-0.5 mt-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${task.verificationStatus === 'verified' ? 'bg-green-50 text-green-700 border-green-200' :
-                                                                task.verificationStatus === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                                                                    'bg-amber-50 text-amber-700 border-amber-200'
-                                                                }`}>
-                                                                {task.verificationStatus === 'verified' ? 'Verified' :
-                                                                    task.verificationStatus === 'rejected' ? 'Rejected' : 'Pending Verify'}
-                                                            </span>
-                                                        )}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setShowUpdateForm(true);
-                                                            }}
-                                                            className="p-2 opacity-0 group-hover:opacity-100 hover:bg-indigo-100 text-indigo-600 rounded-xl transition-all"
+                                                    return (
+                                                        <div
+                                                            key={task.id}
+                                                            className={`group p-5 transition-all ${isSelected ? 'bg-indigo-50/50' : 'hover:bg-indigo-50/30'}`}
                                                         >
-                                                            <Edit3 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                                            <div className="flex items-start gap-4">
+                                                                {/* Checkbox for selection */}
+                                                                <button
+                                                                    onClick={() => toggleTaskSelection(task.id)}
+                                                                    className="mt-1 flex-shrink-0 transition-transform hover:scale-110"
+                                                                >
+                                                                    {isSelected ? (
+                                                                        <CheckSquare className="w-5 h-5 text-indigo-600" />
+                                                                    ) : (
+                                                                        <Square className="w-5 h-5 text-slate-400 hover:text-indigo-500" />
+                                                                    )}
+                                                                </button>
+
+                                                                {/* Task Content */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        {task.taskNumber && (
+                                                                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-300">
+                                                                                {task.taskNumber}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${priorityColors[task.priority as Priority]}`}>
+                                                                            {task.priority}
+                                                                        </span>
+                                                                        {task.revisionCount && task.revisionCount > 0 && (
+                                                                            <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md text-[10px] font-black uppercase tracking-wider border border-rose-100">
+                                                                                {task.revisionCount} REV
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-black uppercase tracking-wider">
+                                                                            {task.category || 'General'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <h3 className={`text-base font-bold transition-colors truncate ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900 group-hover:text-indigo-600'}`}>
+                                                                        {task.title}
+                                                                    </h3>
+                                                                    <p className="text-sm text-slate-500 line-clamp-1 mt-1 font-medium">
+                                                                        {task.description}
+                                                                    </p>
+
+                                                                    {/* Progress bar */}
+                                                                    {task.progress !== undefined && (
+                                                                        <div className="mt-3">
+                                                                            <div className="flex justify-between items-center mb-1">
+                                                                                <span className="text-[9px] font-bold text-slate-400 uppercase">Progress</span>
+                                                                                <span className="text-[9px] font-bold text-indigo-600">{task.progress}%</span>
+                                                                            </div>
+                                                                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                                                <div
+                                                                                    className="bg-indigo-600 h-full rounded-full transition-all duration-500"
+                                                                                    style={{ width: `${task.progress}%` }}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="flex items-center gap-4 mt-3">
+                                                                        <span className={`flex items-center gap-1.5 text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+                                                                            <Calendar className="w-3.5 h-3.5" />
+                                                                            {getDueDateLabel(task)}
+                                                                        </span>
+                                                                        {task.kpiScore !== undefined && task.kpiScore !== null && (
+                                                                            <span className="flex items-center gap-1 text-xs font-bold text-purple-600">
+                                                                                <TrendingUp className="w-3.5 h-3.5" />
+                                                                                KPI: {task.kpiScore}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Status and Quick Actions */}
+                                                                <div className="flex flex-col items-end gap-2">
+                                                                    <span className={`px-3 py-1 rounded-xl text-xs font-bold ${statusColors[task.status as TaskStatus]}`}>
+                                                                        {statusLabels[task.status as TaskStatus]}
+                                                                    </span>
+                                                                    {task.status === 'completed' && (
+                                                                        <span className={`px-2 py-0.5 mt-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${task.verificationStatus === 'verified' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                            task.verificationStatus === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                                                'bg-amber-50 text-amber-700 border-amber-200'
+                                                                            }`}>
+                                                                            {task.verificationStatus === 'verified' ? 'Verified' :
+                                                                                task.verificationStatus === 'rejected' ? 'Rejected' : 'Pending Verify'}
+                                                                        </span>
+                                                                    )}
+                                                                    
+                                                                    {/* Quick action buttons */}
+                                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        {task.status !== 'in_progress' && task.status !== 'completed' && (
+                                                                            <button
+                                                                                onClick={() => handleQuickStatusUpdate(task.id, 'in_progress')}
+                                                                                disabled={isUpdating}
+                                                                                className="p-1.5 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors disabled:opacity-50"
+                                                                                title="Start Task"
+                                                                            >
+                                                                                <PlayCircle className="w-4 h-4" />
+                                                                            </button>
+                                                                        )}
+                                                                        {task.status !== 'completed' && (
+                                                                            <button
+                                                                                onClick={() => handleQuickStatusUpdate(task.id, 'completed')}
+                                                                                disabled={isUpdating}
+                                                                                className="p-1.5 hover:bg-green-100 text-green-600 rounded-lg transition-colors disabled:opacity-50"
+                                                                                title="Mark Complete"
+                                                                            >
+                                                                                <CheckCircle2 className="w-4 h-4" />
+                                                                            </button>
+                                                                        )}
+                                                                        {task.status !== 'on_hold' && task.status !== 'completed' && (
+                                                                            <button
+                                                                                onClick={() => handleQuickStatusUpdate(task.id, 'on_hold')}
+                                                                                disabled={isUpdating}
+                                                                                className="p-1.5 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-colors disabled:opacity-50"
+                                                                                title="Put On Hold"
+                                                                            >
+                                                                                <PauseCircle className="w-4 h-4" />
+                                                                            </button>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedTask(task);
+                                                                                setShowUpdateForm(true);
+                                                                            }}
+                                                                            className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors"
+                                                                            title="Add Update"
+                                                                        >
+                                                                            <Edit3 className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
+                                                                            className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors"
+                                                                            title="View Details"
+                                                                        >
+                                                                            <Eye className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                    
+                                                                    {isUpdating && (
+                                                                        <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Expanded details */}
+                                                            {selectedTask?.id === task.id && (
+                                                                <div className="mt-4 pt-4 border-t border-slate-200">
+                                                                    <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                                            <div>
+                                                                                <span className="font-bold text-slate-600">Created:</span>
+                                                                                <span className="ml-2 text-slate-800">
+                                                                                    {task.createdAt ? format(new Date(task.createdAt), 'MMM d, yyyy') : 'N/A'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="font-bold text-slate-600">Due Date:</span>
+                                                                                <span className="ml-2 text-slate-800">
+                                                                                    {format(new Date(task.finalTargetDate || task.dueDate), 'MMM d, yyyy')}
+                                                                                </span>
+                                                                            </div>
+                                                                            {task.category && (
+                                                                                <div>
+                                                                                    <span className="font-bold text-slate-600">Category:</span>
+                                                                                    <span className="ml-2 text-slate-800">{task.category}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {task.revisionCount && task.revisionCount > 0 && (
+                                                                                <div>
+                                                                                    <span className="font-bold text-slate-600">Revisions:</span>
+                                                                                    <span className="ml-2 text-slate-800">{task.revisionCount}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        {task.description && (
+                                                                            <div className="pt-2">
+                                                                                <span className="font-bold text-slate-600 text-sm">Description:</span>
+                                                                                <p className="text-sm text-slate-800 mt-1">{task.description}</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-                                        );
-                                    })}
+                                        )
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -511,6 +795,14 @@ export default function EmployeeDashboard() {
                             <p className="text-[10px] mt-4 font-bold opacity-60 uppercase tracking-tighter">Based on target completion vs delay</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Activity Log Section */}
+                <div className="mt-8 space-y-4">
+                    <h2 className="text-lg font-black bg-gradient-to-r from-slate-900 via-indigo-900 to-purple-900 bg-clip-text text-transparent tracking-tight">
+                        System Activity Log
+                    </h2>
+                    <ActivityLogViewer limit={50} showFilters={true} compact={false} />
                 </div>
             </main>
 

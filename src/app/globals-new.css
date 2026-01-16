@@ -1,0 +1,286 @@
+// src/app/globals.css - Enhanced with modern design system
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-blue-50 via-white to-purple-50 text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Modern Card Styles */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg shadow-gray-200/50;
+  }
+  
+  .stat-card {
+    @apply relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm;
+    @apply transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-gray-300;
+  }
+  
+  /* Page Container */
+  .page-container {
+    @apply min-h-screen p-6;
+  }
+  
+  /* Modern Button Variants */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-purple-600;
+    @apply px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/30;
+    @apply transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg bg-white border border-gray-200;
+    @apply px-4 py-2 text-sm font-medium text-gray-700 shadow-sm;
+    @apply transition-all duration-200 hover:bg-gray-50 hover:shadow-md;
+  }
+  
+  /* Badge Styles */
+  .badge-modern {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+    @apply ring-1 ring-inset;
+  }
+  
+  .badge-blue {
+    @apply bg-blue-50 text-blue-700 ring-blue-600/20;
+  }
+  
+  .badge-green {
+    @apply bg-green-50 text-green-700 ring-green-600/20;
+  }
+  
+  .badge-purple {
+    @apply bg-purple-50 text-purple-700 ring-purple-600/20;
+  }
+  
+  .badge-orange {
+    @apply bg-orange-50 text-orange-700 ring-orange-600/20;
+  }
+  
+  .badge-red {
+    @apply bg-red-50 text-red-700 ring-red-600/20;
+  }
+  
+  /* Section Headers */
+  .section-header {
+    @apply flex items-center justify-between mb-6 pb-4 border-b border-gray-200;
+  }
+  
+  .section-title {
+    @apply text-xl font-bold text-gray-900 flex items-center gap-3;
+  }
+  
+  /* Empty States */
+  .empty-state {
+    @apply flex flex-col items-center justify-center text-center p-12;
+  }
+  
+  .empty-state-icon {
+    @apply mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl;
+    @apply bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400;
+  }
+  
+  /* Task Card Modern */
+  .task-card {
+    @apply group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5;
+    @apply transition-all duration-200 hover:shadow-lg hover:border-gray-300;
+  }
+  
+  /* Icon Box */
+  .icon-box {
+    @apply flex items-center justify-center rounded-lg;
+    @apply transition-transform duration-200;
+  }
+  
+  .icon-box-sm {
+    @apply h-8 w-8;
+  }
+  
+  .icon-box-md {
+    @apply h-10 w-10;
+  }
+  
+  .icon-box-lg {
+    @apply h-12 w-12;
+  }
+  
+  /* Progress Bar Modern */
+  .progress-bar {
+    @apply h-2 overflow-hidden rounded-full bg-gray-100;
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600;
+    @apply transition-all duration-500 ease-out;
+  }
+  
+  /* Input Modern */
+  .input-modern {
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5;
+    @apply text-sm text-gray-900 placeholder:text-gray-400;
+    @apply transition-all duration-200;
+    @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none;
+  }
+  
+  /* Select Modern */
+  .select-modern {
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5;
+    @apply text-sm text-gray-900;
+    @apply transition-all duration-200;
+    @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none;
+    @apply appearance-none bg-[url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")] bg-[position:right_0.5rem_center] bg-[size:1.5em_1.5em] bg-no-repeat pr-10;
+  }
+  
+  /* Table Modern */
+  .table-modern {
+    @apply w-full border-collapse;
+  }
+  
+  .table-modern thead {
+    @apply bg-gradient-to-r from-gray-50 to-white border-b border-gray-200;
+  }
+  
+  .table-modern th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider;
+  }
+  
+  .table-modern td {
+    @apply px-4 py-4 text-sm text-gray-900 border-b border-gray-100;
+  }
+  
+  .table-modern tbody tr {
+    @apply transition-colors duration-150 hover:bg-gray-50;
+  }
+  
+  /* Scrollbar Styles */
+  .scroll-panel {
+    @apply overflow-y-auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+  
+  .scroll-panel::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  .scroll-panel::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .scroll-panel::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+  
+  .scroll-panel::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+  
+  /* Loading Spinner */
+  .spinner {
+    @apply inline-block h-8 w-8 animate-spin rounded-full;
+    @apply border-4 border-solid border-blue-600 border-r-transparent;
+  }
+  
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  }
+}
+
+/* Custom Animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Responsive Grid */
+@media (min-width: 640px) {
+  .grid-responsive {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-responsive {
+    @apply grid-cols-3;
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-responsive {
+    @apply grid-cols-4;
+  }
+}
