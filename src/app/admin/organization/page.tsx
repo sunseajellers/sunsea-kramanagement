@@ -1,8 +1,7 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Shield, Users, Users2, Download, Loader2 } from "lucide-react"
-import TeamHub from "@/components/features/teams/TeamHub"
+import { Users, Users2, Download, Loader2 } from "lucide-react"
 import UserManagement from "@/components/features/users/UserManagement"
 import TeamManagement from "@/components/features/teams/TeamManagement"
 import { Button } from "@/components/ui/button"
@@ -60,64 +59,43 @@ function ExportButtons() {
 
 export default function OrganizationHubPage() {
     return (
-        <div className="page-container">
-            <div className="flex items-center gap-4 mb-4 flex-shrink-0">
-                <div className="icon-box icon-box-md bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/20">
-                    <Shield className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900">People & Teams</h1>
-                    <p className="text-sm text-gray-400 font-medium">View employees, manage teams, and track who's working on what</p>
-                </div>
-            </div>
-
-            <div className="flex gap-2 mb-2 justify-end">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Export buttons */}
+            <div className="flex gap-2 mb-6 justify-end">
                 <ExportButtons />
             </div>
 
-            <Tabs defaultValue="monitoring" className="flex-1 flex flex-col min-h-0">
-                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl h-auto flex flex-wrap gap-1 shadow-sm flex-shrink-0">
-                    <TabsTrigger
-                        value="monitoring"
-                        className="rounded-lg px-4 py-2 data-[state=active]:bg-violet-50 data-[state=active]:text-violet-700 data-[state=active]:shadow-none flex items-center gap-2"
-                    >
-                        <Shield className="w-4 h-4" />
-                        Monitoring
-                    </TabsTrigger>
+            {/* Tabs */}
+            <Tabs defaultValue="members" className="w-full">
+                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl h-auto flex flex-wrap gap-1 shadow-sm">
                     <TabsTrigger
                         value="members"
-                        className="rounded-lg px-4 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-none flex items-center gap-2"
+                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
                     >
                         <Users className="w-4 h-4" />
                         Members
                     </TabsTrigger>
                     <TabsTrigger
                         value="teams"
-                        className="rounded-lg px-4 py-2 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:shadow-none flex items-center gap-2"
+                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
                     >
                         <Users2 className="w-4 h-4" />
                         Teams
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="monitoring" className="flex-1 mt-4 border-none p-0 outline-none overflow-auto">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm h-full overflow-auto">
-                        <TeamHub />
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="members" className="flex-1 mt-4 border-none p-0 outline-none overflow-auto">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm h-full overflow-auto">
+                <TabsContent value="members" className="mt-6 border-none p-0 outline-none">
+                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                         <UserManagement />
                     </div>
                 </TabsContent>
 
-                <TabsContent value="teams" className="flex-1 mt-4 border-none p-0 outline-none overflow-auto">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm h-full overflow-auto">
+                <TabsContent value="teams" className="mt-6 border-none p-0 outline-none">
+                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                         <TeamManagement />
                     </div>
                 </TabsContent>
             </Tabs>
         </div>
-    )
+    );
 }

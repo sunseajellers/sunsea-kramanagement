@@ -3,25 +3,27 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSystemHealth, getDatabaseStats } from '@/lib/adminService';
-import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { 
-    Users, 
-    BarChart3, 
-    Award, 
-    Activity, 
-    Database, 
-    Shield, 
-    AlertTriangle, 
-    TrendingUp, 
+import { getDatabaseStats } from '@/lib/adminService';
+import {
+    Users,
+    Shield,
+    AlertTriangle,
     Zap,
     CheckCircle2,
+    Target,
+    Activity,
+    Loader2,
+    ArrowRight,
+    TrendingUp,
     Clock,
-    Target
+    BarChart3,
+    Calendar,
+    FileText,
+    TrendingDown,
+    CircleAlert
 } from 'lucide-react';
-import { TaskStatusChart, TaskPriorityChart } from '@/components/features/analytics'
+import Link from 'next/link';
 import AdminVerificationQueue from '@/components/admin/AdminVerificationQueue';
-import { StatCard, PageHeader, SectionCard } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 
 interface DbStats {
@@ -35,57 +37,46 @@ interface DbStats {
 export default function AdminHome() {
     const { user, isAdmin, loading: authLoading } = useAuth();
     const [dbStats, setDbStats] = useState<DbStats | null>(null);
-    const [analytics, setAnalytics] = useState<any>(null);
     const [allTasks, setAllTasks] = useState<any[]>([]);
-    const [, setDataLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!authLoading && user && isAdmin) {
             loadDashboardData();
+        } else if (!authLoading && (!user || !isAdmin)) {
+            setLoading(false);
         }
     }, [authLoading, user, isAdmin]);
 
     const loadDashboardData = async () => {
         try {
-            setDataLoading(true);
+            setLoading(true);
             setError(null);
 
             const { getAllTasks } = await import('@/lib/taskService');
 
-            const [, statsData, analyticsResult, tasksData] = await Promise.all([
-                getSystemHealth(),
+            const [statsData, tasksData] = await Promise.all([
                 getDatabaseStats(),
-                authenticatedJsonFetch('/api/analytics', {
-                    headers: {
-                        'x-user-id': user?.uid || ''
-                    }
-                }),
                 getAllTasks(200)
             ]);
 
             setDbStats(statsData);
             setAllTasks(tasksData);
-
-            if (analyticsResult.success && analyticsResult.data) {
-                setAnalytics(analyticsResult.data);
-            } else {
-                console.warn('Analytics fetch returned:', analyticsResult.error);
-            }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
-            setError('Failed to load some dashboard data. Check your admin permissions.');
+            setError('Failed to load dashboard data. Check your admin permissions.');
         } finally {
-            setDataLoading(false);
+            setLoading(false);
         }
     };
 
-    if (authLoading) {
+    if (authLoading || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse shadow-lg">
-                        <Activity className="w-8 h-8 text-white" />
+                        <Loader2 className="w-8 h-8 text-white animate-spin" />
                     </div>
                     <p className="text-sm text-gray-600 font-medium">Loading dashboard...</p>
                 </div>
@@ -95,218 +86,140 @@ export default function AdminHome() {
 
     if (!isAdmin) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-                <div className="max-w-md w-full text-center p-8 bg-white rounded-2xl shadow-xl border border-gray-200">
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+                <div className="max-w-md w-full text-center p-8 bg-white rounded-3xl shadow-xl border border-slate-200">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-amber-50 flex items-center justify-center">
                         <AlertTriangle className="h-10 w-10 text-amber-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">Admin Access Required</h2>
-                    <p className="text-gray-600 mb-6">
-                        Your account doesn&apos;t have admin privileges. Please contact the system administrator for access.
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+                    <p className="text-slate-600 mb-6">
+                        You need admin rights to access this area.
                     </p>
-                    <div className="text-xs text-gray-400 font-mono bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
-                        User ID: {user?.uid?.slice(0, 16)}...
+                    <div className="text-xs text-slate-400 font-mono bg-slate-50 rounded-lg px-4 py-3">
+                        ID: {user?.uid?.slice(0, 16)}...
                     </div>
                 </div>
             </div>
         );
     }
 
+    const pendingTasks = allTasks.filter(t => t.status === 'pending_review').length;
+    const completedTasks = allTasks.filter(t => t.status === 'completed').length;
+    const inProgressTasks = allTasks.filter(t => t.status === 'in_progress').length;
+    const taskCompletionRate = allTasks.length > 0 ? Math.round((completedTasks / allTasks.length) * 100) : 0;
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <PageHeader
-                    icon={Shield}
-                    title="Admin Dashboard"
-                    description="Monitor system performance, manage users, and oversee platform operations"
-                    actions={
-                        <Button onClick={loadDashboardData} variant="outline" size="sm">
-                            <Activity className="h-4 w-4 mr-2" />
-                            Refresh Data
-                        </Button>
-                    }
-                />
-
-                {error && (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-                        <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                        <span>{error}</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            {/* Welcome Section */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
+                        <p className="text-sm text-gray-500 mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
                     </div>
-                )}
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard
-                        title="Total Users"
-                        value={dbStats?.users || 0}
-                        icon={Users}
-                        color="blue"
-                        subtitle="Active accounts"
-                    />
-                    <StatCard
-                        title="Active Teams"
-                        value={dbStats?.teams || 0}
-                        icon={Shield}
-                        color="purple"
-                        subtitle="Organized groups"
-                    />
-                    <StatCard
-                        title="Tasks"
-                        value={dbStats?.tasks || 0}
-                        icon={CheckCircle2}
-                        color="green"
-                        subtitle={`${analytics?.overview?.completedTasks || 0} completed`}
-                    />
-                    <StatCard
-                        title="KRA Goals"
-                        value={dbStats?.kras || 0}
-                        icon={Target}
-                        color="orange"
-                        subtitle="Performance metrics"
-                    />
-                </div>
-
-                {/* Performance Overview */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <SectionCard
-                        icon={TrendingUp}
-                        title="Task Completion"
-                        description={`${analytics?.overview?.overallCompletionRate || 0}% overall rate`}
+                    <Button 
+                        onClick={loadDashboardData} 
+                        variant="outline"
+                        className="border-gray-300"
                     >
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                    Completed
-                                </span>
-                                <span className="font-semibold">{analytics?.overview?.completedTasks || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-blue-500" />
-                                    In Progress
-                                </span>
-                                <span className="font-semibold">{analytics?.overview?.inProgressTasks || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 flex items-center gap-2">
-                                    <Activity className="h-4 w-4 text-gray-400" />
-                                    Pending
-                                </span>
-                                <span className="font-semibold">
-                                    {(analytics?.overview?.totalTasks || 0) - (analytics?.overview?.completedTasks || 0) - (analytics?.overview?.inProgressTasks || 0)}
-                                </span>
-                            </div>
-                            
-                            {/* Progress Bar */}
-                            <div className="pt-2">
-                                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
-                                        style={{ width: `${analytics?.overview?.overallCompletionRate || 0}%` }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </SectionCard>
-
-                    <SectionCard
-                        icon={BarChart3}
-                        title="Task Distribution"
-                        description="By status"
-                    >
-                        <div className="h-56">
-                            {analytics ? (
-                                <TaskStatusChart data={{
-                                    pending: (analytics.overview?.totalTasks || 0) - (analytics.overview?.completedTasks || 0) - (analytics.overview?.inProgressTasks || 0),
-                                    'in-progress': analytics.overview?.inProgressTasks || 0,
-                                    completed: analytics.overview?.completedTasks || 0,
-                                    blocked: 0
-                                }} />
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-gray-400">
-                                    <div className="text-center">
-                                        <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                                        <p className="text-sm">No data available</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </SectionCard>
-
-                    <SectionCard
-                        icon={Award}
-                        title="Priority Breakdown"
-                        description="Task priorities"
-                    >
-                        <div className="h-56">
-                            {analytics ? (
-                                <TaskPriorityChart data={analytics.distributions?.priority || { low: 0, medium: 0, high: 0, critical: 0 }} />
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-gray-400">
-                                    <div className="text-center">
-                                        <Award className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                                        <p className="text-sm">No data available</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </SectionCard>
-                </div>
-
-                {/* Database Stats */}
-                <SectionCard
-                    icon={Database}
-                    title="Database Overview"
-                    description="Collection statistics"
-                >
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        {[
-                            { label: 'Users', count: dbStats?.users || 0, color: 'blue', icon: Users },
-                            { label: 'Teams', count: dbStats?.teams || 0, color: 'purple', icon: Shield },
-                            { label: 'Tasks', count: dbStats?.tasks || 0, color: 'green', icon: CheckCircle2 },
-                            { label: 'KRAs', count: dbStats?.kras || 0, color: 'orange', icon: Target },
-                            { label: 'Reports', count: dbStats?.reports || 0, color: 'pink', icon: BarChart3 },
-                        ].map((item, i) => (
-                            <div key={i} className="text-center p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
-                                <div className={`inline-flex p-3 rounded-lg mb-3 bg-${item.color}-50`}>
-                                    <item.icon className={`h-6 w-6 text-${item.color}-600`} />
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900 mb-1">{item.count}</p>
-                                <p className="text-xs text-gray-600 font-medium">{item.label}</p>
-                            </div>
-                        ))}
-                    </div>
-                </SectionCard>
-
-                {/* Verification Queue */}
-                <SectionCard
-                    icon={Zap}
-                    title="Verification Queue"
-                    description="Tasks pending review"
-                >
-                    <AdminVerificationQueue
-                        tasks={allTasks}
-                        onVerificationComplete={loadDashboardData}
-                    />
-                </SectionCard>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-green-500" />
-                            <span>System Online</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            <span>Database Connected</span>
-                        </div>
-                    </div>
-                    <p className="text-xs text-gray-400">© 2026 JewelMatrix Admin</p>
+                        <Activity className="h-4 w-4 mr-2" />
+                        Refresh
+                    </Button>
                 </div>
             </div>
+
+            {/* Error message */}
+            {error && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {/* Primary Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-3">
+                        <Users className="h-5 w-5 text-gray-600" />
+                        <p className="text-sm text-gray-600">Team Members</p>
+                    </div>
+                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.users || 0}</h3>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-3">
+                        <Shield className="h-5 w-5 text-gray-600" />
+                        <p className="text-sm text-gray-600">Active Teams</p>
+                    </div>
+                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.teams || 0}</h3>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-3">
+                        <CheckCircle2 className="h-5 w-5 text-gray-600" />
+                        <p className="text-sm text-gray-600">Total Tasks</p>
+                    </div>
+                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.tasks || 0}</h3>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-3">
+                        <Target className="h-5 w-5 text-gray-600" />
+                        <p className="text-sm text-gray-600">KRAs Set</p>
+                    </div>
+                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.kras || 0}</h3>
+                </div>
+            </div>
+
+            {/* Secondary Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm text-gray-600">Completed</p>
+                        <p className="text-xl font-semibold text-gray-900">{completedTasks}</p>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gray-900" style={{ width: `${taskCompletionRate}%` }}></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">{taskCompletionRate}% rate</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm text-gray-600">In Progress</p>
+                        <p className="text-xl font-semibold text-gray-900">{inProgressTasks}</p>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gray-900" style={{ width: `${allTasks.length > 0 ? (inProgressTasks / allTasks.length) * 100 : 0}%` }}></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Active items</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm text-gray-600">Pending Review</p>
+                        <p className="text-xl font-semibold text-gray-900">{pendingTasks}</p>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gray-900" style={{ width: `${allTasks.length > 0 ? (pendingTasks / allTasks.length) * 100 : 0}%` }}></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Needs approval</p>
+                </div>
+            </div>
+
+            {/* Pending Approvals */}
+            {pendingTasks > 0 && (
+                <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <div className="mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">Pending Approvals</h2>
+                        <p className="text-sm text-gray-500 mt-1">{pendingTasks} task{pendingTasks > 1 ? 's' : ''} waiting</p>
+                    </div>
+                    <AdminVerificationQueue 
+                        tasks={allTasks} 
+                        onVerificationComplete={loadDashboardData} 
+                    />
+                </div>
+            )}
         </div>
     );
 }

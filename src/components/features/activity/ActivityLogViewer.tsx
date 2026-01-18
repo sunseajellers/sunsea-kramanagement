@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Activity, Filter, Download, Search, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -74,11 +75,12 @@ export default function ActivityLogViewer({
     compact = false,
     module: initialModule
 }: ActivityLogViewerProps) {
+    const { user } = useAuth();
     const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
-    
+
     // Filters
     const [module, setModule] = useState(initialModule || '');
     const [days, setDays] = useState(7);
@@ -89,24 +91,32 @@ export default function ActivityLogViewer({
         // Auto-refresh every 30 seconds
         const interval = setInterval(fetchActivityLogs, 30000);
         return () => clearInterval(interval);
-    }, [module, days]);
+    }, [module, days, user]);
 
     const fetchActivityLogs = async () => {
+        if (!user) return;
         setLoading(true);
         try {
+            const token = await user.getIdToken();
             const params = new URLSearchParams({
                 limit: limit.toString(),
                 days: days.toString(),
+                t: Date.now().toString(), // Cache busting
                 ...(module && { module })
             });
 
-            const response = await fetch(`/api/activity-log?${params}`);
-            
-            if (!response.ok) {
-                throw new Error('Failed to fetch activity logs');
-            }
+            const response = await fetch(`/api/activity-log?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
             const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to fetch activity logs');
+            }
+
             const logsWithDates = data.logs.map((log: any) => ({
                 ...log,
                 timestamp: new Date(log.timestamp)

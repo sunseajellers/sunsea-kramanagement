@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
             const userData = userDoc.data();
 
             // Get IP address and user agent
-            const ipAddress = request.headers.get('x-forwarded-for') || 
-                            request.headers.get('x-real-ip') || 
-                            'Unknown';
+            const ipAddress = request.headers.get('x-forwarded-for') ||
+                request.headers.get('x-real-ip') ||
+                'Unknown';
             const userAgent = request.headers.get('user-agent') || 'Unknown';
 
             // Create activity log entry
@@ -98,34 +98,32 @@ export async function GET(request: NextRequest) {
             const resourceId = searchParams.get('resourceId');
             const days = parseInt(searchParams.get('days') || '7', 10);
 
+            // Build query
+            let query: any = adminDb.collection('activityLogs');
+
             // Check if user is admin (only admins can see all activity logs)
             const userDoc = await adminDb.collection('users').doc(userId).get();
             const isAdmin = userDoc.data()?.isAdmin === true;
 
+            // Apply ownership filter for non-admins
             if (!isAdmin) {
-                return NextResponse.json(
-                    { success: false, error: 'Permission denied. Only admins can view activity logs.' },
-                    { status: 403 }
-                );
+                query = query.where('userId', '==', userId);
+            } else if (userId_filter) {
+                // Admins can filter by userId if provided
+                query = query.where('userId', '==', userId_filter);
             }
-
-            // Build query
-            let query: any = adminDb.collection('activityLogs');
 
             // Filter by date (last N days)
             const dateThreshold = new Date();
             dateThreshold.setDate(dateThreshold.getDate() - days);
             query = query.where('timestamp', '>=', dateThreshold);
 
-            // Apply filters if provided
+            // Apply other filters if provided
             if (module) {
                 query = query.where('module', '==', module);
             }
             if (action) {
                 query = query.where('action', '==', action);
-            }
-            if (userId_filter) {
-                query = query.where('userId', '==', userId_filter);
             }
             if (resourceId) {
                 query = query.where('resourceId', '==', resourceId);
@@ -144,12 +142,14 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({
                 success: true,
                 logs,
-                count: logs.length
+                count: logs.length,
+                serverTime: new Date().toISOString()
             });
         } catch (error) {
             console.error('Error fetching activity logs:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             return NextResponse.json(
-                { success: false, error: 'Failed to fetch activity logs' },
+                { success: false, error: `API_ERROR: ${errorMessage}` },
                 { status: 500 }
             );
         }

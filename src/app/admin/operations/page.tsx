@@ -59,51 +59,43 @@ function ExportButtons() {
 
 export default function OperationsHubPage() {
     return (
-        <div className="page-container">
-            <div className="flex items-center gap-4 mb-4 flex-shrink-0">
-                <div className="icon-box icon-box-md bg-gradient-to-br from-purple-500 to-fuchsia-500 shadow-lg shadow-purple-500/20">
-                    <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900">Tasks & Goals</h1>
-                    <p className="text-sm text-gray-400 font-medium">Create tasks, assign work to employees, and manage daily operations</p>
-                </div>
-            </div>
-
-            <div className="flex gap-2 mb-2 justify-end">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Export buttons */}
+            <div className="flex gap-2 mb-6 justify-end">
                 <ExportButtons />
             </div>
 
-            <Tabs defaultValue="tasks" className="flex-1 flex flex-col min-h-0">
-                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl h-auto flex flex-wrap gap-1 shadow-sm flex-shrink-0">
+            {/* Tabs */}
+            <Tabs defaultValue="tasks" className="w-full">
+                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl h-auto flex flex-wrap gap-1 shadow-sm">
                     <TabsTrigger
                         value="tasks"
-                        className="rounded-lg px-4 py-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 data-[state=active]:shadow-none flex items-center gap-2"
+                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
                     >
                         <FileText className="w-4 h-4" />
                         Master Tasks
                     </TabsTrigger>
                     <TabsTrigger
                         value="automation"
-                        className="rounded-lg px-4 py-2 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700 data-[state=active]:shadow-none flex items-center gap-2"
+                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
                     >
                         <Zap className="w-4 h-4" />
-                        Automation
+                        KRA Automation
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="tasks" className="flex-1 mt-4 border-none p-0 outline-none overflow-auto">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm h-full overflow-auto">
+                <TabsContent value="tasks" className="mt-6 border-none p-0 outline-none">
+                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                         <MasterTaskList />
                     </div>
                 </TabsContent>
 
-                <TabsContent value="automation" className="flex-1 mt-4 border-none p-0 outline-none overflow-auto">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm h-full overflow-auto">
+                <TabsContent value="automation" className="mt-6 border-none p-0 outline-none">
+                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                         <KRAScheduler />
                     </div>
                 </TabsContent>
             </Tabs>
         </div>
-    )
+    );
 }
