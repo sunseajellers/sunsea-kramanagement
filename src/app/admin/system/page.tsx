@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getSystemHealth, getDatabaseStats, performSystemBackup, toggleMaintenanceMode } from '@/lib/adminService'
-import { Server, Database, Shield, Cloud, Activity, HardDrive, Users, FileText, Save, Settings, Clock, ToggleLeft, ToggleRight, Loader2, CheckCircle, AlertTriangle, XCircle, Calendar } from 'lucide-react'
+import { Database, Shield, Cloud, Activity, HardDrive, Users, FileText, Save, ToggleLeft, ToggleRight, Loader2, CheckCircle, AlertTriangle, XCircle, Calendar } from 'lucide-react'
 import HolidayManager from '@/components/admin/HolidayManager'
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
@@ -34,14 +34,6 @@ export default function AdminSystemPage() {
     const [loading, setLoading] = useState(true)
     const [maintenanceMode, setMaintenanceMode] = useState(false)
     const [backingUp, setBackingUp] = useState(false)
-
-    // Settings state
-    const [settings, setSettings] = useState({
-        backupFrequency: 'daily',
-        logRetention: '30',
-        maxFileSize: '10',
-        sessionTimeout: '60'
-    })
 
     useEffect(() => {
         if (!authLoading && user) {
@@ -97,17 +89,6 @@ export default function AdminSystemPage() {
                 return <AlertTriangle className="w-4 h-4 text-amber-500" />
             case 'error':
                 return <XCircle className="w-4 h-4 text-red-500" />
-        }
-    }
-
-    const getStatusBadge = (status: 'healthy' | 'warning' | 'error') => {
-        switch (status) {
-            case 'healthy':
-                return 'badge-success'
-            case 'warning':
-                return 'badge-warning'
-            case 'error':
-                return 'badge-danger'
         }
     }
 

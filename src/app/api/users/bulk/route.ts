@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateUser } from '@/lib/userService';
+import { updateUser, deleteUser } from '@/lib/userService';
 import { handleError } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
@@ -51,6 +51,11 @@ export async function POST(request: NextRequest) {
                             isActive,
                             updatedAt: new Date()
                         });
+                        success++;
+                        break;
+
+                    case 'delete':
+                        await deleteUser(userId);
                         success++;
                         break;
 

@@ -1,12 +1,10 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BarChart3, FileText, Award, Archive } from "lucide-react"
+import { BarChart3, FileText, Award } from "lucide-react"
 import AnalyticsHub from "@/components/features/performance/AnalyticsHub"
 import WeeklyReports from "@/components/features/performance/WeeklyReports"
 import ScoringConfig from "@/components/features/performance/ScoringConfig"
-import KPIArchives from "@/components/features/performance/KPIArchives"
-import MISScorecard from "@/components/features/performance/MISScorecard"
 
 export default function PerformanceHubPage() {
     return (

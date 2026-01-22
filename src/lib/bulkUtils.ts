@@ -54,7 +54,7 @@ export function useBulkSelection<T extends { id: string }>(items: T[]) {
  */
 export type BulkTaskAction = 'delete' | 'reassign' | 'updateStatus' | 'updatePriority';
 export type BulkKRAAction = 'delete' | 'toggleStatus' | 'duplicate';
-export type BulkUserAction = 'updateRole' | 'updateTeam' | 'toggleActive';
+export type BulkUserAction = 'updateRole' | 'updateTeam' | 'toggleActive' | 'delete';
 
 /**
  * Execute bulk task operations

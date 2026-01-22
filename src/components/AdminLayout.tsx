@@ -5,17 +5,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutDashboard,
     LogOut,
-    Home,
     BarChart3,
     FileText,
-    Server,
     Loader2,
     Shield,
-    Activity
+    Activity,
+    Settings
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
@@ -49,7 +47,7 @@ const menuItems = [
     {
         href: '/admin/system',
         label: 'Settings',
-        icon: Server,
+        icon: Settings,
     },
 ];
 
@@ -106,10 +104,6 @@ export default function AdminLayout({
             </div>
         );
     }
-
-    // Get user display name and initials
-    const displayName = user.displayName || user.email?.split('@')[0] || 'Admin';
-    const initials = displayName.charAt(0).toUpperCase();
 
     return (
         <div className="admin-root">

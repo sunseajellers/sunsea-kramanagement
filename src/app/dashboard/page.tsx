@@ -67,7 +67,6 @@ export default function EmployeeDashboard() {
     const [activeTab, setActiveTab] = useState<'tasks' | 'delegated' | 'history' | 'profile'>('tasks');
     const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed' | 'overdue'>('all');
     const [userProfile, setUserProfile] = useState<any>(null);
-    const [managerInfo, setManagerInfo] = useState<any>(null);
     const [editingProfile, setEditingProfile] = useState(false);
     const [profileForm, setProfileForm] = useState({ fullName: '', phone: '' });
     const [savingProfile, setSavingProfile] = useState(false);
@@ -170,16 +169,6 @@ export default function EmployeeDashboard() {
                     fullName: data.fullName || user?.displayName || '', 
                     phone: data.phone || '' 
                 });
-                // Fetch manager info if managerId exists
-                if (data.managerId) {
-                    const managerRes = await fetch(`/api/users/${data.managerId}`, {
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                    });
-                    if (managerRes.ok) {
-                        const managerData = await managerRes.json();
-                        setManagerInfo(managerData);
-                    }
-                }
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
@@ -277,13 +266,8 @@ export default function EmployeeDashboard() {
         return isActive && inWeek && !isToday(dueDate);
     });
 
-    const historyTasks = tasks
-        .filter(task => task.status === 'completed')
-        .sort((a, b) => new Date(b.updatedAt || b.finalTargetDate || b.dueDate).getTime() - new Date(a.updatedAt || a.finalTargetDate || a.dueDate).getTime());
-
     const getFilteredAllTasks = () => {
         let filtered = tasks;
-        const now = new Date();
         
         switch (taskFilter) {
             case 'active':

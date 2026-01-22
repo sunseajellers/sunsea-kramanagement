@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
-import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users, ChevronLeft, ChevronRight } from 'lucide-react'
+import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,7 +17,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { getAllUsers, createUser, updateUser } from '@/lib/userService'
+import { getAllUsers, createUser, updateUser, deleteUser } from '@/lib/userService'
 import { useBulkSelection, executeBulkUserAction } from '@/lib/bulkUtils'
 import BulkActionBar from '@/components/features/bulk/BulkActionBar'
 
@@ -133,6 +133,38 @@ export default function UserManagement() {
             loadUsers()
         } catch (error) {
             toast.error('Bulk role update failed')
+        } finally {
+            setBulkActionLoading(false)
+        }
+    }
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`Are you sure you want to delete "${userName}"? This action cannot be undone.`)) {
+            return
+        }
+
+        try {
+            await deleteUser(userId)
+            toast.success(`User "${userName}" deleted successfully`)
+            loadUsers()
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to delete user')
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`Are you sure you want to delete ${bulkSelection.selectedCount} users? This action cannot be undone.`)) {
+            return
+        }
+
+        setBulkActionLoading(true)
+        try {
+            const result = await executeBulkUserAction('delete', bulkSelection.selectedIds)
+            toast.success(`Deleted ${result.success} users`)
+            bulkSelection.clearSelection()
+            loadUsers()
+        } catch (error) {
+            toast.error('Bulk delete failed')
         } finally {
             setBulkActionLoading(false)
         }
@@ -368,6 +400,14 @@ export default function UserManagement() {
                                                             <Activity className="h-3.5 w-3.5 mr-2 opacity-50" />
                                                             {u.isActive === false ? 'Activate' : 'Suspend'}
                                                         </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleDeleteUser(u.id, u.fullName)}
+                                                            className="rounded-lg text-xs text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                                            Delete User
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </td>
@@ -457,6 +497,13 @@ export default function UserManagement() {
                         icon: UserCheck,
                         onClick: () => handleBulkRoleChange(false),
                         disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Delete Users',
+                        icon: Trash2,
+                        onClick: handleBulkDelete,
+                        disabled: bulkActionLoading,
+                        variant: 'destructive'
                     }
                 ]}
             />

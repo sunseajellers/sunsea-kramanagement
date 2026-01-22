@@ -8,21 +8,11 @@ import {
     Users,
     Shield,
     AlertTriangle,
-    Zap,
     CheckCircle2,
     Target,
     Activity,
-    Loader2,
-    ArrowRight,
-    TrendingUp,
-    Clock,
-    BarChart3,
-    Calendar,
-    FileText,
-    TrendingDown,
-    CircleAlert
+    Loader2
 } from 'lucide-react';
-import Link from 'next/link';
 import AdminVerificationQueue from '@/components/admin/AdminVerificationQueue';
 import { Button } from '@/components/ui/button';
 
