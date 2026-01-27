@@ -238,15 +238,3 @@ export function exportReportAsJSON(report: WeeklyReport | TeamWeeklyReport): voi
     URL.revokeObjectURL(url);
 }
 
-/**
- * Send weekly report via email (placeholder - requires backend)
- */
-export async function sendWeeklyReportEmail(
-    reportId: string,
-    recipientEmail: string
-): Promise<void> {
-    // This would typically call a Cloud Function or API endpoint
-    // For now, we'll just log it
-    console.log(`Sending report ${reportId} to ${recipientEmail}`);
-    // TODO: Implement email sending via Cloud Functions
-}

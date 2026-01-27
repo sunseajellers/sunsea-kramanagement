@@ -1,15 +1,65 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Users2, Download, Loader2 } from "lucide-react"
+import { Users, Users2, Building2, Download, Loader2 } from "lucide-react"
 import UserManagement from "@/components/features/users/UserManagement"
 import TeamManagement from "@/components/features/teams/TeamManagement"
+import DepartmentManagement from "@/components/features/users/DepartmentManagement"
 import { Button } from "@/components/ui/button"
 import { exportToCSV } from "@/lib/exportUtils"
 import { getAllUsers } from "@/lib/userService"
 import { getAllTeams } from "@/lib/teamService"
 import { useState } from "react"
 import { toast } from "react-hot-toast"
+
+export default function OrganizationHubPage() {
+    return (
+        <div className="space-y-10">
+            {/* Page Header */}
+            <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h1 className="section-title">Organization Hub</h1>
+                    <p className="section-subtitle">Manage personnel, structure, and operational teams</p>
+                </div>
+                <ExportButtons />
+            </div>
+
+            {/* Content Tabs */}
+            <Tabs defaultValue="members" className="w-full">
+                <div className="flex items-center justify-between mb-8 overflow-x-auto pb-4 scrollbar-none">
+                    <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/60 h-auto flex gap-1">
+                        {[
+                            { value: 'members', label: 'Members', icon: Users },
+                            { value: 'departments', label: 'Departments', icon: Building2 },
+                            { value: 'teams', label: 'Teams', icon: Users2 },
+                        ].map((tab) => (
+                            <TabsTrigger
+                                key={tab.value}
+                                value={tab.value}
+                                className="rounded-xl px-5 py-2.5 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200/60 flex items-center gap-2.5 text-sm font-bold transition-all"
+                            >
+                                <tab.icon className="w-4 h-4" />
+                                {tab.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
+
+                <TabsContent value="members" className="animate-in outline-none">
+                    <UserManagement />
+                </TabsContent>
+
+                <TabsContent value="departments" className="animate-in outline-none text-slate-800">
+                    <DepartmentManagement />
+                </TabsContent>
+
+                <TabsContent value="teams" className="animate-in outline-none">
+                    <TeamManagement />
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
+}
 
 function ExportButtons() {
     const [exportingUsers, setExportingUsers] = useState(false);
@@ -44,58 +94,15 @@ function ExportButtons() {
     };
 
     return (
-        <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportUsers} disabled={exportingUsers} className="h-8 text-xs">
-                {exportingUsers ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Download className="w-3 h-3 mr-2" />}
+        <div className="flex items-center gap-3">
+            <Button onClick={handleExportUsers} disabled={exportingUsers} className="btn-secondary h-11 px-6">
+                {exportingUsers ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                 Export Users
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExportTeams} disabled={exportingTeams} className="h-8 text-xs">
-                {exportingTeams ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Download className="w-3 h-3 mr-2" />}
+            <Button onClick={handleExportTeams} disabled={exportingTeams} className="btn-secondary h-11 px-6">
+                {exportingTeams ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                 Export Teams
             </Button>
-        </div>
-    );
-}
-
-export default function OrganizationHubPage() {
-    return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Export buttons */}
-            <div className="flex gap-2 mb-6 justify-end">
-                <ExportButtons />
-            </div>
-
-            {/* Tabs */}
-            <Tabs defaultValue="members" className="w-full">
-                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl h-auto flex flex-wrap gap-1 shadow-sm">
-                    <TabsTrigger
-                        value="members"
-                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                        <Users className="w-4 h-4" />
-                        Members
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="teams"
-                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                        <Users2 className="w-4 h-4" />
-                        Teams
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="members" className="mt-6 border-none p-0 outline-none">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <UserManagement />
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="teams" className="mt-6 border-none p-0 outline-none">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <TeamManagement />
-                    </div>
-                </TabsContent>
-            </Tabs>
         </div>
     );
 }

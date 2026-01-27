@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react'
 import { signInWithEmail } from '@/lib/authService'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/contexts/AuthContext'
-import Image from 'next/image'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -74,66 +73,66 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md space-y-8">
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="glass-card w-full max-w-md p-8 md:p-12 space-y-8 animate-float">
                 {/* Logo */}
-                <div className="flex justify-center">
-                    <Image
-                        src="/logo.png"
-                        alt="SunSea"
-                        width={380}
-                        height={95}
-                        className="h-20 w-auto"
-                        priority
-                    />
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <span className="text-4xl font-black text-white tracking-tighter">JM</span>
+                    </div>
+                    <div className="text-center">
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">JewelMatrix</h1>
+                        <p className="text-slate-500 font-medium text-sm mt-1">Operational Excellence Platform</p>
+                    </div>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-6">
                     {/* Error Message */}
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-semibold">
-                            {error}
+                        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-sm font-bold flex items-center gap-2">
+                            <span className="bg-rose-100 p-1 rounded-full">!</span> {error}
                         </div>
                     )}
 
-                    {/* Email Field */}
-                    <div>
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            required
-                        />
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-2">Work Email</label>
+                            <input
+                                type="email"
+                                placeholder="name@company.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="premium-input bg-white/50 focus:bg-white"
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-2">Password</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="premium-input bg-white/50 focus:bg-white"
+                                required
+                            />
+                        </div>
                     </div>
 
-                    {/* Password Field */}
-                    <div>
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            required
-                        />
-                    </div>
-
-                    {/* Login Button */}
                     <button
                         type="submit"
-                        className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold hover:from-purple-700 hover:to-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        className="premium-button w-full h-12 flex items-center justify-center gap-3 text-sm font-extrabold uppercase tracking-wider"
                         disabled={loginLoading}
                     >
                         {loginLoading ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Signing in...
+                                Authenticating...
                             </>
                         ) : (
-                            'Sign In'
+                            'Access Dashboard'
                         )}
                     </button>
                 </form>

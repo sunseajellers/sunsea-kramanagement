@@ -9,15 +9,15 @@ async function getUserFromToken(request: NextRequest): Promise<string | null> {
     try {
         const authHeader = request.headers.get('Authorization');
         if (!authHeader?.startsWith('Bearer ')) {
-            // Fallback to x-user-id header for backwards compatibility
-            return request.headers.get('x-user-id');
+            const fallbackUid = request.headers.get('x-user-id');
+            return fallbackUid;
         }
 
         const token = authHeader.split('Bearer ')[1];
         const decodedToken = await adminAuth.verifyIdToken(token);
         return decodedToken.uid;
     } catch (error) {
-        console.error('Token verification failed:', error);
+        console.error('[AUTH] Token verification failed:', error);
         return null;
     }
 }

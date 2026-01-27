@@ -14,7 +14,7 @@ import {
     Loader2
 } from 'lucide-react';
 import AdminVerificationQueue from '@/components/admin/AdminVerificationQueue';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface DbStats {
     users: number;
@@ -63,12 +63,15 @@ export default function AdminHome() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse shadow-lg">
-                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-white animate-in fade-in duration-700">
+                <div className="flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 rounded-[2.5rem] bg-indigo-50 flex items-center justify-center animate-pulse shadow-2xl shadow-indigo-100/50 border border-indigo-100">
+                        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
                     </div>
-                    <p className="text-sm text-gray-600 font-medium">Loading dashboard...</p>
+                    <div className="text-center space-y-2">
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Authenticating Executive Access</p>
+                        <p className="text-sm text-slate-400 font-medium">Loading executive dashboard...</p>
+                    </div>
                 </div>
             </div>
         );
@@ -76,17 +79,17 @@ export default function AdminHome() {
 
     if (!isAdmin) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-                <div className="max-w-md w-full text-center p-8 bg-white rounded-3xl shadow-xl border border-slate-200">
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-amber-50 flex items-center justify-center">
-                        <AlertTriangle className="h-10 w-10 text-amber-600" />
+            <div className="min-h-screen flex items-center justify-center bg-slate-50/50 p-6 animate-in zoom-in-95 duration-500">
+                <div className="max-w-md w-full text-center p-12 bg-white rounded-[3rem] shadow-2xl border border-slate-100 group">
+                    <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                        <AlertTriangle className="h-12 w-12 text-rose-500" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-                    <p className="text-slate-600 mb-6">
-                        You need admin rights to access this area.
+                    <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tight">Access Denied</h2>
+                    <p className="text-slate-500 mb-10 font-medium leading-relaxed">
+                        Your current credentials do not grant executive administrative authority. Contact system oversight if this is an error.
                     </p>
-                    <div className="text-xs text-slate-400 font-mono bg-slate-50 rounded-lg px-4 py-3">
-                        ID: {user?.uid?.slice(0, 16)}...
+                    <div className="text-[10px] font-black text-slate-400 font-mono bg-slate-50 rounded-2xl px-6 py-4 border border-slate-100 tracking-widest break-all">
+                        UID: {user?.uid}
                     </div>
                 </div>
             </div>
@@ -99,115 +102,137 @@ export default function AdminHome() {
     const taskCompletionRate = allTasks.length > 0 ? Math.round((completedTasks / allTasks.length) * 100) : 0;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-            {/* Welcome Section */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
-                        <p className="text-sm text-gray-500 mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+        <div className="space-y-12 animate-in slide-in-from-bottom-4 duration-700">
+            {/* Page Header */}
+            <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-8">
+                <div>
+                    <h1 className="section-title">Executive Overview</h1>
+                    <div className="flex items-center gap-3 mt-1">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                            SYSTEM OPERATIONAL: {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                        </p>
                     </div>
-                    <Button 
-                        onClick={loadDashboardData} 
-                        variant="outline"
-                        className="border-gray-300"
+                </div>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={loadDashboardData}
+                        className="btn-secondary h-14 px-8 group flex items-center justify-center gap-3 rounded-2xl bg-white border-2 border-slate-100 text-slate-900 font-black text-[11px] uppercase tracking-widest hover:border-indigo-100 hover:text-indigo-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                        disabled={loading}
                     >
-                        <Activity className="h-4 w-4 mr-2" />
-                        Refresh
-                    </Button>
+                        <Activity className={cn("h-5 w-5 transition-transform duration-700 group-hover:rotate-180", loading && "animate-spin text-indigo-500")} />
+                        Refresh Intelligence
+                    </button>
+                    <div className="h-14 w-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-900/20 group hover:scale-110 transition-transform cursor-pointer">
+                        <Shield className="w-6 h-6" />
+                    </div>
                 </div>
             </div>
 
             {/* Error message */}
             {error && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
-                    <AlertTriangle className="h-5 w-5" />
+                <div className="flex items-center gap-6 px-10 py-6 bg-rose-50 border-2 border-rose-100 rounded-[2rem] text-rose-700 text-sm font-black shadow-xl shadow-rose-100/20 animate-in slide-in-from-top-4 uppercase tracking-tight">
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-rose-500 shadow-sm">
+                        <AlertTriangle className="h-6 w-6" />
+                    </div>
                     <span>{error}</span>
                 </div>
             )}
 
-            {/* Primary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                        <Users className="h-5 w-5 text-gray-600" />
-                        <p className="text-sm text-gray-600">Team Members</p>
+            {/* Key Performance Indicators */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {[
+                    { label: 'Total Personnel', value: dbStats?.users || 0, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50', sub: 'Authorized Users' },
+                    { label: 'Active Teams', value: dbStats?.teams || 0, icon: Shield, color: 'text-emerald-600', bg: 'bg-emerald-50', sub: 'Strategic Units' },
+                    { label: 'Ongoing Tasks', value: dbStats?.tasks || 0, icon: CheckCircle2, color: 'text-blue-600', bg: 'bg-blue-50', sub: 'Tactical Flows' },
+                    { label: 'Active KRAs', value: dbStats?.kras || 0, icon: Target, color: 'text-purple-600', bg: 'bg-purple-50', sub: 'Execution Goals' },
+                ].map((stat, i) => (
+                    <div key={i} className="dashboard-card group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
+                        <div className="flex items-start justify-between mb-8">
+                            <div className={cn("w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all group-hover:scale-110 shadow-sm", stat.bg, stat.color)}>
+                                <stat.icon className="h-7 w-7" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">METRIC-0{i + 1}</span>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.sub}</p>
+                            <h3 className="text-4xl font-black text-slate-900 leading-none tracking-tight group-hover:text-indigo-600 transition-colors">
+                                {stat.value}
+                            </h3>
+                        </div>
                     </div>
-                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.users || 0}</h3>
-                </div>
-
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                        <Shield className="h-5 w-5 text-gray-600" />
-                        <p className="text-sm text-gray-600">Active Teams</p>
-                    </div>
-                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.teams || 0}</h3>
-                </div>
-
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                        <CheckCircle2 className="h-5 w-5 text-gray-600" />
-                        <p className="text-sm text-gray-600">Total Tasks</p>
-                    </div>
-                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.tasks || 0}</h3>
-                </div>
-
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                        <Target className="h-5 w-5 text-gray-600" />
-                        <p className="text-sm text-gray-600">KRAs Set</p>
-                    </div>
-                    <h3 className="text-2xl font-semibold text-gray-900">{dbStats?.kras || 0}</h3>
-                </div>
+                ))}
             </div>
 
-            {/* Secondary Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm text-gray-600">Completed</p>
-                        <p className="text-xl font-semibold text-gray-900">{completedTasks}</p>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gray-900" style={{ width: `${taskCompletionRate}%` }}></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">{taskCompletionRate}% rate</p>
-                </div>
+            {/* Operational Status Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {[
+                    { label: 'Execution Rate', count: completedTasks, rate: taskCompletionRate, sub: 'Personnel Throughput', color: 'bg-indigo-600', accent: 'text-indigo-600', icon: CheckCircle2 },
+                    { label: 'Work in Progress', count: inProgressTasks, rate: allTasks.length > 0 ? (inProgressTasks / allTasks.length) * 100 : 0, sub: 'Operational Flow', color: 'bg-slate-900', accent: 'text-slate-900', icon: Activity },
+                    { label: 'Pending Audit', count: pendingTasks, rate: allTasks.length > 0 ? (pendingTasks / allTasks.length) * 100 : 0, sub: 'Needs Executive Action', color: 'bg-rose-500', accent: 'text-rose-500', icon: Target },
+                ].map((item, i) => (
+                    <div key={i} className="glass-panel p-8 flex flex-col justify-between group hover:shadow-2xl transition-all duration-500">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{item.sub}</p>
+                                <p className="text-xl font-black text-slate-900 uppercase tracking-tight">{item.label}</p>
+                            </div>
+                            <div className={cn("w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center transition-all group-hover:scale-110 shadow-sm", item.accent)}>
+                                <item.icon className="w-6 h-6" />
+                            </div>
+                        </div>
 
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm text-gray-600">In Progress</p>
-                        <p className="text-xl font-semibold text-gray-900">{inProgressTasks}</p>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Operational Load</span>
+                                <span className={cn("text-sm font-black transition-colors", item.accent)}>{Math.round(item.rate)}%</span>
+                            </div>
+                            <div className="h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                                <div
+                                    className={cn("h-full rounded-full transition-all duration-1000 ease-out shadow-sm", item.color)}
+                                    style={{ width: `${item.rate}%` }}
+                                />
+                            </div>
+                            <div className="flex items-center justify-end">
+                                <span className="text-2xl font-black text-slate-900 tracking-tight">{item.count} <span className="text-[10px] text-slate-400 ml-1">UNITS</span></span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gray-900" style={{ width: `${allTasks.length > 0 ? (inProgressTasks / allTasks.length) * 100 : 0}%` }}></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">Active items</p>
-                </div>
-
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm text-gray-600">Pending Review</p>
-                        <p className="text-xl font-semibold text-gray-900">{pendingTasks}</p>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gray-900" style={{ width: `${allTasks.length > 0 ? (pendingTasks / allTasks.length) * 100 : 0}%` }}></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">Needs approval</p>
-                </div>
+                ))}
             </div>
 
-            {/* Pending Approvals */}
+            {/* Verification Queue - Highlighted Section */}
             {pendingTasks > 0 && (
-                <div className="bg-white rounded-lg p-5 border border-gray-200">
-                    <div className="mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Pending Approvals</h2>
-                        <p className="text-sm text-gray-500 mt-1">{pendingTasks} task{pendingTasks > 1 ? 's' : ''} waiting</p>
+                <div className="glass-panel p-10 space-y-10 relative overflow-hidden group/terminal border-l-8 border-l-rose-500">
+                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover/terminal:rotate-12 transition-transform duration-1000">
+                        <Activity className="w-72 h-72 text-slate-900" />
                     </div>
-                    <AdminVerificationQueue 
-                        tasks={allTasks} 
-                        onVerificationComplete={loadDashboardData} 
-                    />
+
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-10 pb-10 border-b border-slate-100">
+                        <div>
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="p-3 bg-rose-50 rounded-2xl relative shadow-sm">
+                                    <div className="absolute inset-0 bg-rose-500/20 rounded-2xl animate-ping" />
+                                    <Shield className="h-6 w-6 text-rose-500 relative" />
+                                </div>
+                                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Verification Terminal</h2>
+                            </div>
+                            <p className="text-sm font-bold text-slate-500 mt-2 flex items-center gap-3">
+                                <span className="flex h-2 w-2 rounded-full bg-rose-500" />
+                                <span className="text-rose-600 font-black uppercase tracking-widest text-xs">{pendingTasks} critical entities</span> require executive review protocol
+                            </p>
+                        </div>
+                        <button className="btn-primary h-16 px-10 rounded-[1.5rem] shadow-xl shadow-indigo-100 group-hover/terminal:scale-105 transition-transform">
+                            Initialize All Audits
+                        </button>
+                    </div>
+
+                    <div className="relative z-10">
+                        <AdminVerificationQueue
+                            tasks={allTasks}
+                            onVerificationComplete={loadDashboardData}
+                        />
+                    </div>
                 </div>
             )}
         </div>

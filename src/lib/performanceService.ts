@@ -1,8 +1,9 @@
 // src/lib/performanceService.ts
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import { PerformanceParameter, PerformanceScore, MISReport } from '@/types';
+import { PerformanceParameter, PerformanceScore, MISReport, Task } from '@/types';
 import { timestampToDate, handleError } from './utils';
+import { getUserTasks } from './taskService';
 
 /**
  * Get all active performance parameters
@@ -242,10 +243,27 @@ export async function generateMISReport(
             ? parameterScores.reduce((sum, p) => sum + (p.averageScore * p.weight / 100), 0)
             : 0;
 
-        // Get task statistics (simplified - would need actual task data)
-        const totalTasks = scores.length; // Simplified
-        const completedTasks = scores.filter(s => s.score >= s.maxScore * 0.7).length; // 70% threshold
-        const onTimeTasks = completedTasks; // Simplified
+        // Get actual task statistics
+        const tasks = await getUserTasks(userId);
+
+        // Find the date range of scores to filter tasks
+        const scoreDates = scores.map(s => s.evaluatedAt instanceof Date ? s.evaluatedAt : new Date(s.evaluatedAt));
+        const minDate = scoreDates.length > 0 ? new Date(Math.min(...scoreDates.map(d => d.getTime()))) : new Date();
+        const maxDate = scoreDates.length > 0 ? new Date(Math.max(...scoreDates.map(d => d.getTime()))) : new Date();
+
+        // Buffer the range slightly or just use it
+        const periodTasks = tasks.filter((t: Task) => {
+            const taskDate = t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt);
+            return taskDate >= minDate && taskDate <= maxDate;
+        });
+
+        const totalTasks = periodTasks.length;
+        const completedTasks = periodTasks.filter((t: Task) => t.status === 'completed').length;
+        const onTimeTasks = periodTasks.filter((t: Task) => {
+            const dueDate = t.dueDate instanceof Date ? t.dueDate : new Date(t.dueDate);
+            const updatedAt = t.updatedAt instanceof Date ? t.updatedAt : new Date(t.updatedAt);
+            return t.status === 'completed' && updatedAt <= dueDate;
+        }).length;
         const delayedTasks = totalTasks - onTimeTasks;
 
         const report: Omit<MISReport, 'id'> = {

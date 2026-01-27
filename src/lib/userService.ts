@@ -34,6 +34,12 @@ export async function createUser(
     email: string,
     password: string,
     fullName: string,
+    employeeData: {
+        employeeId: string,
+        department: string,
+        position: string,
+        employeeType: string
+    },
     roleIds: string[] = [],
     idToken: string
 ): Promise<{ id: string; email: string; fullName: string }> {
@@ -44,7 +50,7 @@ export async function createUser(
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${idToken}`
             },
-            body: JSON.stringify({ email, password, fullName, roleIds })
+            body: JSON.stringify({ email, password, fullName, ...employeeData, roleIds })
         });
 
         const data = await response.json();

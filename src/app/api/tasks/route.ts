@@ -72,5 +72,12 @@ export async function GET(request: NextRequest) {
             tasks,
             stats
         });
+    }).catch(error => {
+        console.error('Error in GET /api/tasks:', error);
+        return NextResponse.json({
+            success: false,
+            tasks: [],
+            stats: { total: 0, completed: 0, inProgress: 0, pending: 0, overdue: 0 }
+        });
     });
 }

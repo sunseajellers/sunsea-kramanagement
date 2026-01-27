@@ -16,7 +16,7 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ taskId: string }> }
 ) {
-    return withAuth(request, async (_request: NextRequest, _userId: string) => {
+    return withAuth(request, async (_req: NextRequest, _userId: string) => {
         try {
             const { taskId } = await params;
             const taskDoc = await adminDb.collection('tasks').doc(taskId).get();
@@ -57,7 +57,7 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ taskId: string }> }
 ) {
-    return withAuth(request, async (_request: NextRequest, userId: string) => {
+    return withAuth(request, async (request: NextRequest, userId: string) => {
         try {
             const { taskId } = await params;
             const updates = await request.json();
@@ -149,7 +149,7 @@ export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ taskId: string }> }
 ) {
-    return withAuth(request, async (_request: NextRequest, userId: string) => {
+    return withAuth(request, async (_req: NextRequest, userId: string) => {
         try {
             const { taskId } = await params;
             const taskRef = adminDb.collection('tasks').doc(taskId);

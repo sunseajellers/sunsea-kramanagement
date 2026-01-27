@@ -8,7 +8,7 @@ interface Params {
 
 // PATCH /api/kpis/[id] - Update KPI weekly values
 export async function PATCH(request: NextRequest, { params }: Params) {
-    return withAuth(request, async (_request: NextRequest, userId: string) => {
+    return withAuth(request, async (request: NextRequest, userId: string) => {
         try {
             const { id } = await params;
             const updates = await request.json();

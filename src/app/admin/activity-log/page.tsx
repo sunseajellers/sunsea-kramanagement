@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import ActivityLogViewer from '@/components/features/activity/ActivityLogViewer';
-import AdminLayout from '@/components/AdminLayout';
 
 export default function ActivityLogPage() {
     const { isAdmin, loading: authLoading } = useAuth();
@@ -36,24 +35,22 @@ export default function ActivityLogPage() {
     }
 
     return (
-        <AdminLayout>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-black bg-gradient-to-r from-slate-900 via-indigo-900 to-purple-900 bg-clip-text text-transparent tracking-tight">
-                        System Activity Log
-                    </h1>
-                    <p className="text-slate-600 mt-2">Monitor all user activities and system events across the platform</p>
-                </div>
+        <div className="space-y-10">
+            {/* Header */}
+            <div className="page-header">
+                <h1 className="section-title">Operations Ledger</h1>
+                <p className="section-subtitle">Real-time audit trail of system-wide tactical events and user interactions</p>
+            </div>
 
-                {/* Activity Log with full features */}
+            {/* Activity Log with full features */}
+            <div className="glass-panel p-1">
                 <ActivityLogViewer
                     limit={100}
                     showFilters={true}
-                    maxHeight="max-h-screen"
+                    maxHeight="calc(100vh - 400px)"
                     compact={false}
                 />
             </div>
-        </AdminLayout>
+        </div>
     );
 }

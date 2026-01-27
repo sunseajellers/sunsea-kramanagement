@@ -8,49 +8,52 @@ import ScoringConfig from "@/components/features/performance/ScoringConfig"
 
 export default function PerformanceHubPage() {
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Tabs */}
+        <div className="space-y-10">
+            {/* Header */}
+            <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h1 className="section-title">Performance Intelligence</h1>
+                    <p className="section-subtitle">Comprehensive analytics, weekly reporting, and scoring logic control</p>
+                </div>
+            </div>
+
             <Tabs defaultValue="analytics" className="w-full">
-                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl h-auto flex flex-wrap gap-1 shadow-sm">
-                    <TabsTrigger
-                        value="analytics"
-                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                        <BarChart3 className="w-4 h-4" />
-                        Intelligence
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="reports"
-                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                        <FileText className="w-4 h-4" />
-                        Weekly Reports
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="scoring"
-                        className="rounded-lg px-3 sm:px-4 py-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                        <Award className="w-4 h-4" />
-                        Scoring
-                    </TabsTrigger>
-                </TabsList>
+                <div className="flex bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/60 mb-8 w-fit">
+                    <TabsList className="bg-transparent border-none p-0 h-auto flex gap-1">
+                        <TabsTrigger
+                            value="analytics"
+                            className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=active]:border-slate-200/60 border border-transparent transition-all flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500"
+                        >
+                            <BarChart3 className="w-4 h-4" />
+                            Intelligence
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="reports"
+                            className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=active]:border-slate-200/60 border border-transparent transition-all flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Weekly Reports
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="scoring"
+                            className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=active]:border-slate-200/60 border border-transparent transition-all flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500"
+                        >
+                            <Award className="w-4 h-4" />
+                            Scoring
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                <TabsContent value="analytics" className="mt-6 border-none p-0 outline-none">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <AnalyticsHub />
-                    </div>
+                <TabsContent value="analytics" className="mt-0 border-none p-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <AnalyticsHub />
                 </TabsContent>
 
-                <TabsContent value="reports" className="mt-6 border-none p-0 outline-none">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <WeeklyReports />
-                    </div>
+                <TabsContent value="reports" className="mt-0 border-none p-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <WeeklyReports />
                 </TabsContent>
 
-                <TabsContent value="scoring" className="mt-6 border-none p-0 outline-none">
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                        <ScoringConfig />
-                    </div>
+                <TabsContent value="scoring" className="mt-0 border-none p-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <ScoringConfig />
                 </TabsContent>
             </Tabs>
         </div>

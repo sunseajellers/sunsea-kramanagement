@@ -162,7 +162,6 @@ export async function generateScheduledKRAs(): Promise<{ generated: number; erro
             const isWorking = await isWorkingDay(new Date());
 
             if (!isWorking && template.type === 'daily') {
-                console.log(`Skipping Daily KRA ${template.title} - Today is not a working day.`);
                 continue;
             }
 

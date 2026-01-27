@@ -95,14 +95,17 @@ export async function getDashboardStats(uid: string): Promise<DashboardStats> {
         const pendingTasks = tasks.filter((t) => t.status === 'assigned' || t.status === 'in_progress').length;
         const overdueTasks = tasks.filter((t) => {
             const now = new Date();
-            return t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed';
+            const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+            return dueDate && dueDate < now && t.status !== 'completed';
         }).length;
 
         const activeKRAs = kras.filter((k) => k.status === 'in_progress').length;
         const totalKRAs = kras.length;
         const completedKRAs = kras.filter((k) => k.status === 'completed').length;
         const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        const weeklyScore = Math.min(100, completionRate + activeKRAs * 2); // dummy calculation
+
+        // Real weekly score based on weighted completion and KRA activity
+        const weeklyScore = Math.min(100, Math.round((completionRate * 0.7) + (activeKRAs > 0 ? 30 : 0)));
 
         return {
             totalTasks,
@@ -138,10 +141,11 @@ export async function getTaskAnalytics(uid: string) {
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter((t) => t.status === 'completed').length;
         const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
-        const pendingTasks = tasks.filter((t) => t.status === 'assigned').length; // 'assigned' maps to pending in UI often
+        const pendingTasks = tasks.filter((t) => t.status === 'assigned').length;
         const overdueTasks = tasks.filter((t) => {
             const now = new Date();
-            return t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed';
+            const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+            return dueDate && dueDate < now && t.status !== 'completed';
         }).length;
 
         const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -162,14 +166,29 @@ export async function getTaskAnalytics(uid: string) {
             critical: tasks.filter(t => t.priority === 'critical').length
         };
 
-        // Mock Trend Data (Last 7 days) - In a real app, you'd aggregate this from createdAt/completedAt
+        // Real Trend Data (Last 7 days)
         const tasksOverTime = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
+            d.setHours(0, 0, 0, 0);
             d.setDate(d.getDate() - (6 - i));
+            const nextDay = new Date(d);
+            nextDay.setDate(d.getDate() + 1);
+
+            const created = tasks.filter(t => {
+                const c = new Date(t.createdAt);
+                return c >= d && c < nextDay;
+            }).length;
+
+            const completed = tasks.filter(t => {
+                if (t.status !== 'completed') return false;
+                const c = new Date(t.updatedAt);
+                return c >= d && c < nextDay;
+            }).length;
+
             return {
                 date: d.toLocaleDateString('en-US', { weekday: 'short' }),
-                created: Math.floor(Math.random() * 5), // Mock
-                completed: Math.floor(Math.random() * 5) // Mock
+                created,
+                completed
             };
         });
 
@@ -207,13 +226,25 @@ export async function getKRAAnalytics(uid: string) {
         const totalKRAs = kras.length;
         const activeKRAs = kras.filter(k => k.status === 'in_progress').length;
 
-        // Mock Progress Data - In a real app, this would come from linked tasks
-        const kraProgress = kras.slice(0, 5).map(kra => ({
-            name: kra.title,
-            tasksTotal: 10, // Mock
-            tasksCompleted: Math.floor(Math.random() * 10), // Mock
-            percentage: Math.floor(Math.random() * 100) // Mock
-        }));
+        // Real Progress Data based on linked tasks
+        const tasksSnap = await adminDb.collection('tasks')
+            .where('assignedTo', 'array-contains', uid)
+            .get();
+        const userTasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
+
+        const kraProgress = kras.slice(0, 5).map(kra => {
+            const linkedTasks = userTasks.filter(t => t.kraId === kra.id);
+            const tasksTotal = linkedTasks.length;
+            const tasksCompleted = linkedTasks.filter(t => t.status === 'completed').length;
+            const percentage = tasksTotal ? Math.round((tasksCompleted / tasksTotal) * 100) : kra.progress || 0;
+
+            return {
+                name: kra.title,
+                tasksTotal,
+                tasksCompleted,
+                percentage
+            };
+        });
 
         return {
             totalKRAs,
@@ -226,11 +257,6 @@ export async function getKRAAnalytics(uid: string) {
     }
 }
 
-export async function exportAnalyticsData(uid: string) {
-    // Placeholder for export functionality
-    console.log('Exporting analytics for', uid);
-    return true;
-}
 
 // ===== ADMIN-ONLY ANALYTICS FUNCTIONS =====
 
@@ -239,27 +265,29 @@ export async function exportAnalyticsData(uid: string) {
  */
 export async function getAdminDashboardAnalytics() {
     try {
-        const [users, teams] = await Promise.all([
+        const [users, teams, tasksSnap, krasSnap] = await Promise.all([
             getAllUsers(),
-            getAllTeams()
+            getAllTeams(),
+            adminDb.collection('tasks').get(),
+            adminDb.collection('kras').get()
         ]);
 
-        // Get all tasks and KRAs for comprehensive analysis
-        const allTasksPromises = users.map(user => getServerUserTasks(user.id));
-        const allKRAsPromises = users.map(user => getServerUserKRAs(user.id, user.teamId));
+        const allTasks = tasksSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            dueDate: timestampToDate(doc.data().dueDate),
+            createdAt: timestampToDate(doc.data().createdAt),
+            updatedAt: timestampToDate(doc.data().updatedAt)
+        })) as Task[];
 
-        const [allTasksArrays, allKRAsArrays] = await Promise.all([
-            Promise.all(allTasksPromises),
-            Promise.all(allKRAsPromises)
-        ]);
-
-        const allTasks = allTasksArrays.flat();
-        const allKRAs = allKRAsArrays.flat();
-
-        // Remove duplicates (users might have overlapping team KRAs)
-        const uniqueKRAs = allKRAs.filter((kra, index, self) =>
-            index === self.findIndex(k => k.id === kra.id)
-        );
+        const uniqueKRAs = krasSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            startDate: timestampToDate(doc.data().startDate),
+            endDate: timestampToDate(doc.data().endDate),
+            createdAt: timestampToDate(doc.data().createdAt),
+            updatedAt: timestampToDate(doc.data().updatedAt)
+        })) as KRA[];
 
         // Calculate comprehensive metrics
         const totalUsers = users.length;
@@ -268,7 +296,7 @@ export async function getAdminDashboardAnalytics() {
         const totalKRAs = uniqueKRAs.length;
 
         const completedTasks = allTasks.filter(t => t.status === 'completed').length;
-        const inProgressTasks = allTasks.filter(t => t.status === 'in_progress').length;
+        const inProgressTasks = allTasks.filter(t => t.status === 'in_progress' || t.status === 'assigned').length;
         const overdueTasks = allTasks.filter(t => {
             const now = new Date();
             return t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed';
@@ -280,8 +308,10 @@ export async function getAdminDashboardAnalytics() {
         // Team performance metrics
         const teamPerformance = teams.map(team => {
             const teamMembers = users.filter(u => u.teamId === team.id);
-            const teamTasks = allTasks.filter(t => teamMembers.some(m => t.assignedTo.includes(m.id)));
-            const teamKRAs = uniqueKRAs.filter(k => teamMembers.some(m => k.assignedTo.includes(m.id) || k.teamIds?.includes(team.id)));
+            const teamMemberIds = new Set(teamMembers.map(m => m.id));
+
+            const teamTasks = allTasks.filter(t => t.teamId === team.id || t.assignedTo.some(id => teamMemberIds.has(id)));
+            const teamKRAs = uniqueKRAs.filter(k => k.teamIds?.includes(team.id) || k.assignedTo.some(id => teamMemberIds.has(id)));
 
             const completedTeamTasks = teamTasks.filter(t => t.status === 'completed').length;
             const teamCompletionRate = teamTasks.length ? Math.round((completedTeamTasks / teamTasks.length) * 100) : 0;
@@ -301,7 +331,7 @@ export async function getAdminDashboardAnalytics() {
         // User performance metrics
         const userPerformance = users.map(user => {
             const userTasks = allTasks.filter(t => t.assignedTo.includes(user.id));
-            const userKRAs = uniqueKRAs.filter(k => k.assignedTo.includes(user.id) || k.teamIds?.includes(user.teamId || ''));
+            const userKRAs = uniqueKRAs.filter(k => k.assignedTo.includes(user.id) || (user.teamId && k.teamIds?.includes(user.teamId)));
 
             const completedUserTasks = userTasks.filter(t => t.status === 'completed').length;
             const userCompletionRate = userTasks.length ? Math.round((completedUserTasks / userTasks.length) * 100) : 0;

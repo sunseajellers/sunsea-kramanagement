@@ -5,6 +5,26 @@ import { timestampToDate, handleError } from './utils';
 import { authenticatedJsonFetch } from './apiClient';
 
 /**
+ * Task Service singleton and individual exports
+ */
+export const taskService = {
+    verifyTask: (...args: any[]) => (verifyTask as any)(...args),
+    getUserTasks: (...args: any[]) => (getUserTasks as any)(...args),
+    fetchTasksForUser: (...args: any[]) => (fetchTasksForUser as any)(...args),
+    createTask: (...args: any[]) => (createTask as any)(...args),
+    updateTask: (...args: any[]) => (updateTask as any)(...args),
+    deleteTask: (...args: any[]) => (deleteTask as any)(...args),
+    getTaskStats: (...args: any[]) => (getTaskStats as any)(...args),
+    reassignTask: (...args: any[]) => (reassignTask as any)(...args),
+    getChecklistItems: (...args: any[]) => (getChecklistItems as any)(...args),
+    addChecklistItem: (...args: any[]) => (addChecklistItem as any)(...args),
+    updateChecklistItem: (...args: any[]) => (updateChecklistItem as any)(...args),
+    deleteChecklistItem: (...args: any[]) => (deleteChecklistItem as any)(...args),
+    getAllTasks: (...args: any[]) => (getAllTasks as any)(...args),
+    getTeamTasks: (...args: any[]) => (getTeamTasks as any)(...args)
+};
+
+/**
  * Verify a task (Admin action)
  */
 export async function verifyTask(taskId: string, status: 'verified' | 'rejected', reason?: string): Promise<void> {
@@ -90,9 +110,24 @@ export async function deleteTask(taskId: string): Promise<void> {
     }
 }
 
-export async function getTaskStats(uid: string): Promise<TaskStats> {
+export async function getTaskStats(filtersOrUid: string | { userId?: string; departmentId?: string }): Promise<TaskStats> {
     try {
-        const tasks = await getUserTasks(uid);
+        let tasks: Task[] = [];
+
+        if (typeof filtersOrUid === 'string') {
+            tasks = await getUserTasks(filtersOrUid);
+        } else {
+            if (filtersOrUid.userId) {
+                tasks = await getUserTasks(filtersOrUid.userId);
+            } else {
+                tasks = await getAllTasks();
+            }
+
+            if (filtersOrUid.departmentId) {
+                tasks = tasks.filter(t => t.department === filtersOrUid.departmentId);
+            }
+        }
+
         const total = tasks.length;
         const completed = tasks.filter(t => t.status === 'completed').length;
         const inProgress = tasks.filter(t => t.status === 'in_progress').length;
@@ -387,6 +422,25 @@ export async function getTeamTasks(teamMemberIds: string[], maxResults: number =
         return uniqueTasks;
     } catch (error) {
         handleError(error, 'Failed to fetch team tasks');
+        throw error;
+    }
+}
+/**
+ * Get activity log for a task
+ */
+export async function getTaskActivityLog(taskId: string): Promise<any[]> {
+    try {
+        const activityRef = collection(db, 'tasks', taskId, 'activityLog');
+        const q = query(activityRef, orderBy('timestamp', 'desc'));
+        const snap = await getDocs(q);
+
+        return snap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            timestamp: timestampToDate(doc.data().timestamp)
+        }));
+    } catch (error) {
+        handleError(error, 'Failed to fetch task activity log');
         throw error;
     }
 }

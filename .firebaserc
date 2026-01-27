@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "sunsea-crm",
+    "production": "sunsea-crm"
+  },
+  "targets": {},
+  "etags": {}
+}

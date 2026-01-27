@@ -84,99 +84,121 @@ export default function HolidayManager() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="glass-card p-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-purple-600" />
-                    Add New Holiday
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-500">Holiday Name</label>
+        <div className="space-y-10 animate-in">
+            <div className="page-header">
+                <h2 className="section-title">Operational Calendar</h2>
+                <p className="section-subtitle">Manage organizational holidays and non-operational tactical windows</p>
+            </div>
+
+            <div className="glass-panel p-10">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                        <CalendarDays className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">
+                        Register Tactical Break
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Directive Name</label>
                         <input
                             type="text"
-                            placeholder="e.g. Diwali"
+                            placeholder="e.g. Strategic Recess"
                             value={newHoliday.name}
                             onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })}
-                            className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                            className="form-input h-14"
                         />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-500">Date</label>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Date</label>
                         <input
                             type="date"
                             value={newHoliday.date}
                             onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
-                            className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                            className="form-input h-14"
                         />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-500">Type</label>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
                         <select
                             value={newHoliday.type}
                             onChange={(e) => setNewHoliday({ ...newHoliday, type: e.target.value as any })}
-                            className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                            className="form-input h-14 appearance-none"
                         >
-                            <option value="company">Company Holiday (Mandatory)</option>
-                            <option value="public">Public Holiday</option>
-                            <option value="optional">Optional / Restricted</option>
+                            <option value="company">MANDATORY (COMPANY)</option>
+                            <option value="public">PUBLIC OBSERVANCE</option>
+                            <option value="optional">RESTRICTED / OPTIONAL</option>
                         </select>
                     </div>
                     <Button
                         onClick={handleAdd}
                         disabled={adding}
-                        className="h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+                        className="btn-primary h-14 w-full"
                     >
-                        {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                        Add Holiday
+                        {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-6 h-6 mr-2" />}
+                        Authorize Date
                     </Button>
                 </div>
             </div>
 
-            <div className="glass-card overflow-hidden">
-                <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Date</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Type</th>
-                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {holidays.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-400">
-                                    No holidays configured yet.
-                                </td>
+            <div className="glass-panel overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="bg-slate-50/50 border-b border-slate-100">
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Temporal Window</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Designation</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Type</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Control</th>
                             </tr>
-                        ) : (
-                            holidays.map((holiday) => (
-                                <tr key={holiday.id} className="hover:bg-gray-50/50">
-                                    <td className="px-6 py-3 text-sm font-medium text-gray-900">
-                                        {format(new Date(holiday.date), 'MMM d, yyyy (EEE)')}
-                                    </td>
-                                    <td className="px-6 py-3 text-sm text-gray-600">{holiday.name}</td>
-                                    <td className="px-6 py-3">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide
-                                            ${holiday.type === 'company' ? 'bg-purple-100 text-purple-700' :
-                                                holiday.type === 'public' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                                            {holiday.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3 text-right">
-                                        <button
-                                            onClick={() => handleDelete(holiday.id)}
-                                            className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {holidays.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} className="px-8 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-16 h-16 rounded-[2rem] bg-slate-50 flex items-center justify-center text-slate-200">
+                                                <CalendarDays className="w-8 h-8" />
+                                            </div>
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Zero Calendar Exceptions Configured</p>
+                                        </div>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : (
+                                holidays.map((holiday) => (
+                                    <tr key={holiday.id} className="group hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-8 py-6">
+                                            <div className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                                {format(new Date(holiday.date), 'MMM dd, yyyy')}
+                                            </div>
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                                {format(new Date(holiday.date), '(EEEE)')}
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-sm font-black text-slate-700 uppercase tracking-tight">{holiday.name}</td>
+                                        <td className="px-8 py-6">
+                                            <span className={`status-badge px-3 py-1 text-[9px]
+                                                ${holiday.type === 'company' ? 'status-badge-neutral border-indigo-200 text-indigo-600 bg-indigo-50' :
+                                                    holiday.type === 'public' ? 'status-badge-success' : 'status-badge-neutral'}`}>
+                                                {holiday.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <button
+                                                onClick={() => handleDelete(holiday.id)}
+                                                className="w-10 h-10 rounded-xl hover:bg-rose-50 text-slate-300 hover:text-rose-600 border border-transparent hover:border-rose-100 flex items-center justify-center transition-all group/trash"
+                                            >
+                                                <Trash2 className="w-5 h-5 group-hover/trash:scale-110 transition-transform" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

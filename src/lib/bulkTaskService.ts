@@ -16,6 +16,7 @@ export interface CSVTaskData {
     teamId?: string
     dueDate: string // Date string
     progress?: string // Optional percentage string
+    frequency?: string // NEW: Task frequency
 }
 
 /**
@@ -57,7 +58,8 @@ export function parseCSV(csvContent: string): CSVTaskData[] {
             assignedTo: task.assignedto,
             teamId: task.teamid,
             dueDate: task.duedate,
-            progress: task.progress
+            progress: task.progress,
+            frequency: task.frequency
         });
     }
 
@@ -87,6 +89,17 @@ function parseDate(dateString: string): Date {
         return defaultDate;
     }
     return date;
+}
+
+/**
+ * Validate frequency value
+ */
+function validateFrequency(frequency: string): any {
+    const normalized = frequency?.toLowerCase();
+    if (['daily', 'weekly', 'fortnightly', 'monthly', 'quarterly', 'yearly', 'one-time'].includes(normalized)) {
+        return normalized;
+    }
+    return 'one-time';
 }
 
 /**
@@ -140,6 +153,7 @@ export async function createBulkTasksFromCSV(
                     teamId: csvTask.teamId,
                     dueDate: parseDate(csvTask.dueDate),
                     progress: csvTask.progress ? parseInt(csvTask.progress) : 0,
+                    frequency: validateFrequency(csvTask.frequency || ''),
                     attachments: [],
                     createdAt: new Date(),
                     updatedAt: new Date()

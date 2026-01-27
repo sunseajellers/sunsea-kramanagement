@@ -18,20 +18,30 @@ export async function POST(request: NextRequest) {
         const decodedToken = await adminAuth.verifyIdToken(idToken)
         const requestingUserId = decodedToken.uid
 
-        // Check if requesting user has admin role (simplified check)
+        // Check if requesting user has admin role
         const requestingUserDoc = await adminDb.collection('users').doc(requestingUserId).get()
-        if (!requestingUserDoc.exists) {
-            return NextResponse.json({ error: 'Unauthorized - User not found' }, { status: 401 })
+        const userData = requestingUserDoc.data()
+        if (!requestingUserDoc.exists || userData?.isAdmin !== true) {
+            return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 })
         }
 
         // Parse request body
         const body = await request.json()
-        const { email, password, fullName, roleIds = [] } = body
+        const {
+            email,
+            password,
+            fullName,
+            roleIds = [],
+            employeeId = '',
+            department = '',
+            position = '',
+            employeeType = 'full-time'
+        } = body
 
         // Validate required fields
-        if (!email || !password || !fullName) {
+        if (!email || !password || !fullName || !employeeId) {
             return NextResponse.json(
-                { error: 'Missing required fields: email, password, fullName' },
+                { error: 'Missing required fields: email, password, fullName, employeeId' },
                 { status: 400 }
             )
         }
@@ -58,6 +68,10 @@ export async function POST(request: NextRequest) {
             email: userRecord.email,
             fullName: fullName,
             roleIds: roleIds,
+            employeeId,
+            department,
+            position,
+            employeeType,
             isActive: true,
             createdAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),

@@ -1,122 +1,156 @@
 // src/lib/server/scoringService.ts
-import { Task, WeeklyReport, ScoringConfig } from '@/types';
-import { getUserTasks } from './taskService';
-import { getUserKRAs } from './kraService';
+import { adminDb } from '../firebase-admin';
+import { Task, ScoringConfig, WeeklyReport } from '@/types';
+import { differenceInDays, isBefore } from 'date-fns';
+
+/**
+ * Scoring Service
+ * Handles calculation of task-based performance scores
+ */
+
+export interface ScoreResult {
+    score: number;
+    completedOnTime: boolean;
+    delayDays: number;
+}
+
+/**
+ * Calculate score for a single task
+ */
+export function calculateTaskScore(task: Task): ScoreResult {
+    const dueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+    const now = new Date();
+
+    // If completed
+    if (task.status === 'completed') {
+        const completedAt = task.verifiedAt || task.updatedAt;
+        const compDate = completedAt instanceof Date ? completedAt : new Date(completedAt);
+
+        const isLate = isBefore(dueDate, compDate);
+        if (!isLate) {
+            return { score: 100, completedOnTime: true, delayDays: 0 };
+        } else {
+            const delay = Math.max(1, differenceInDays(compDate, dueDate));
+            const score = Math.max(40, 100 - (delay * 10)); // Deduct 10 points per day late, max penalty 60
+            return { score, completedOnTime: false, delayDays: delay };
+        }
+    }
+
+    // If not completed and overdue
+    if (isBefore(dueDate, now)) {
+        return { score: 0, completedOnTime: false, delayDays: differenceInDays(now, dueDate) };
+    }
+
+    // In progress - partial score (up to 70)
+    const progressScore = Math.floor((task.progress || 0) * 0.7);
+    return { score: progressScore, completedOnTime: false, delayDays: 0 };
+}
 
 export class ScoringService {
-
-    static calculateCompletionScore(tasks: Task[]): number {
+    /**
+     * Calculate overall score for a set of tasks based on configuration
+     */
+    static calculateOverallScore(tasks: Task[], _config: ScoringConfig): number {
         if (tasks.length === 0) return 0;
-        const completedTasks = tasks.filter(t => t.status === 'completed').length;
-        return Math.round((completedTasks / tasks.length) * 100);
-    }
 
-    static calculateTimelinessScore(tasks: Task[]): number {
-        const completedTasks = tasks.filter(t => t.status === 'completed');
-        if (completedTasks.length === 0) return 0;
-        const onTimeTasks = completedTasks.filter(task => {
-            return !task.dueDate || task.updatedAt <= task.dueDate;
+        let totalScore = 0;
+        let totalWeight = 0;
+
+        tasks.forEach(task => {
+            const result = calculateTaskScore(task);
+            // In a real scenario, you might apply different weights to different task types based on config
+            // For now, we just average the scores
+            totalScore += result.score;
+            totalWeight += 1;
         });
-        return Math.round((onTimeTasks.length / completedTasks.length) * 100);
+
+        return totalWeight > 0 ? Math.round(totalScore / totalWeight) : 0;
     }
 
-    static calculateQualityScore(): number {
-        return 80;
-    }
-
-    static calculateKraAlignmentScore(tasks: Task[]): number {
-        if (tasks.length === 0) return 0;
-        const alignedTasks = tasks.filter(t => t.kraId).length;
-        return Math.round((alignedTasks / tasks.length) * 100);
-    }
-
-    static calculateOverallScore(
-        tasks: Task[],
-        config: ScoringConfig
-    ): number {
-        const completionScore = this.calculateCompletionScore(tasks);
-        const timelinessScore = this.calculateTimelinessScore(tasks);
-        const qualityScore = this.calculateQualityScore();
-        const kraAlignmentScore = this.calculateKraAlignmentScore(tasks);
-
-        const weightedScore =
-            (completionScore * config.completionWeight / 100) +
-            (timelinessScore * config.timelinessWeight / 100) +
-            (qualityScore * config.qualityWeight / 100) +
-            (kraAlignmentScore * config.kraAlignmentWeight / 100);
-
-        return Math.round(Math.min(100, Math.max(0, weightedScore)));
-    }
-
-    static calculateWorkNotDoneRate(tasks: Task[]): number {
-        if (tasks.length === 0) return 0;
-        const notCompleted = tasks.filter(t => t.status !== 'completed').length;
-        return Math.round((notCompleted / tasks.length) * 100);
-    }
-
-    static calculateDelayRate(tasks: Task[]): number {
-        if (tasks.length === 0) return 0;
-        const delayed = tasks.filter(t => {
-            const dueDate = t.finalTargetDate || t.dueDate;
-            if (!dueDate) return false;
-            const now = new Date();
-            // Delayed if not completed and past due date, OR if completed but after due date
-            if (t.status !== 'completed') {
-                return now > new Date(dueDate);
-            } else {
-                return t.updatedAt > new Date(dueDate);
-            }
-        }).length;
-        return Math.round((delayed / tasks.length) * 100);
-    }
-
+    /**
+     * Generate a full weekly report object
+     */
     static async generateWeeklyReport(
         userId: string,
         weekStart: Date,
         weekEnd: Date,
         config: ScoringConfig
     ): Promise<WeeklyReport> {
-        const allTasks = await getUserTasks(userId);
-        const weekTasks = allTasks.filter(task => {
-            const taskDate = new Date(task.createdAt);
-            return taskDate >= weekStart && taskDate <= weekEnd;
-        });
+        // Fetch tasks for the week
+        const tasksQuery = await adminDb.collection('tasks')
+            .where('assignedTo', 'array-contains', userId)
+            .where('dueDate', '>=', weekStart)
+            .where('dueDate', '<=', weekEnd)
+            .get();
 
-        const completionScore = this.calculateCompletionScore(weekTasks);
-        const timelinessScore = this.calculateTimelinessScore(weekTasks);
-        const workNotDoneRate = this.calculateWorkNotDoneRate(weekTasks);
-        const delayRate = this.calculateDelayRate(weekTasks);
-        const qualityScore = this.calculateQualityScore();
-        const kraAlignmentScore = this.calculateKraAlignmentScore(weekTasks);
-        const overallScore = this.calculateOverallScore(weekTasks, config);
+        const tasks = tasksQuery.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
 
-        const kras = await getUserKRAs(userId);
-        const activeKras = kras.filter(kra => kra.status === 'in_progress');
-        const kraTitles = activeKras.map(kra => kra.title);
+        const score = this.calculateOverallScore(tasks, config);
+        const tasksAssigned = tasks.length;
+        const tasksCompleted = tasks.filter(t => t.status === 'completed').length;
+        const onTimeTasks = tasks.filter(t => {
+            const result = calculateTaskScore(t);
+            return t.status === 'completed' && result.completedOnTime;
+        }).length;
+
+        const onTimePercentage = tasksCompleted > 0 ? Math.round((onTimeTasks / tasksCompleted) * 100) : 0;
 
         return {
-            id: `report_${userId}_${weekStart.toISOString().split('T')[0]}`,
+            id: `report_${userId}_${weekStart.getTime()}`,
+            userId,
+            userName: '', // To be filled by caller
             weekStartDate: weekStart,
             weekEndDate: weekEnd,
-            userId,
-            userName: '',
-            tasksAssigned: weekTasks.length,
-            tasksCompleted: weekTasks.filter(t => t.status === 'completed').length,
-            onTimeCompletion: timelinessScore,
-            onTimePercentage: timelinessScore,
-            krasCovered: kraTitles,
-            taskDelays: weekTasks.filter(t => this.calculateDelayRate([t]) > 0).length,
-            score: overallScore,
-            workNotDoneRate,
-            delayRate,
+            score,
+            tasksAssigned,
+            tasksCompleted,
+            onTimePercentage,
+            onTimeCompletion: onTimeTasks,
+            taskDelays: tasksCompleted - onTimeTasks,
+            krasCovered: [],
+            workNotDoneRate: 0,
+            delayRate: 0,
             breakdown: {
-                completionScore,
-                timelinessScore,
-                qualityScore,
-                kraAlignmentScore,
-                totalScore: overallScore
+                completionScore: 0,
+                timelinessScore: 0,
+                qualityScore: 0,
+                kraAlignmentScore: 0,
+                totalScore: score
             },
             generatedAt: new Date()
         };
     }
+}
+
+/**
+ * Legacy function for backward compatibility if needed, 
+ * or can be removed if not used elsewhere.
+ */
+export async function calculateWeeklyPerformance(userId: string, weekStart: Date, weekEnd: Date) {
+    const report = await ScoringService.generateWeeklyReport(
+        userId,
+        weekStart,
+        weekEnd,
+        {
+            id: 'legacy',
+            completionWeight: 0,
+            timelinessWeight: 0,
+            qualityWeight: 0,
+            kraAlignmentWeight: 0,
+            updatedAt: new Date(),
+            updatedBy: 'system'
+        }
+    );
+
+    // Save legacy format
+    await adminDb.collection('performanceScores').add({
+        userId,
+        weekStart,
+        weekEnd,
+        score: report.score,
+        taskCount: report.tasksAssigned,
+        calculatedAt: new Date()
+    });
+
+    return { score: report.score, taskCount: report.tasksAssigned };
 }

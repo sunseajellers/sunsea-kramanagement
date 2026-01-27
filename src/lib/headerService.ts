@@ -46,12 +46,13 @@ export function getDefaultHeaderConfig(): HeaderConfig {
         logo: '',
         title: 'JewelMatrix',
         navigation: [
-            { name: 'Dashboard', href: '/dashboard', roles: ['admin', 'user'] },
-            { name: 'Goals', href: '/dashboard/kras', roles: ['admin', 'user'] },
-            { name: 'Tasks', href: '/dashboard/tasks', roles: ['admin', 'user'] },
-            { name: 'My Updates', href: '/dashboard/my-updates', roles: ['admin', 'user'] },
-            { name: 'Reports', href: '/dashboard/reports', roles: ['admin', 'user'] },
-            { name: 'Team', href: '/dashboard/team', roles: ['admin', 'user'] },
+            { name: 'Home', href: '/dashboard', roles: ['admin', 'user'] },
+            { name: 'Team', href: '/admin/operations', roles: ['admin'] },
+            { name: 'People', href: '/admin/organization', roles: ['admin'] },
+            { name: 'Tasks', href: '/dashboard/tasks', roles: ['user'] },
+            { name: 'Score', href: '/dashboard/my-updates', roles: ['user'] },
+            { name: 'OKRs', href: '/dashboard/kras', roles: ['user'] },
+            { name: 'Academy', href: '/dashboard/learning-hub', roles: ['admin', 'user'] },
         ],
         theme: 'indian'
     };

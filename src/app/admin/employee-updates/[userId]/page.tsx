@@ -4,7 +4,6 @@ import { useState, useEffect, use } from 'react'
 import { getTaskUpdatesByUser } from '@/lib/taskUpdateService'
 import { TaskUpdate } from '@/types'
 import { ArrowLeft, MessageSquare, Calendar, Clock, Loader2 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { db } from '@/lib/firebase'
@@ -58,96 +57,110 @@ export default function EmployeeUpdatesPage({ params }: Props) {
     }
 
     return (
-        <div className="page-container">
-            <div className="flex-1 overflow-auto space-y-4">
-                {/* Header */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                        <Link href="/admin/team-hub">
-                            <Button variant="ghost" size="sm" className="h-8">
-                                <ArrowLeft className="w-4 h-4 mr-1" />
-                                Back
-                            </Button>
-                        </Link>
+        <div className="space-y-10">
+            {/* Header */}
+            <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                    <Link href="/admin/organization">
+                        <Button variant="ghost" className="btn-secondary h-12 w-12 p-0 rounded-2xl">
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="section-title">Submission Ledger</h1>
+                        <p className="section-subtitle">Tactical reporting history for {employee?.fullName || 'Personnel'}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl">
-                            {employee?.fullName?.charAt(0).toUpperCase() || '?'}
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black text-gray-900">
-                                {employee?.fullName || 'Unknown Employee'}
-                            </h1>
-                            <p className="text-sm text-gray-400 font-medium">
-                                {employee?.email} • {updates.length} updates submitted
-                            </p>
+                </div>
+            </div>
+
+            {/* Profile Overview */}
+            <div className="glass-panel p-8 bg-slate-900 border-none relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+                <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+                    <div className="w-24 h-24 rounded-3xl bg-white/10 flex items-center justify-center text-4xl font-black text-white border border-white/10 shadow-2xl backdrop-blur-md">
+                        {employee?.fullName?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                    <div className="text-center md:text-left space-y-2">
+                        <h2 className="text-3xl font-black text-white tracking-tight">{employee?.fullName || 'Unknown Employee'}</h2>
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                            <p className="text-indigo-300 font-bold text-sm tracking-wide uppercase">{employee?.email}</p>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                            <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">{updates.length} Intelligence Submissions</p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Updates List */}
-                <Card className="border-none shadow-sm bg-white">
-                    <CardHeader className="border-b bg-gray-50/30 px-6 py-4">
-                        <CardTitle className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            Task Update History
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        {updates.length === 0 ? (
-                            <div className="text-center py-12">
-                                <MessageSquare className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                                <p className="text-gray-400 text-sm">No updates submitted yet</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-gray-50">
-                                {updates.map(update => (
-                                    <div key={update.id} className="p-5 hover:bg-gray-50/50 transition-colors">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex-1">
-                                                <h4 className="font-bold text-gray-900 mb-1">
-                                                    {update.taskTitle}
-                                                </h4>
-                                                <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        {new Date(update.timestamp).toLocaleString()}
-                                                    </span>
-                                                </div>
+            {/* Updates List */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
+                        <MessageSquare className="w-4 h-4 text-indigo-500" />
+                        Engagement History
+                    </h3>
+                    <span className="text-xs font-bold text-slate-400">{updates.length} Total Records</span>
+                </div>
+
+                {updates.length === 0 ? (
+                    <div className="glass-panel p-20 text-center flex flex-col items-center">
+                        <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
+                            <MessageSquare className="w-10 h-10 text-slate-300" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">No Records Found</h3>
+                        <p className="text-slate-500 font-medium max-w-sm">This operative has not submitted any tactical updates to the system yet.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                        {updates.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(update => (
+                            <div key={update.id} className="glass-panel p-6 hover:translate-x-1 transition-all">
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+                                    <div className="space-y-1">
+                                        <h4 className="text-lg font-black text-slate-900 tracking-tight leading-none group-hover:text-indigo-600 transition-colors">
+                                            {update.taskTitle}
+                                        </h4>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                {new Date(update.timestamp).toLocaleString()}
                                             </div>
-                                        </div>
-
-                                        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                                            <div>
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Status Update</p>
-                                                <p className="text-gray-700 text-sm">{update.statusUpdate}</p>
-                                            </div>
-
-                                            {update.revisionDate && (
-                                                <div>
-                                                    <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
-                                                        <Calendar className="w-3 h-3" />
-                                                        Revision Requested
-                                                    </p>
-                                                    <p className="text-amber-700 text-sm font-medium">
-                                                        New date: {new Date(update.revisionDate).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {update.remarks && (
-                                                <div>
-                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Remarks</p>
-                                                    <p className="text-gray-600 text-sm italic">"{update.remarks}"</p>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
-                                ))}
+                                    {update.revisionDate && (
+                                        <div className="px-4 py-1.5 bg-amber-50 text-amber-600 rounded-xl border border-amber-100/50 flex items-center gap-2">
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Extension Requested</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Report Content</p>
+                                        <p className="text-sm font-medium text-slate-700 leading-relaxed">{update.statusUpdate}</p>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {update.revisionDate && (
+                                            <div>
+                                                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1.5">Proposed Deadline</p>
+                                                <p className="text-sm font-bold text-slate-900">
+                                                    {new Date(update.revisionDate).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {update.remarks && (
+                                            <div>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Internal Remarks</p>
+                                                <p className="text-sm text-slate-500 font-medium italic italic-slate-300">"{update.remarks}"</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )

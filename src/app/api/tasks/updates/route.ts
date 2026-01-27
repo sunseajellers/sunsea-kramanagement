@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (_request: NextRequest, userId: string) => {
         try {
             const body = await request.json();
-            const { taskId, statusUpdate, remarks, revisionDate, isKRA: bodyIsKRA } = body;
+            const { taskId, statusUpdate, remarks, revisionDate, delayReason, isKRA: bodyIsKRA, proofOfWork, proofLink } = body;
 
             // 1. Determine if it's a KRA or a Task
             let isKRA = bodyIsKRA;
@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
                 collectionName = isKRA ? 'kras' : 'tasks';
                 taskDoc = await adminDb.collection(collectionName).doc(taskId).get();
             }
-
             if (!taskDoc.exists) {
                 return NextResponse.json({ error: 'Task or KRA not found' }, { status: 404 });
             }
@@ -80,12 +79,29 @@ export async function POST(request: NextRequest) {
                 updatedAt: new Date()
             };
 
+            // Set verification status and proof if submitted for review
+            if (statusUpdate === 'pending_review' && !isKRA) {
+                updates.verificationStatus = 'pending';
+                if (proofOfWork) updates.proofOfWork = proofOfWork;
+                if (proofLink) updates.proofLink = proofLink;
+            }
+
             if (revisionDate) {
-                updates.finalTargetDate = new Date(revisionDate);
-                // Increment revision count if it's a task
+                const requestedDate = new Date(revisionDate);
+                updates.requestedExtensionDate = requestedDate;
+
+                // If the task logic requires explicit approval for extensions
                 if (!isKRA) {
+                    updates.extensionStatus = 'pending';
                     updates.revisionCount = (taskData?.revisionCount || 0) + 1;
+                } else {
+                    // For KRAs, we might just update the date directly or follow same logic
+                    updates.finalTargetDate = requestedDate;
                 }
+            }
+
+            if (delayReason) {
+                updates.delayReason = delayReason;
             }
 
             await adminDb.collection(collectionName).doc(taskId).update(updates);
@@ -102,12 +118,26 @@ export async function POST(request: NextRequest) {
                 userName,
                 statusUpdate,
                 remarks: remarks || null,
+                proofOfWork: proofOfWork || null,
+                proofLink: proofLink || null,
                 revisionDate: revisionDate ? new Date(revisionDate) : null,
+                delayReason: delayReason || null,
                 isKRA,
                 timestamp: new Date()
             };
 
             const docRef = await adminDb.collection('taskUpdates').add(updateEntry);
+
+            // 5. Trigger Notifications
+            if (statusUpdate === 'pending_review' && !isKRA) {
+                const { notifyTaskSubmitted } = await import('@/lib/server/notificationService');
+                const adminSnap = await adminDb.collection('users').where('isAdmin', '==', true).get();
+                const adminIds = adminSnap.docs.map(d => d.id);
+
+                if (adminIds.length > 0) {
+                    await notifyTaskSubmitted(taskId, taskTitle, userName, adminIds);
+                }
+            }
 
             return NextResponse.json({
                 success: true,

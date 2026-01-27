@@ -96,13 +96,14 @@ export default function BulkTaskUpload({ onClose, onSuccess }: BulkTaskUploadPro
                 <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-xl">
                     <p className="text-sm text-primary-900 font-bold mb-2">CSV Format Required:</p>
                     <p className="text-[10px] sm:text-xs text-primary-700 font-mono bg-white p-2 rounded border border-primary-100 overflow-x-auto whitespace-nowrap">
-                        title,description,priority,assignedTo,dueDate,progress,teamId
+                        title,description,priority,assignedTo,dueDate,progress,teamId,frequency
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-[10px] sm:text-xs text-primary-600">
                         <p>• <b>Priority</b>: low, medium, high, or critical</p>
                         <p>• <b>assignedTo</b>: User ID or email</p>
                         <p>• <b>dueDate</b>: YYYY-MM-DD format</p>
                         <p>• <b>progress</b>: 0 to 100 (optional)</p>
+                        <p>• <b>frequency</b>: daily, weekly, fortnightly, monthly, quarterly, yearly, one-time</p>
                     </div>
                 </div>
 
@@ -139,6 +140,7 @@ export default function BulkTaskUpload({ onClose, onSuccess }: BulkTaskUploadPro
                                         <th className="px-3 py-3 text-left font-bold text-gray-600">Priority</th>
                                         <th className="px-3 py-3 text-left font-bold text-gray-600">Progress</th>
                                         <th className="px-3 py-3 text-left font-bold text-gray-600">Due Date</th>
+                                        <th className="px-3 py-3 text-left font-bold text-gray-600">Type</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -152,6 +154,11 @@ export default function BulkTaskUpload({ onClose, onSuccess }: BulkTaskUploadPro
                                             </td>
                                             <td className="px-3 py-3 text-primary-600 font-bold">{task.progress || 0}%</td>
                                             <td className="px-3 py-3 text-gray-500">{task.dueDate || 'N/A'}</td>
+                                            <td className="px-3 py-3">
+                                                <span className="text-[10px] font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                                    {task.frequency || 'one-time'}
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

@@ -7,6 +7,7 @@ import { generateAdminReportAction } from '@/app/actions/analytics';
 import { Team } from '@/types';
 import { FileText, Download, Users, TrendingUp, BarChart3, Loader2, Calendar, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface WeeklyReport {
@@ -133,69 +134,77 @@ export default function WeeklyReports() {
 
     if (initialLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center animate-pulse">
-                        <FileText className="w-6 h-6 text-white" />
+            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-700">
+                <div className="flex flex-col items-center gap-6">
+                    <div className="w-16 h-16 rounded-[2rem] bg-indigo-50 flex items-center justify-center animate-pulse shadow-xl shadow-indigo-100/50 border border-indigo-100">
+                        <FileText className="w-8 h-8 text-indigo-600" />
                     </div>
-                    <p className="text-sm text-gray-400 font-medium">Loading reports catalogue...</p>
+                    <div className="text-center space-y-1">
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Initializing Analytics Engine</p>
+                        <p className="text-sm text-slate-400 font-medium">Loading reports catalogue...</p>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-10 animate-in">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Weekly Intelligence</h2>
-                    <p className="text-gray-400 text-xs font-medium">Detailed team-level execution metrics</p>
+                    <h2 className="section-title">Weekly Intelligence</h2>
+                    <p className="section-subtitle">Comprehensive team-level execution metrics and efficiency audit</p>
                 </div>
             </div>
 
-            {/* Report Generator */}
-            <div className="glass-card p-6">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Protocol Parameters
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Assigned Team</label>
-                        <div className="relative">
+            {/* Protocol Parameters */}
+            <div className="glass-panel p-10">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                        <Calendar className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">
+                        Protocol Selection Parameters
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Strategic Unit</label>
+                        <div className="relative group">
                             <select
                                 value={selectedTeam}
                                 onChange={(e) => setSelectedTeam(e.target.value)}
-                                className="w-full h-12 px-4 pr-10 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-black uppercase tracking-widest appearance-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer outline-none"
+                                className="form-input h-14 appearance-none px-5 bg-slate-50/50"
                             >
-                                <option value="">Select Team</option>
+                                <option value="">Select Target Team</option>
                                 {teams.map(team => (
                                     <option key={team.id} value={team.id}>
                                         {team.name}
                                     </option>
                                 ))}
                             </select>
-                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:text-indigo-500 transition-colors" />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Temporal Window</label>
-                        <div className="relative">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Temporal Window</label>
+                        <div className="relative group">
                             <select
                                 value={selectedWeek}
                                 onChange={(e) => setSelectedWeek(e.target.value)}
-                                className="w-full h-12 px-4 pr-10 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-black uppercase tracking-widest appearance-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer outline-none"
+                                className="form-input h-14 appearance-none px-5 bg-slate-50/50"
                             >
-                                <option value="">Select Week</option>
+                                <option value="">Select Audit Week</option>
                                 {getWeekOptions().map(option => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>
                                 ))}
                             </select>
-                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:text-indigo-500 transition-colors" />
                         </div>
                     </div>
 
@@ -203,14 +212,14 @@ export default function WeeklyReports() {
                         <Button
                             onClick={generateWeeklyReport}
                             disabled={!selectedTeam || !selectedWeek || loading}
-                            className="w-full h-12 bg-gray-900 hover:bg-black text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-gray-100"
+                            className="btn-primary w-full h-14"
                         >
                             {loading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Loader2 className="h-6 w-6 animate-spin" />
                             ) : (
                                 <>
-                                    <BarChart3 className="h-4 w-4 mr-2" />
-                                    Compile Data
+                                    <BarChart3 className="h-6 w-6 mr-3" />
+                                    Compile Intelligence
                                 </>
                             )}
                         </Button>
@@ -218,109 +227,128 @@ export default function WeeklyReports() {
                 </div>
             </div>
 
-            {/* Report Display */}
+            {/* Intelligence Record */}
             {report ? (
-                <div className="space-y-6">
-                    {/* Report Header */}
-                    <div className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-8 border-l-blue-600">
-                        <div>
-                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">{report.teamName} Report</h2>
-                            <p className="text-[11px] text-blue-600 font-bold uppercase tracking-widest mt-1">
-                                {report.weekStart.toLocaleDateString()} — {report.weekEnd.toLocaleDateString()}
-                            </p>
+                <div className="space-y-10">
+                    {/* Record Header */}
+                    <div className="glass-panel p-10 flex flex-col md:flex-row md:items-center justify-between gap-10 overflow-hidden relative border-l-8 border-l-indigo-600 bg-white shadow-2xl shadow-indigo-100/20 group/record">
+                        <div className="absolute top-0 right-0 p-10 opacity-[0.03] -rotate-6 pointer-events-none group-hover/record:rotate-0 transition-transform duration-1000">
+                            <FileText className="w-56 h-56" />
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => exportReport('csv')}
-                                disabled={generating}
-                                className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-gray-100"
-                            >
-                                <Download className="h-3.5 w-3.5 mr-1.5" />
-                                CSV
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => exportReport('json')}
-                                disabled={generating}
-                                className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-gray-100"
-                            >
-                                <Download className="h-3.5 w-3.5 mr-1.5" />
-                                JSON
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => exportReport('pdf')}
-                                disabled={generating}
-                                className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-gray-100"
-                            >
-                                <Download className="h-3.5 w-3.5 mr-1.5" />
-                                PDF
-                            </Button>
+
+                        <div className="relative space-y-2">
+                            <div className="flex items-center gap-4">
+                                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{report.teamName} Report</h2>
+                                <span className="status-badge status-badge-success px-4 py-1.5">Operational</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-indigo-500" />
+                                <p className="text-xs text-indigo-600 font-black uppercase tracking-[0.2em]">
+                                    WINDOW: {report.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — {report.weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 relative">
+                            {['csv', 'json', 'pdf'].map((format) => (
+                                <Button
+                                    key={format}
+                                    variant="outline"
+                                    onClick={() => exportReport(format as any)}
+                                    disabled={generating}
+                                    className="h-14 px-8 rounded-2xl text-[11px] font-black uppercase tracking-widest border-2 border-slate-100 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm active:scale-95"
+                                >
+                                    <Download className="h-5 w-5 mr-3" />
+                                    {format}
+                                </Button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Metrics Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Matrix Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {[
-                            { label: 'Force Size', value: report.teamMembers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                            { label: 'Task Execution', value: `${report.completedTasks}/${report.totalTasks}`, icon: FileText, color: 'text-green-600', bg: 'bg-green-50' },
+                            { label: 'Personnel Count', value: report.teamMembers, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                            { label: 'Task Execution', value: `${report.completedTasks}/${report.totalTasks}`, icon: FileText, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                             { label: 'Objective Score', value: `${report.completedKRAs}/${report.totalKRAs}`, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
-                            { label: 'Avg Efficiency', value: `${report.averageScore.toFixed(1)}%`, icon: BarChart3, color: 'text-amber-600', bg: 'bg-amber-50' }
+                            { label: 'Efficiency Index', value: `${report.averageScore.toFixed(1)}%`, icon: BarChart3, color: 'text-amber-600', bg: 'bg-amber-50' }
                         ].map((metric, i) => (
-                            <div key={i} className="stat-card">
-                                <div className="flex flex-col gap-0.5">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{metric.label}</p>
-                                    <h3 className="text-xl font-black text-gray-900">{metric.value}</h3>
+                            <div key={i} className="dashboard-card group">
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">{metric.label}</p>
+                                    <h3 className="text-4xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors tracking-tight">{metric.value}</h3>
                                 </div>
-                                <div className={`icon-box icon-box-md ${metric.bg} ${metric.color}`}>
-                                    <metric.icon className="h-5 w-5" />
+                                <div className={cn("w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all group-hover:scale-110 shadow-sm", metric.bg, metric.color)}>
+                                    <metric.icon className="h-7 w-7" />
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Top Performers */}
-                        <div className="glass-card flex flex-col overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/30">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Efficiency Leaders</h3>
+                    {/* Detailed Analysis */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Elite Performers */}
+                        <div className="glass-panel p-0 flex flex-col overflow-hidden group/box">
+                            <div className="px-10 py-8 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Efficiency Vanguard</h3>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Personnel Ranking Matrix</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm">
+                                    <TrendingUp className="w-5 h-5" />
+                                </div>
                             </div>
-                            <div className="p-6 space-y-3">
+                            <div className="p-10 space-y-6">
                                 {report.topPerformers.length > 0 ? (
                                     report.topPerformers.map((performer, index) => (
-                                        <div key={index} className="flex items-center justify-between p-4 bg-white border border-gray-50 rounded-2xl shadow-sm">
-                                            <span className="text-xs font-black text-gray-900 uppercase tracking-tight">{performer}</span>
-                                            <span className="badge badge-info py-1 px-3 text-[9px]">RANK #{index + 1}</span>
+                                        <div key={index} className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group/item">
+                                            <div className="flex items-center gap-5">
+                                                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xs font-black text-slate-400 border border-slate-100 group-hover/item:border-indigo-100 group-hover/item:bg-indigo-50 group-hover/item:text-indigo-600 transition-all">
+                                                    {(index + 1).toString().padStart(2, '0')}
+                                                </div>
+                                                <span className="text-base font-black text-slate-900 uppercase tracking-tight">{performer}</span>
+                                            </div>
+                                            <span className="status-badge status-badge-success px-4 py-1.5 text-[10px]">ELITE TIER</span>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-12 text-center">
-                                        <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Leader Data Available</p>
+                                    <div className="py-24 text-center flex flex-col items-center">
+                                        <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center text-slate-200 mb-6">
+                                            <Users className="w-10 h-10" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">No Vanguard Data Available</p>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Issues */}
-                        <div className="glass-card flex flex-col overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/30">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Constraint Registry</h3>
+                        {/* Constraint Registry */}
+                        <div className="glass-panel p-0 flex flex-col overflow-hidden group/box">
+                            <div className="px-10 py-8 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Constraint Registry</h3>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Operational Impediment Log</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 shadow-sm relative">
+                                    <div className="absolute inset-0 bg-rose-500/20 rounded-xl animate-ping" />
+                                    <BarChart3 className="w-5 h-5 relative" />
+                                </div>
                             </div>
-                            <div className="p-6 space-y-3">
+                            <div className="p-10 space-y-6">
                                 {report.issues.length > 0 ? (
                                     report.issues.map((issue, index) => (
-                                        <div key={index} className="p-4 border-l-4 border-red-500 bg-red-50/50 rounded-r-2xl">
-                                            <span className="text-[11px] font-bold text-red-700 leading-relaxed">{issue}</span>
+                                        <div key={index} className="p-6 border-l-4 border-l-rose-500 bg-rose-50/30 rounded-r-[2rem] flex items-start gap-5 group/issue hover:bg-rose-50 transition-colors">
+                                            <span className="text-[10px] font-black text-rose-500 mt-1 uppercase tracking-widest">ERR-{(index + 1).toString().padStart(2, '0')}</span>
+                                            <span className="text-sm font-bold text-slate-700 leading-relaxed uppercase tracking-tight">{issue}</span>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-12 text-center">
-                                        <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                            <TrendingUp className="w-6 h-6 text-green-500" />
+                                    <div className="py-24 text-center flex flex-col items-center">
+                                        <div className="w-20 h-20 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-emerald-100/50 border-2 border-white ring-4 ring-emerald-50/50">
+                                            <TrendingUp className="w-10 h-10 text-emerald-500" />
                                         </div>
-                                        <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Zero Constraints Detected</p>
+                                        <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em]">Zero System Impediments</p>
+                                        <p className="text-sm text-slate-400 font-medium mt-2 uppercase tracking-tight">Optimal performance equilibrium reached</p>
                                     </div>
                                 )}
                             </div>
@@ -328,10 +356,12 @@ export default function WeeklyReports() {
                     </div>
                 </div>
             ) : (
-                <div className="glass-card border-dashed border-2 border-gray-100 bg-gray-50/30 py-24 text-center">
-                    <FileText className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Report Engine Ready</h3>
-                    <p className="text-xs text-gray-300 font-bold mt-2">Initialize parameters to compile weekly summarizes</p>
+                <div className="glass-panel border-dashed border-4 border-slate-100 bg-slate-50/30 py-40 text-center rounded-[3.5rem] hover:border-indigo-100 hover:bg-indigo-50/20 transition-all duration-700 group/standby">
+                    <div className="w-28 h-28 rounded-[3.5rem] bg-white border border-slate-100 flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-indigo-100/30 group-hover/standby:scale-110 transition-transform duration-700">
+                        <FileText className="w-14 h-14 text-slate-200 group-hover/standby:text-indigo-200 transition-colors" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-400 uppercase tracking-tight mb-3">Intelligence Standby</h3>
+                    <p className="text-sm text-slate-400 font-medium max-w-sm mx-auto leading-relaxed">Initialize tactical parameters to compile organization-wide weekly summaries and personnel throughput.</p>
                 </div>
             )}
         </div>

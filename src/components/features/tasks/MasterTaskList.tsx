@@ -9,7 +9,6 @@ import {
     Search,
     Filter,
     Tag,
-    TrendingUp,
     RotateCcw,
     Edit,
     Trash2,
@@ -18,7 +17,6 @@ import {
     UserPlus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/AuthContext'
 import TaskForm from '@/components/features/tasks/TaskForm'
 import { deleteTask } from '@/lib/taskService'
@@ -26,6 +24,7 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { useBulkSelection, executeBulkTaskAction } from '@/lib/bulkUtils'
 import BulkActionBar from '@/components/features/bulk/BulkActionBar'
+import { cn } from '@/lib/utils'
 
 export default function MasterTaskList() {
     return (
@@ -153,177 +152,204 @@ function MasterTaskListContent() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-10 animate-in">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Master Task Repository</h2>
-                    <p className="text-gray-400 text-xs font-medium">Replicating MBA 2.0 Spreadsheet structure</p>
+                    <h2 className="section-title">Master Task Ledger</h2>
+                    <p className="section-subtitle">System-wide mission control and personnel directive repository</p>
                 </div>
                 <Button
                     onClick={() => {
                         setEditingTask(null)
                         setIsFormOpen(true)
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 h-10 px-6 rounded-xl font-bold text-sm"
+                    className="btn-primary h-12 px-6"
                 >
                     <Plus className="w-4 h-4 mr-2" />
-                    New Task
+                    Initialize Directive
                 </Button>
             </div>
 
-            {/* Filters Bar */}
-            <div className="glass-card p-4 flex flex-wrap gap-4 items-center">
-                <div className="flex-1 min-w-[300px] relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                        placeholder="Search tasks by title or description..."
+            {/* Tactical Filters */}
+            <div className="glass-panel p-6 flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[300px] relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <input
+                        placeholder="Scan directives by identity or parameters..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-12 h-11 border-none bg-gray-50/50 rounded-xl text-sm"
+                        className="form-input pl-12 h-12"
                     />
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                        <Users className="w-4 h-4 text-purple-500" />
+                    <div className="relative">
+                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <select
                             value={filterUser}
                             onChange={(e) => setFilterUser(e.target.value)}
-                            className="bg-transparent text-xs font-bold outline-none cursor-pointer"
+                            className="form-input h-12 pl-11 pr-10 text-xs font-black uppercase tracking-widest appearance-none"
                         >
-                            <option value="all">All Employees</option>
+                            <option value="all">All Personnel</option>
                             {users.map(u => (
                                 <option key={u.id} value={u.id}>{u.fullName || u.email}</option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                        <Filter className="w-4 h-4 text-blue-500" />
+                    <div className="relative">
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="bg-transparent text-xs font-bold outline-none cursor-pointer"
+                            className="form-input h-12 pl-11 pr-10 text-xs font-black uppercase tracking-widest appearance-none"
                         >
-                            <option value="all">All Statuses</option>
+                            <option value="all">Every Status</option>
                             <option value="assigned">Assigned</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="blocked">Blocked</option>
+                            <option value="in-progress">Operational</option>
+                            <option value="completed">Finalized</option>
+                            <option value="blocked">Suspended</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            {/* Tasks Repository Grid */}
-            <div className="flex-1 glass-card overflow-hidden flex flex-col min-h-[600px]">
-                <div className="overflow-x-auto h-full">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
-                        <thead className="sticky top-0 bg-white z-20 border-b border-gray-100">
+            {/* Main Ledger Grid */}
+            <div className="glass-panel p-0 overflow-hidden flex flex-col min-h-[600px]">
+                <div className="overflow-x-auto h-full scroll-panel">
+                    <table className="w-full text-left border-collapse min-w-[1200px]">
+                        <thead className="sticky top-0 bg-slate-50/80 backdrop-blur-md z-20 border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4 w-10">
-                                    <input
-                                        type="checkbox"
-                                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
-                                        checked={bulkSelection.isAllSelected}
-                                        ref={el => {
-                                            if (el) el.indeterminate = bulkSelection.isSomeSelected;
-                                        }}
-                                        onChange={bulkSelection.toggleAll}
-                                    />
+                                <th className="px-8 py-5 w-16">
+                                    <div className="flex items-center justify-center">
+                                        <input
+                                            type="checkbox"
+                                            className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all"
+                                            checked={bulkSelection.isAllSelected}
+                                            ref={el => {
+                                                if (el) el.indeterminate = bulkSelection.isSomeSelected;
+                                            }}
+                                            onChange={bulkSelection.toggleAll}
+                                        />
+                                    </div>
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Task Details</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Assignee</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Revisions</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">KPI Score</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Date</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Directive Identity</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Lead Personnel</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sector</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Iterations</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Performance Matrix</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Strategic Deadline</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-slate-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={8} className="py-20 text-center">
-                                        <Loader2 className="w-10 h-10 animate-spin text-purple-600 mx-auto mb-4" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Syncing with database...</p>
+                                    <td colSpan={8} className="py-32 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronizing Force Data Grid...</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : filteredTasks.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="py-20 text-center">
-                                        <p className="text-gray-400 font-medium">No tasks found matching your criteria</p>
+                                    <td colSpan={8} className="py-32 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center">
+                                                <Search className="w-10 h-10 text-slate-200" />
+                                            </div>
+                                            <p className="text-lg font-black text-slate-400 uppercase tracking-tight">Directives Not Located</p>
+                                            <p className="text-sm text-slate-400 font-medium whitespace-pre">Adjust vector filters or initialize a new task entity</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredTasks.map(task => (
-                                    <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${bulkSelection.isSelected(task.id) ? 'bg-purple-50/30' : ''}`}>
-                                        <td className="px-6 py-4">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
-                                                checked={bulkSelection.isSelected(task.id)}
-                                                onChange={() => bulkSelection.toggleSelection(task.id)}
-                                            />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="max-w-xs">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`w-2 h-2 rounded-full ${task.priority === 'critical' ? 'bg-red-500' :
-                                                        task.priority === 'high' ? 'bg-orange-500' :
-                                                            task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
-                                                        }`} />
-                                                    <p className="text-sm font-bold text-gray-900 truncate">{task.title}</p>
-                                                </div>
-                                                <p className="text-[11px] text-gray-400 line-clamp-1">{task.description}</p>
+                                    <tr key={task.id} className={cn(
+                                        "group transition-all duration-300",
+                                        bulkSelection.isSelected(task.id) ? 'bg-indigo-50/40' : 'hover:bg-slate-50/50'
+                                    )}>
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center justify-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all"
+                                                    checked={bulkSelection.isSelected(task.id)}
+                                                    onChange={() => bulkSelection.toggleSelection(task.id)}
+                                                />
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-xs font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-lg">
-                                                {getUserName(task.assignedTo)}
+                                        <td className="px-8 py-6">
+                                            <div className="max-w-md">
+                                                <div className="flex items-center gap-3 mb-1.5">
+                                                    <div className={cn(
+                                                        "w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-white",
+                                                        task.priority === 'critical' ? 'bg-rose-500 shadow-rose-200' :
+                                                            task.priority === 'high' ? 'bg-amber-500 shadow-amber-200' :
+                                                                task.priority === 'medium' ? 'bg-indigo-500 shadow-indigo-200' : 'bg-slate-400 border-slate-200'
+                                                    )} />
+                                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-600 transition-colors truncate">
+                                                        {task.title}
+                                                    </h4>
+                                                </div>
+                                                <p className="text-xs text-slate-500 font-medium line-clamp-1 leading-none pl-5">{task.description}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200">
+                                                    <Users className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">
+                                                    {getUserName(task.assignedTo)}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <span className="status-badge status-badge-info">
+                                                <Tag className="w-3 h-3 mr-1.5 opacity-60" />
+                                                {task.category || 'GENERAL'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-tighter">
-                                                <Tag className="w-3 h-3 mr-1" />
-                                                {task.category || 'General'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-8 py-6 text-center">
                                             {task.revisionCount ? (
-                                                <span className="inline-flex items-center text-[10px] font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded uppercase tracking-tighter">
-                                                    <RotateCcw className="w-3 h-3 mr-1" />
+                                                <span className="inline-flex items-center h-7 px-2.5 rounded-lg text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 uppercase tracking-widest shadow-sm">
+                                                    <RotateCcw className="w-3 h-3 mr-1.5 animate-spin-slow" />
                                                     {task.revisionCount}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-gray-300">0</span>
+                                                <span className="text-[10px] font-black text-slate-300">0</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${(task.kpiScore || 0) >= 80 ? 'bg-green-50 text-green-700' :
-                                                (task.kpiScore || 0) >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-                                                }`}>
-                                                <TrendingUp className="w-3 h-3 mr-1" />
-                                                {task.kpiScore || 0}%
-                                            </span>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className="flex flex-col items-center gap-1.5">
+                                                <span className={cn(
+                                                    "text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest border transition-colors shadow-sm",
+                                                    (task.kpiScore || 0) >= 80 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        (task.kpiScore || 0) >= 60 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                                                )}>
+                                                    {task.kpiScore || 0}%
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <p className="text-[11px] font-bold text-gray-900">
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col">
+                                                <p className="text-[11px] font-black text-slate-900 uppercase">
                                                     {format(new Date(task.finalTargetDate || task.dueDate), 'dd MMM yyyy')}
                                                 </p>
                                                 {task.finalTargetDate && (
-                                                    <p className="text-[9px] font-bold text-amber-500 uppercase tracking-tighter">Revised Deadline</p>
+                                                    <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-0.5 leading-none">Revised Vector</p>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <td className="px-8 py-6 text-right">
+                                            <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                                                 <Button
                                                     variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 rounded-lg text-blue-600 hover:bg-blue-50"
+                                                    size="icon"
+                                                    className="h-9 w-9 rounded-xl text-indigo-600 hover:bg-indigo-50 border border-slate-100/50"
                                                     onClick={() => {
                                                         setEditingTask(task)
                                                         setIsFormOpen(true)
@@ -333,8 +359,8 @@ function MasterTaskListContent() {
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 rounded-lg text-red-600 hover:bg-red-50"
+                                                    size="icon"
+                                                    className="h-9 w-9 rounded-xl text-rose-600 hover:bg-rose-50 border border-slate-100/50"
                                                     onClick={() => handleDelete(task.id)}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -349,19 +375,19 @@ function MasterTaskListContent() {
                 </div>
             </div>
 
-            {/* Bulk Action Bar */}
+            {/* Bulk Control Interface */}
             <BulkActionBar
                 selectedCount={bulkSelection.selectedCount}
                 onClear={bulkSelection.clearSelection}
                 actions={[
                     {
-                        label: 'Reassign',
+                        label: 'Update Assignments',
                         icon: UserPlus,
                         onClick: handleBulkReassign,
                         disabled: bulkActionLoading
                     },
                     {
-                        label: 'Delete',
+                        label: 'Purge Records',
                         icon: Trash2,
                         onClick: handleBulkDelete,
                         variant: 'destructive',
@@ -370,7 +396,7 @@ function MasterTaskListContent() {
                 ]}
             />
 
-            {/* Task Form Modal */}
+            {/* Task Configuration Modal */}
             {isFormOpen && (
                 <TaskForm
                     initialData={editingTask}

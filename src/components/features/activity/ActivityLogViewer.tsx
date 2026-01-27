@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Activity, Filter, Download, Search, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface ActivityLogEntry {
     id: string;
@@ -166,111 +168,120 @@ export default function ActivityLogViewer({
     };
 
     return (
-        <div className="space-y-4">
-            {/* Filters */}
+        <div className="space-y-8 animate-in">
+            {/* Context Header (if not compact) */}
+            {!compact && showFilters && (
+                <div className="page-header flex items-center justify-between">
+                    <div>
+                        <h2 className="section-title">Audit Ledger</h2>
+                        <p className="section-subtitle">Comprehensive system-wide event tracking and security monitoring</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Global Filters Panel */}
             {showFilters && (
-                <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4 text-slate-600" />
-                        <h3 className="font-bold text-slate-800">Filters</h3>
+                <div className="glass-panel p-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-indigo-50 rounded-xl">
+                                <Filter className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Operational Filters</h3>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            onClick={handleExport}
+                            className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all flex items-center gap-2"
+                        >
+                            <Download className="w-4 h-4" />
+                            Download Audit
+                        </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Search */}
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
-                                Search
-                            </label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        {/* Search Intelligence */}
+                        <div className="md:col-span-5 space-y-1.5">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Search Registry</label>
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                                 <input
                                     type="text"
-                                    placeholder="Resource, user, action..."
+                                    placeholder="Keywords, IDs, Personnel..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="form-input pl-11 h-12"
                                 />
                             </div>
                         </div>
 
-                        {/* Module Filter */}
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
-                                Module
-                            </label>
+                        {/* Module Vector */}
+                        <div className="md:col-span-4 space-y-1.5">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sector Analysis</label>
                             <select
                                 value={module}
                                 onChange={(e) => setModule(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="form-input h-12 appearance-none"
                             >
-                                <option value="">All Modules</option>
-                                <option value="tasks">Tasks</option>
-                                <option value="kras">KRAs</option>
-                                <option value="users">Users</option>
-                                <option value="teams">Teams</option>
-                                <option value="settings">Settings</option>
+                                <option value="">All Sectors</option>
+                                <option value="tasks">Mission Operations</option>
+                                <option value="kras">Strategic Objectives</option>
+                                <option value="users">Personnel Management</option>
+                                <option value="teams">Unit Structures</option>
+                                <option value="settings">Core Configurations</option>
                             </select>
                         </div>
 
-                        {/* Days Filter */}
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
-                                Time Period
-                            </label>
+                        {/* Time Vector */}
+                        <div className="md:col-span-3 space-y-1.5">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Temporal Range</label>
                             <select
                                 value={days}
                                 onChange={(e) => setDays(parseInt(e.target.value))}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="form-input h-12 appearance-none"
                             >
-                                <option value="1">Last 24 Hours</option>
-                                <option value="7">Last 7 Days</option>
-                                <option value="30">Last 30 Days</option>
-                                <option value="90">Last 90 Days</option>
+                                <option value="1">Past 24 Cycles</option>
+                                <option value="7">Standard Week</option>
+                                <option value="30">Monthly Horizon</option>
+                                <option value="90">Quarterly Audit</option>
                             </select>
-                        </div>
-
-                        {/* Export */}
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleExport}
-                                className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Download className="w-4 h-4" />
-                                Export CSV
-                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Activity Logs */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+            {/* Audit Log Stream */}
+            <div className="glass-panel p-0 overflow-hidden flex flex-col min-h-[400px]">
+                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div className="flex items-center gap-3">
                         <Activity className="w-5 h-5 text-indigo-600" />
-                        <h3 className="font-bold text-slate-800">Activity Log</h3>
-                        <span className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600">
-                            {filteredLogs.length} ENTRIES
-                        </span>
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Live Data Stream</h3>
                     </div>
-                    {loading && <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />}
+                    <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+                            {filteredLogs.length} LOGS RETRIEVED
+                        </span>
+                        {loading && <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />}
+                    </div>
                 </div>
 
                 {error && (
-                    <div className="p-4 bg-red-50 border-b border-red-200 text-red-700 text-sm font-medium">
-                        {error}
+                    <div className="px-8 py-4 bg-rose-50 border-b border-rose-100 text-rose-600 text-[11px] font-black uppercase tracking-widest">
+                        Critical Error: {error}
                     </div>
                 )}
 
-                <div className={`${maxHeight} overflow-y-auto`}>
+                <div className={`${maxHeight} scroll-panel`}>
                     {filteredLogs.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <Activity className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                            <p className="text-slate-600 font-medium">No activity logs found</p>
-                            <p className="text-slate-400 text-sm">Try adjusting your filters</p>
+                        <div className="flex flex-col items-center justify-center py-24 text-center">
+                            <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center border border-slate-100 mb-6">
+                                <Activity className="w-10 h-10 text-slate-200" />
+                            </div>
+                            <p className="text-lg font-black text-slate-400 uppercase tracking-tight">Zero Activity Records</p>
+                            <p className="text-sm text-slate-400 font-medium">Verify filter parameters or audit connectivity status</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-slate-50">
                             {filteredLogs.map((log) => {
                                 const isExpanded = expandedId === log.id;
                                 const timestamp = new Date(log.timestamp);
@@ -279,89 +290,102 @@ export default function ActivityLogViewer({
                                 const icon = actionIcons[log.action] || '📝';
 
                                 return (
-                                    <div key={log.id} className="transition-colors hover:bg-slate-50">
+                                    <div key={log.id} className={cn(
+                                        "group transition-all duration-300",
+                                        isExpanded ? "bg-slate-50/80" : "hover:bg-slate-50/50"
+                                    )}>
                                         <button
                                             onClick={() => setExpandedId(isExpanded ? null : log.id)}
-                                            className="w-full px-4 py-3 text-left focus:outline-none transition-colors"
+                                            className="w-full px-8 py-6 text-left focus:outline-none"
                                         >
-                                            <div className={`flex items-start gap-3 ${compact ? 'flex-col' : ''}`}>
-                                                {/* Icon */}
-                                                <div className="text-2xl flex-shrink-0">{icon}</div>
+                                            <div className="flex items-start gap-6">
+                                                {/* Action Identity */}
+                                                <div className="text-3xl flex-shrink-0 p-4 rounded-2xl bg-white shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                                                    {icon}
+                                                </div>
 
-                                                {/* Content */}
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                        <span className={`inline-flex px-2 py-1 rounded-lg text-[10px] font-black uppercase border ${actionColor}`}>
+                                                {/* Core Information */}
+                                                <div className="flex-1 min-w-0 pt-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className={cn(
+                                                            "inline-flex px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border transition-colors",
+                                                            actionColor
+                                                        )}>
                                                             {log.action.replace(/_/g, ' ')}
                                                         </span>
-                                                        <span className={`inline-flex px-2 py-1 rounded-lg text-[10px] font-black uppercase ${moduleColor}`}>
+                                                        <span className={cn(
+                                                            "inline-flex px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors",
+                                                            moduleColor
+                                                        )}>
                                                             {log.module}
                                                         </span>
                                                     </div>
 
-                                                    <p className="text-sm font-bold text-slate-900 truncate">
+                                                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
                                                         {log.resourceName}
-                                                    </p>
+                                                    </h4>
 
-                                                    <div className={`text-xs text-slate-600 mt-1 ${compact ? 'flex flex-col gap-1' : 'flex items-center gap-4'}`}>
-                                                        <span>👤 {log.userName}</span>
-                                                        <span>📅 {formatDistanceToNow(timestamp, { addSuffix: true })}</span>
+                                                    <div className="flex items-center gap-6 flex-wrap">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300">
+                                                                <span className="text-[8px] font-black text-slate-600">{log.userName.charAt(0)}</span>
+                                                            </div>
+                                                            <span className="text-[11px] font-bold text-slate-600">{log.userName}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-slate-400">
+                                                            <Activity className="w-3.5 h-3.5" />
+                                                            <span className="text-[11px] font-medium">{formatDistanceToNow(timestamp, { addSuffix: true })}</span>
+                                                        </div>
                                                     </div>
-
-                                                    {log.details && !compact && (
-                                                        <p className="text-xs text-slate-600 mt-2 line-clamp-1">
-                                                            {log.details}
-                                                        </p>
-                                                    )}
                                                 </div>
 
-                                                {/* Expand Icon */}
-                                                {(log.details || log.changes) && (
-                                                    <div className="flex-shrink-0 text-slate-400 mt-1">
-                                                        {isExpanded ? (
-                                                            <ChevronUp className="w-5 h-5" />
-                                                        ) : (
-                                                            <ChevronDown className="w-5 h-5" />
-                                                        )}
+                                                {/* Dynamic Details Toggle */}
+                                                {(log.details || (log.changes && Object.keys(log.changes).length > 0)) && (
+                                                    <div className={cn(
+                                                        "p-2 rounded-xl transition-all",
+                                                        isExpanded ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-110" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"
+                                                    )}>
+                                                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                                     </div>
                                                 )}
                                             </div>
                                         </button>
 
-                                        {/* Expanded Details */}
+                                        {/* Detailed Audit Context */}
                                         {isExpanded && (
-                                            <div className="px-4 pb-4 bg-slate-50 border-t border-slate-200">
-                                                <div className="space-y-3">
-                                                    {/* Details */}
+                                            <div className="px-8 pb-8 pt-2 animate-in slide-in-from-top-4 duration-300">
+                                                <div className="ml-24 space-y-6">
                                                     {log.details && (
-                                                        <div>
-                                                            <p className="text-xs font-bold text-slate-600 uppercase mb-1">Details</p>
-                                                            <p className="text-sm text-slate-800 bg-white p-2 rounded border border-slate-200">
-                                                                {log.details}
-                                                            </p>
+                                                        <div className="space-y-2">
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Event Summary</label>
+                                                            <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm text-sm font-medium text-slate-700 leading-relaxed italic">
+                                                                "{log.details}"
+                                                            </div>
                                                         </div>
                                                     )}
 
-                                                    {/* Changes */}
                                                     {log.changes && Object.keys(log.changes).length > 0 && (
-                                                        <div>
-                                                            <p className="text-xs font-bold text-slate-600 uppercase mb-1">Changes</p>
-                                                            <div className="space-y-2">
+                                                        <div className="space-y-4">
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Attribute Mutations</label>
+                                                            <div className="grid grid-cols-1 gap-4">
                                                                 {Object.entries(log.changes).map(([key, value]) => (
-                                                                    <div key={key} className="bg-white p-2 rounded border border-slate-200 text-xs">
-                                                                        <p className="font-bold text-slate-700 mb-1">{key}</p>
-                                                                        <div className="flex gap-2">
-                                                                            <div className="flex-1">
-                                                                                <span className="text-slate-600">Old: </span>
-                                                                                <span className="text-red-600 line-through">
-                                                                                    {JSON.stringify(value.old)}
-                                                                                </span>
+                                                                    <div key={key} className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm flex flex-col gap-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{key}</span>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-6 pl-3">
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">Original</span>
+                                                                                <p className="text-[11px] font-black text-slate-500 bg-rose-50/30 p-2 rounded-lg line-through truncate opacity-60">
+                                                                                    {String(value.old)}
+                                                                                </p>
                                                                             </div>
-                                                                            <div className="flex-1">
-                                                                                <span className="text-slate-600">New: </span>
-                                                                                <span className="text-green-600 font-bold">
-                                                                                    {JSON.stringify(value.new)}
-                                                                                </span>
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest leading-none">Modified</span>
+                                                                                <p className="text-[11px] font-black text-emerald-600 bg-emerald-50/30 p-2 rounded-lg truncate">
+                                                                                    {String(value.new)}
+                                                                                </p>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -370,11 +394,13 @@ export default function ActivityLogViewer({
                                                         </div>
                                                     )}
 
-                                                    {/* Timestamp */}
-                                                    <div className="pt-2 border-t border-slate-200">
-                                                        <p className="text-xs text-slate-500">
-                                                            {format(timestamp, 'EEEE, MMMM d, yyyy - h:mm:ss a')}
-                                                        </p>
+                                                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                                            Unique Audit Reference: <span className="text-slate-900">{log.id}</span>
+                                                        </span>
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                                            {format(timestamp, 'EEEE, MMM d, yyyy · HH:mm:ss')}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>

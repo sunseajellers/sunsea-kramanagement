@@ -38,13 +38,24 @@ export class ScoringService {
 
     /**
      * Calculate quality score (0-100)
-     * This is a placeholder - would need checklist completion data
-     * For now, returns 80 as baseline
+     * Based on verification status and revision history
      */
-    static calculateQualityScore(): number {
-        // TODO: Implement based on checklist completion rates
-        // For now, return a reasonable baseline
-        return 80;
+    static calculateQualityScore(tasks: Task[]): number {
+        const completedTasks = tasks.filter(t => t.status === 'completed');
+        if (completedTasks.length === 0) return 80;
+
+        let totalQuality = 0;
+        completedTasks.forEach(task => {
+            if (task.verificationStatus === 'verified') {
+                totalQuality += 100;
+            } else if (task.verificationStatus === 'rejected' || task.status === 'revision_requested') {
+                totalQuality += 40;
+            } else {
+                totalQuality += 80;
+            }
+        });
+
+        return Math.round(totalQuality / completedTasks.length);
     }
 
     /**
@@ -67,7 +78,7 @@ export class ScoringService {
     ): number {
         const completionScore = this.calculateCompletionScore(tasks);
         const timelinessScore = this.calculateTimelinessScore(tasks);
-        const qualityScore = this.calculateQualityScore();
+        const qualityScore = this.calculateQualityScore(tasks);
         const kraAlignmentScore = this.calculateKraAlignmentScore(tasks);
 
         const weightedScore =
@@ -98,7 +109,7 @@ export class ScoringService {
         // Calculate individual scores
         const completionScore = this.calculateCompletionScore(weekTasks);
         const timelinessScore = this.calculateTimelinessScore(weekTasks);
-        const qualityScore = this.calculateQualityScore();
+        const qualityScore = this.calculateQualityScore(weekTasks);
         const kraAlignmentScore = this.calculateKraAlignmentScore(weekTasks);
         const overallScore = this.calculateOverallScore(weekTasks, config);
 

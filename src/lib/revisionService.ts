@@ -1,7 +1,7 @@
 // src/lib/revisionService.ts
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import { TaskRevision } from '@/types';
+import { Task, TaskRevision } from '@/types';
 import { timestampToDate, handleError } from './utils';
 import { updateTask } from './taskService';
 
@@ -58,7 +58,9 @@ export async function resolveTaskRevision(
     revisionId: string,
     resolvedBy: string,
     resolvedByName: string,
-    resolutionNotes?: string
+    resolutionNotes?: string,
+    proofOfWork?: string,
+    proofLink?: string
 ): Promise<void> {
     try {
         const revisionRef = doc(db, 'taskRevisions', revisionId);
@@ -78,10 +80,16 @@ export async function resolveTaskRevision(
             const revision = revisionDoc.docs[0].data();
 
             // Update task status back to pending review
-            await updateTask(revision.taskId, {
+            const taskUpdates: Partial<Task> = {
                 status: 'pending_review',
+                verificationStatus: 'pending',
                 updatedAt: new Date()
-            });
+            };
+
+            if (proofOfWork) taskUpdates.proofOfWork = proofOfWork;
+            if (proofLink) taskUpdates.proofLink = proofLink;
+
+            await updateTask(revision.taskId, taskUpdates);
         }
     } catch (error) {
         handleError(error, 'Failed to resolve task revision');

@@ -3,143 +3,127 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // ========================================
-    // HELPER FUNCTIONS (SIMPLIFIED FOR INTERNAL USE)
+    // HELPERS
     // ========================================
-    
     function isAuthenticated() {
-      return request.auth != null && request.auth.uid != null;
+      return request.auth != null;
     }
     
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
+
+    // ========================================
+    // CORE COLLECTIONS
+    // ========================================
     
-    // Simplified admin check - no extra database lookups during read
-    function isAdmin() {
-      return isAuthenticated();
-      // For strict admin checks, add to user document check later
-      // exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-      // get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    // Users: Users can read all (directory), update own profile. Admins can manage all.
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // For signup
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    function isManager() {
-      return isAuthenticated();
-      // Simplified for internal tool - all authenticated users can manage
-    }
-    
-    // ========================================
-    // USERS COLLECTION (RELAXED FOR INTERNAL TOOL)
-    // ========================================
-    match /users/{userId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // ========================================
-    // TASKS COLLECTION (SIMPLIFIED FOR INTERNAL TOOL)
-    // ========================================
+    // Tasks: Collaborative. 
+    // Ideally: Assignees can update status/progress. Admins can do all.
+    // Current: Open to all authenticated for internal collaboration.
     match /tasks/{taskId} {
       allow read, write: if isAuthenticated();
+      match /checklist/{itemId} { allow read, write: if isAuthenticated(); }
+      match /activityLog/{logId} { allow read, write: if isAuthenticated(); }
+      match /comments/{commentId} { allow read, write: if isAuthenticated(); }
     }
     
-    // ========================================
-    // KRAs COLLECTION (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /kras/{kraId} {
+    // Tickets: Collaborative.
+    match /tickets/{ticketId} {
       allow read, write: if isAuthenticated();
+      match /comments/{commentId} { allow read, write: if isAuthenticated(); }
     }
     
     // ========================================
-    // TEAMS COLLECTION (FULL ACCESS FOR INTERNAL TOOL)
+    // ADMIN / CONFIG (PROTECTED)
     // ========================================
+    
+    // Departments & Teams - Managed by Admin/Strategies
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
     match /teams/{teamId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // System Config
+    match /config/{docId} { 
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); 
     }
     
-    // ========================================
-    // NOTIFICATIONS & REMINDERS (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /notifications/{id} { allow read, write: if isAuthenticated(); }
-    match /reminders/{id} { allow read, write: if isAuthenticated(); }
-    
-    // ========================================
-    // TEMPLATES (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /taskTemplates/{id} {
-      allow read, write: if isAuthenticated();
-    }
-    match /kraTemplates/{id} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // ========================================
-    // PERFORMANCE & CONFIG (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /performanceParameters/{id} { allow read, write: if isAuthenticated(); }
-    match /scoringConfig/{id} { allow read, write: if isAuthenticated(); }
-    match /scoringWeights/{id} { allow read, write: if isAuthenticated(); }
-    match /config/{id} { allow read, write: if isAuthenticated(); }
-    match /header_config/{id} { allow read, write: if isAuthenticated(); }
-    
-    // ========================================
-    // HOLIDAYS (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /holidays/{id} {
-      allow read, write: if isAuthenticated();
+    match /scoringConfig/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     // ========================================
-    // TASK REVISIONS (FULL ACCESS FOR INTERNAL TOOL)
+    // PERFORMANCE MODULES
     // ========================================
-    match /taskRevisions/{id} {
-      allow read, write: if isAuthenticated();
-    }
+    match /kras/{kraId} { allow read, write: if isAuthenticated(); }
+    match /kraTemplates/{templateId} { allow read, write: if isAuthenticated(); }
+    match /kpis/{kpiId} { allow read, write: if isAuthenticated(); } 
+    match /kpiTemplates/{templateId} { allow read, write: if isAuthenticated(); }
+    match /objectives/{objId} { allow read, write: if isAuthenticated(); }
+    match /keyResults/{krId} { allow read, write: if isAuthenticated(); }
+    match /performanceScores/{scoreId} { allow read: if isAuthenticated(); allow write: if isAdmin(); } // Scores are system-generated
+    match /performanceParameters/{paramId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
 
     // ========================================
-    // BULK OPERATIONS (FULL ACCESS FOR INTERNAL TOOL)
+    // KNOWLEDGE BASE
     // ========================================
-    match /bulkTaskOperations/{id} {
-      allow read, write: if isAuthenticated();
-    }
+    match /learningHub/{docId} { allow read, write: if isAuthenticated(); }
+    match /articles/{articleId} { allow read, write: if isAuthenticated(); }
+    match /categories/{catId} { allow read, write: if isAuthenticated(); }
+    match /faqs/{faqId} { allow read, write: if isAuthenticated(); }
 
     // ========================================
-    // SCORES & REPORTS (FULL ACCESS FOR INTERNAL TOOL)
+    // LOGS & NOTIFICATIONS
     // ========================================
-    match /performanceScores/{id} {
-      allow read, write: if isAuthenticated();
-    }
-    match /misReports/{id} {
-      allow read, write: if isAuthenticated();
-    }
-    match /weeklyReports/{id} {
-      allow read, write: if isAuthenticated();
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); // For marking as read
     }
 
-    // ========================================
-    // UTILS & TRACKING (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /filterPresets/{id} { allow read, write: if isAuthenticated(); }
-    match /taskUpdates/{id} { allow read, write: if isAuthenticated(); }
-    match /kpis/{id} { allow read, write: if isAuthenticated(); }
-    match /admin_logs/{id} { allow read, write: if isAuthenticated(); }
-    match /notificationRules/{id} { allow read, write: if isAuthenticated(); }
-    match /notificationAnalytics/{id} { allow read, write: if isAuthenticated(); }
-    
-    // ========================================
-    // ACTIVITY LOGS (FULL ACCESS FOR INTERNAL TOOL)
-    // ========================================
-    match /activityLogs/{id} {
-      allow read, write: if isAuthenticated();
+    match /activityLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // Client-side logging allowed
+      allow update, delete: if isAdmin(); // Audit logs should be immutable
     }
     
-    match /auditLogs/{id} {
-      allow read, write: if isAuthenticated();
+    match /taskUpdates/{updateId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
 
     // ========================================
-    // LEGACY (FULL ACCESS FOR INTERNAL TOOL)
+    // MISC
     // ========================================
-    match /roles/{id} { allow read, write: if isAuthenticated(); }
-    match /permissions/{id} { allow read, write: if isAuthenticated(); }
-    match /role_permissions/{id} { allow read, write: if isAuthenticated(); }
+    match /holidays/{holidayId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /scoringWeights/{weightId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /taskRevisions/{revId} { allow read, write: if isAuthenticated(); }
+    match /bulkTaskOperations/{opId} { allow read, write: if isAuthenticated(); }
+    match /misReports/{reportId} { allow read, write: if isAuthenticated(); }
+    
+    // Catch-all
+    match /{path=**} {
+      allow read, write: if false; // Default deny for everything else
+    }
   }
 }

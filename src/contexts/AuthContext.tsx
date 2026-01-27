@@ -13,6 +13,7 @@ interface UserData {
     isAdmin: boolean // Simple boolean - set by developer in Firebase
     avatar?: string
     teamId?: string
+    department?: string
 }
 
 interface AuthContextType {
@@ -54,18 +55,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
 
     useEffect(() => {
         const unsubscribe = onAuthStateChange(async (firebaseUser) => {
-            console.log('🔐 Auth state changed:', firebaseUser?.email)
             setUser(firebaseUser)
 
             if (firebaseUser) {
                 try {
                     // Fetch user data from Firestore
                     let data = await getUserData(firebaseUser.uid)
-                    console.log('🔐 User data from Firestore:', data)
 
                     // If no Firestore document exists, auto-create one
                     if (!data) {
-                        console.log('📝 Creating Firestore user document for:', firebaseUser.email)
 
                         // Create the user document - isAdmin: false by default
                         // Developer must set isAdmin: true in Firebase for admin users
@@ -92,7 +90,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             adminStatus = data.roleIds.includes('admin')
                         }
 
-                        console.log('🔐 Admin status:', adminStatus)
 
                         const processedUserData: UserData = {
                             uid: data.uid || data.id || firebaseUser.uid,
@@ -100,10 +97,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             fullName: data.fullName || firebaseUser.displayName || 'User',
                             isAdmin: adminStatus,
                             avatar: data.avatar || undefined,
-                            teamId: data.teamId || undefined
+                            teamId: data.teamId || undefined,
+                            department: data.department || undefined
                         }
 
-                        console.log('🔐 Processed userData:', processedUserData)
 
                         setUserData(processedUserData)
                         setIsAdmin(adminStatus)
@@ -150,7 +147,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         return isAdmin ? '/admin' : '/dashboard'
     }
 
-    const value = {
+    const value = React.useMemo(() => ({
         user,
         userData,
         loading,
@@ -159,7 +156,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         logout,
         signOut: logout,
         getDefaultRoute
-    }
+    }), [user, userData, loading, error, isAdmin])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

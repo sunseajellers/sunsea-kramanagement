@@ -7,7 +7,7 @@ import {
     UserCredential,
     sendPasswordResetEmail,
 } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { handleError, timestampToDate } from './utils'
 
@@ -58,24 +58,43 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
 // Get user data from Firestore
 export const getUserData = async (uid: string) => {
     try {
-        console.log('🔍 getUserData called for UID:', uid)
         const userDoc = await getDoc(doc(db, 'users', uid))
-        console.log('🔍 getUserData - doc exists:', userDoc.exists())
         if (userDoc.exists()) {
             const data = userDoc.data() as any;
-            console.log('🔍 getUserData - raw doc data:', data)
             const processedData = {
                 ...data,
                 createdAt: data.createdAt ? timestampToDate(data.createdAt) : undefined,
                 updatedAt: data.updatedAt ? timestampToDate(data.updatedAt) : undefined
             };
-            console.log('🔍 getUserData - processed data:', processedData)
             return processedData;
         }
-        console.log('🔍 getUserData - document does not exist')
         return null
     } catch (error: any) {
         handleError(error, 'Failed to get user data')
         throw new Error(error.message || 'Failed to get user data')
+    }
+}
+
+// Get user by email
+export const getUserByEmail = async (email: string) => {
+    try {
+        const q = query(collection(db, 'users'), where('email', '==', email))
+        const querySnapshot = await getDocs(q)
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0]
+            const data = doc.data()
+            return {
+                id: doc.id,
+                ...data,
+                // Ensure helper works or fallback
+                uid: doc.id,
+                email: data.email,
+                fullName: data.fullName
+            }
+        }
+        return null
+    } catch (error: any) {
+        handleError(error, 'Failed to find user by email')
+        throw error
     }
 }

@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { Task, TaskRevision } from '@/types'
-import { updateTask, addChecklistItem, reassignTask } from '@/lib/taskService'
+import { updateTask, addChecklistItem, reassignTask, getChecklistItems, getTaskActivityLog, updateChecklistItem } from '@/lib/taskService'
 import { getTaskRevisions } from '@/lib/revisionService'
+import { getUserByEmail } from '@/lib/authService'
 import { useAuth } from '@/contexts/AuthContext'
 import RevisionRequestModal from './RevisionRequestModal'
 import RevisionResolveModal from './RevisionResolveModal'
 import RevisionHistory from './RevisionHistory'
+import { cn } from '@/lib/utils'
 import {
     X,
     Calendar,
@@ -17,7 +19,10 @@ import {
     History,
     UserPlus,
     AlertCircle,
-    CheckCircle
+    CheckCircle,
+    Clock,
+    CheckCircle2,
+    ExternalLink
 } from 'lucide-react'
 
 interface Props {
@@ -53,12 +58,38 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
     const [updating, setUpdating] = useState(false)
     const [canRequestRevision, setCanRequestRevision] = useState(false)
     const [revisions, setRevisions] = useState<TaskRevision[]>([])
+    const [checklist, setChecklist] = useState<any[]>([])
+    const [activity, setActivity] = useState<any[]>([])
+    const [loadingChecklist, setLoadingChecklist] = useState(false)
 
     useEffect(() => {
         setLocalTask(task)
         loadRevisions()
+        loadChecklist()
+        loadActivity()
         checkPermissions()
     }, [task])
+
+    const loadChecklist = async () => {
+        setLoadingChecklist(true)
+        try {
+            const data = await getChecklistItems(task.id)
+            setChecklist(data)
+        } catch (error) {
+            console.error('Failed to load checklist:', error)
+        } finally {
+            setLoadingChecklist(false)
+        }
+    }
+
+    const loadActivity = async () => {
+        try {
+            const data = await getTaskActivityLog(task.id)
+            setActivity(data)
+        } catch (error) {
+            console.error('Failed to load activity:', error)
+        }
+    }
 
     const loadRevisions = async () => {
         try {
@@ -107,9 +138,23 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
         try {
             await addChecklistItem(task.id, newChecklistItem.trim(), user.uid)
             setNewChecklistItem('')
+            loadChecklist()
+            loadActivity()
             onUpdate()
         } catch (error) {
             console.error('Failed to add checklist item', error)
+        }
+    }
+
+    const handleToggleChecklist = async (itemId: string, completed: boolean) => {
+        if (!user) return
+        try {
+            await updateChecklistItem(task.id, itemId, { completed }, user.uid)
+            loadChecklist()
+            loadActivity()
+            onUpdate()
+        } catch (error) {
+            console.error('Failed to toggle checklist item', error)
         }
     }
 
@@ -117,9 +162,13 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
         if (!user || !reassignEmail.trim()) return
         setUpdating(true)
         try {
-            // In a real app, you'd look up the user by email
-            // For now, we'll just use the email as the ID (placeholder)
-            await reassignTask(task.id, [reassignEmail], user.uid, 'Reassigned via task detail modal')
+            const targetUser = await getUserByEmail(reassignEmail.trim())
+            if (!targetUser) {
+                alert('User not found with that email address.')
+                return
+            }
+
+            await reassignTask(task.id, [targetUser.uid], user.uid, 'Reassigned via task detail modal')
             setShowReassignModal(false)
             setReassignEmail('')
             onUpdate()
@@ -132,8 +181,9 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
     }
 
     const getChecklistProgress = () => {
-        // TODO: Fetch checklist from subcollection
-        return 0
+        if (checklist.length === 0) return 0
+        const completed = checklist.filter(item => item.completed).length
+        return Math.round((completed / checklist.length) * 100)
     }
 
     const formatDate = (date: Date) => {
@@ -239,26 +289,88 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                             </div>
                         </div>
 
+                        {/* Verification Status Banner */}
+                        {localTask.verificationStatus && (
+                            <div className={cn(
+                                "p-4 rounded-xl flex items-center justify-between mb-6 border animate-in slide-in-from-top-2",
+                                localTask.verificationStatus === 'pending' ? "bg-indigo-50 border-indigo-100 text-indigo-700" :
+                                    localTask.verificationStatus === 'verified' ? "bg-emerald-50 border-emerald-100 text-emerald-700" :
+                                        "bg-rose-50 border-rose-100 text-rose-700"
+                            )}>
+                                <div className="flex items-center gap-3">
+                                    {localTask.verificationStatus === 'pending' ? <Clock className="w-5 h-5" /> :
+                                        localTask.verificationStatus === 'verified' ? <CheckCircle className="w-5 h-5" /> :
+                                            <AlertCircle className="w-5 h-5" />}
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-widest leading-none">
+                                            {localTask.verificationStatus === 'pending' ? 'Awaiting Verification' :
+                                                localTask.verificationStatus === 'verified' ? 'Verified & Approved' :
+                                                    'Revision Requested'}
+                                        </p>
+                                        {localTask.rejectionReason && (
+                                            <p className="text-xs font-medium mt-1 opacity-80">{localTask.rejectionReason}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                {localTask.verifiedAt && (
+                                    <p className="text-[10px] font-bold opacity-60">
+                                        Processed on {formatDate(localTask.verifiedAt)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Task Info */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                                <Calendar className="w-5 h-5 text-gray-600" />
+                            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <Calendar className="w-5 h-5 text-gray-400" />
                                 <div>
-                                    <p className="text-xs text-gray-500">Due Date</p>
-                                    <p className="text-sm font-medium text-gray-900">{formatDate(localTask.dueDate)}</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Due Date</p>
+                                    <p className="text-sm font-bold text-gray-900">{formatDate(localTask.dueDate)}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                                <User className="w-5 h-5 text-gray-600" />
+                            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <User className="w-5 h-5 text-gray-400" />
                                 <div>
-                                    <p className="text-xs text-gray-500">Assigned To</p>
-                                    <p className="text-sm font-medium text-gray-900">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Assigned To</p>
+                                    <p className="text-sm font-bold text-gray-900">
                                         {localTask.assignedTo.length} member{localTask.assignedTo.length !== 1 ? 's' : ''}
                                     </p>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Proof of Work Section */}
+                        {(localTask.proofOfWork || localTask.proofLink) && (
+                            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+                                <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em]">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Submission Details
+                                </div>
+                                <div className="space-y-3">
+                                    {localTask.proofOfWork && (
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Results Description</p>
+                                            <p className="text-sm text-slate-700 font-medium leading-relaxed bg-white/50 p-4 rounded-2xl border border-slate-100">
+                                                {localTask.proofOfWork}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {localTask.proofLink && (
+                                        <a
+                                            href={localTask.proofLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 text-xs font-black text-indigo-600 hover:text-indigo-700 transition-colors bg-white px-4 py-2 rounded-xl border border-indigo-100 shadow-sm shadow-indigo-50"
+                                        >
+                                            View Performance Proof
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Reassign Button */}
                         <button
@@ -304,60 +416,85 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                     <CheckSquare className="w-5 h-5 mr-2 text-primary-600" />
                                     Checklist
                                 </h3>
-                                {/* TODO: Show checklist progress when subcollection fetching is implemented */}
-                                <span className="text-sm font-medium text-gray-600">
-                                    Feature coming soon
+                                <span className="text-sm font-black text-primary-600 bg-primary-50 px-3 py-1 rounded-full border border-primary-100">
+                                    {getChecklistProgress()}% Complete
                                 </span>
                             </div>
 
-                            {/* Progress Bar - Hidden until checklist subcollection fetching is implemented */}
-                            {false && (
-                                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                                    <div
-                                        className="bg-primary-600 h-2 rounded-full transition-all"
-                                        style={{ width: `${getChecklistProgress()}%` }}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Checklist Items - Hidden until subcollection fetching is implemented */}
-                            <div className="space-y-2 mb-4">
-                                {/* TODO: Implement checklist subcollection fetching */}
+                            {/* Progress Bar */}
+                            <div className="w-full bg-gray-100 rounded-full h-2 mb-6 border border-gray-200 overflow-hidden">
+                                <div
+                                    className="bg-primary-600 h-full rounded-full transition-all duration-700 ease-out"
+                                    style={{ width: `${getChecklistProgress()}%` }}
+                                />
                             </div>
 
-                            {/* Add Checklist Item - Hidden until subcollection fetching is implemented */}
-                            {false && (
-                                <div className="flex space-x-2">
-                                    <input
-                                        type="text"
-                                        value={newChecklistItem}
-                                        onChange={(e) => setNewChecklistItem(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleAddChecklistItem()}
-                                        placeholder="Add a checklist item..."
-                                        className="flex-1 py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300"
-                                    />
-                                    <button
-                                        onClick={handleAddChecklistItem}
-                                        className="btn-primary flex items-center px-4"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            )}
+                            {/* Checklist Items */}
+                            <div className="space-y-3 mb-6">
+                                {loadingChecklist ? (
+                                    <div className="text-center py-4 text-gray-400 text-sm italic">Syncing tactical requirements...</div>
+                                ) : checklist.map(item => (
+                                    <div key={item.id} className="group flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-100">
+                                        <button
+                                            onClick={() => handleToggleChecklist(item.id, !item.completed)}
+                                            className={cn(
+                                                "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all",
+                                                item.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-200 hover:border-primary-500 bg-white"
+                                            )}
+                                        >
+                                            {item.completed && <CheckCircle2 className="w-4 h-4" />}
+                                        </button>
+                                        <span className={cn(
+                                            "text-sm font-medium transition-all flex-1",
+                                            item.completed ? "text-gray-400 line-through" : "text-gray-700"
+                                        )}>
+                                            {item.text}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Add Checklist Item */}
+                            <div className="flex space-x-2">
+                                <input
+                                    type="text"
+                                    value={newChecklistItem}
+                                    onChange={(e) => setNewChecklistItem(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleAddChecklistItem()}
+                                    placeholder="Add tactical requirement..."
+                                    className="flex-1 py-3 px-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-primary-500 rounded-xl text-sm font-medium outline-none transition-all"
+                                />
+                                <button
+                                    onClick={handleAddChecklistItem}
+                                    className="h-12 w-12 flex items-center justify-center bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Activity Log - Hidden until subcollection fetching is implemented */}
-                        {false && (
-                            <div className="border-t border-gray-200 pt-6">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                                    <History className="w-5 h-5 mr-2 text-primary-600" />
-                                    Activity History
-                                </h3>
-                                <div className="space-y-3 max-h-64 overflow-y-auto">
-                                    {/* TODO: Implement activity log subcollection fetching */}
-                                </div>
+                        {/* Activity Log */}
+                        <div className="border-t border-gray-200 pt-8 mt-8">
+                            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <History className="w-5 h-5 text-indigo-600" />
+                                Operational Audit Log
+                            </h3>
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {activity.map((log) => (
+                                    <div key={log.id} className="relative pl-8 pb-4 border-l-2 border-gray-100 last:border-0 last:pb-0">
+                                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-2 border-indigo-400" />
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{log.action.replace('_', ' ')}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{log.timestamp ? formatDate(log.timestamp) : 'Just now'}</p>
+                                            </div>
+                                            <p className="text-sm text-slate-600 font-medium leading-relaxed">{log.details}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Operator: {log.userName || 'Personnel'}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>

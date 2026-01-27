@@ -17,8 +17,305 @@ export type TaskStatus = 'not_started' | 'assigned' | 'in_progress' | 'blocked' 
 export type KRAStatus = 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold'
 export type RevisionStatus = 'pending' | 'resolved' | 'rejected'
 
+// Task Frequencies/Types
+export type TaskFrequency = 'daily' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'yearly' | 'one-time'
+
 // KRA Types
 export type KRAType = 'daily' | 'weekly' | 'fortnightly' | 'monthly'
+
+// TICKET TYPES
+export type TicketRequestType =
+    | 'office_cleaning'
+    | 'stationery'
+    | 'purchase_request'
+    | 'repair_maintenance'
+    | 'hr_helpdesk'
+    | 'it_support'
+    | 'accounts_admin'
+    | 'general_query'
+
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
+
+export interface Ticket {
+    id: string
+    ticketNumber: string      // TKT-001, TKT-002, etc.
+    subject: string
+    description: string
+
+    // Requester Info
+    requesterId: string       // Auto-filled from auth
+    requesterName: string
+    requesterEmail: string
+
+    // Ticket Details
+    requestType: TicketRequestType
+    priority: Priority        // Reuse existing type
+    departmentId?: string
+
+    // Assignment
+    assignedTo?: string       // Support staff user ID
+    assignedToName?: string
+    assignedAt?: Date
+
+    // Dates
+    dueDate: Date
+    createdAt: Date
+    updatedAt: Date
+
+    // Status
+    status: TicketStatus
+
+    // Resolution
+    solutions: TicketSolution[]
+    resolvedBy?: string
+    resolvedByName?: string
+    resolvedAt?: Date
+
+    // Metadata
+    attachments?: string[]
+    tags?: string[]
+}
+
+export interface TicketSolution {
+    id: string
+    ticketId: string
+    solutionText: string
+    addedBy: string
+    addedByName: string
+    addedAt: Date
+    isAccepted?: boolean      // Did requester accept this solution?
+}
+
+export interface TicketComment {
+    id: string
+    ticketId: string
+    userId: string
+    userName: string
+    text: string
+    createdAt: Date
+}
+
+export interface TicketStats {
+    total: number
+    open: number
+    inProgress: number
+    resolved: number
+    closed: number
+    avgResolutionTime: number // in hours
+}
+
+// ========================================
+// OKR (OBJECTIVES & KEY RESULTS) TYPES
+// ========================================
+
+export type OKRTimeframe = 'quarterly' | 'yearly'
+export type OKRStatus = 'draft' | 'active' | 'completed' | 'cancelled'
+export type KeyResultType = 'percentage' | 'number' | 'currency' | 'boolean'
+
+export interface Objective {
+    id: string
+    title: string
+    description: string
+
+    // Ownership
+    ownerId: string          // User who owns this objective
+    ownerName: string
+    teamId?: string          // Department/team (optional)
+    teamName?: string
+
+    // Timeframe
+    timeframe: OKRTimeframe
+    startDate: Date
+    endDate: Date
+    quarter?: number         // 1, 2, 3, or 4 (for quarterly)
+    year: number
+
+    // Status
+    status: OKRStatus
+    progress: number         // 0-100 (calculated from key results)
+
+    // Key Results
+    keyResultIds: string[]   // IDs of associated key results
+
+    // Linkages
+    linkedTaskIds?: string[]  // Tasks contributing to this objective
+    linkedKPIIds?: string[]   // KPIs measuring this objective
+
+    // Metadata
+    createdBy: string
+    createdByName: string
+    createdAt: Date
+    updatedAt: Date
+    completedAt?: Date
+}
+
+export type KPITargetType = 'employee' | 'department'
+
+export interface KPITemplate {
+    id: string
+    title: string
+    description: string
+    frequency: TaskFrequency
+    priority: Priority
+    targetType: KPITargetType
+    assignedTo?: string[]
+    departmentId?: string
+    isActive: boolean
+    lastPulse?: Date
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface KeyResult {
+    id: string
+    objectiveId: string      // Parent objective
+
+    // Details
+    title: string
+    description?: string
+
+    // Measurement
+    type: KeyResultType
+    startValue: number       // Initial value
+    targetValue: number      // Goal value
+    currentValue: number     // Current progress
+    unit?: string            // e.g., '%', '$', 'users', etc.
+
+    // Progress
+    progress: number         // 0-100 (calculated)
+    status: OKRStatus
+
+    // Linkages
+    linkedTaskIds?: string[]  // Tasks contributing to this KR
+    linkedKPIIds?: string[]   // KPIs measuring this KR
+
+    // Metadata
+    createdAt: Date
+    updatedAt: Date
+    completedAt?: Date
+}
+
+export interface OKRProgress {
+    objectiveId: string
+    objectiveTitle: string
+    progress: number
+    keyResults: {
+        id: string
+        title: string
+        progress: number
+        currentValue: number
+        targetValue: number
+    }[]
+    tasksCompleted: number
+    tasksTotal: number
+}
+
+export interface OKRStats {
+    total: number
+    active: number
+    completed: number
+    draft: number
+    cancelled: number
+    avgProgress: number
+    onTrack: number          // Progress >= 70%
+    atRisk: number           // Progress < 70%
+    byTimeframe: {
+        quarterly: number
+        yearly: number
+    }
+    byTeam: Record<string, number>
+}
+
+// ========================================
+// LEARNING HUB TYPES
+// ========================================
+
+export type ArticleType = 'article' | 'faq' | 'sop' | 'guide' | 'video'
+export type ArticleStatus = 'draft' | 'published' | 'archived'
+
+export interface Article {
+    id: string
+    title: string
+    content: string          // Rich text or markdown
+    excerpt?: string         // Short summary
+
+    // Classification
+    type: ArticleType
+    categoryId: string
+    categoryName: string
+    tags: string[]
+
+    // Status
+    status: ArticleStatus
+
+    // Metadata
+    authorId: string
+    authorName: string
+    createdAt: Date
+    updatedAt: Date
+    publishedAt?: Date
+
+    // Engagement
+    views: number            // Renamed from viewCount to match usage
+    helpful: number          // Renamed from helpfulCount to match usage
+    viewCount?: number       // Legacy support
+    helpfulCount?: number    // Legacy support
+
+    // Files
+    attachments?: {
+        name: string
+        url: string
+        type: string         // pdf, video, image
+        size: number
+    }[]
+}
+
+export interface FAQ {
+    id: string
+    question: string
+    answer: string
+    categoryId: string
+    categoryName: string
+    tags: string[]
+
+    // Metadata
+    authorId: string
+    authorName: string
+    createdAt: Date
+    updatedAt: Date
+
+    // Engagement
+    viewCount: number
+    helpfulCount: number
+
+    // Status
+    isPublished: boolean
+}
+
+export interface Category {
+    id: string
+    name: string
+    description?: string
+    icon?: string            // Icon name or emoji
+    parentId?: string        // For sub-categories
+    order: number            // Display order
+
+    // Stats
+    articleCount: number
+    faqCount: number
+
+    // Metadata
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface LearningHubStats {
+    totalArticles: number
+    totalFAQs: number
+    totalViews: number
+    mostReadArticles: Article[]
+}
 
 // RBAC Types - Supports both system and custom roles
 export interface Role {
@@ -67,6 +364,8 @@ export type BusinessRule =
     | 'manager_can_assign'
 
 // User Interface
+export type EmployeeType = 'full-time' | 'part-time' | 'contract' | 'intern'
+
 export interface User {
     id: string
     fullName: string
@@ -79,7 +378,26 @@ export interface User {
     lastLogin?: Date // Last login timestamp
     createdAt: Date
     updatedAt: Date
+
+    // NEW EMPLOYEE FIELDS (Phase 1 - Week 4)
+    employeeId: string          // Unique employee ID (e.g., EMP-001)
+    position: string            // Job title/position
+    employeeType: EmployeeType  // Employment type
+    phone: string               // Contact number
+    joiningDate: Date           // Date of joining
+    reportingTo?: string        // Manager user ID
+    department?: string         // Department name (denormalized for quick access)
+
+    // Optional additional fields
+    dateOfBirth?: Date
+    address?: string
+    emergencyContact?: {
+        name: string
+        phone: string
+        relationship: string
+    }
 }
+
 
 // Team Interface
 export interface Team {
@@ -90,6 +408,20 @@ export interface Team {
     memberIds: string[]
     parentId?: string // For hierarchical team structure
     isActive?: boolean // Whether team is active
+    createdAt: Date
+    updatedAt: Date
+}
+
+// Department Interface
+export interface Department {
+    id: string
+    name: string
+    code?: string
+    description?: string
+    managerId?: string      // Department Head ID
+    headName?: string      // Department Head Name
+    headEmail?: string     // Department Head Email
+    isActive: boolean
     createdAt: Date
     updatedAt: Date
 }
@@ -147,6 +479,7 @@ export interface Task {
     assignedTo: string[] // User IDs who can work on this task
     assignedBy: string   // User ID who assigned the task
     teamId?: string      // Team this task belongs to
+    department?: string  // Department this task belongs to
     dueDate: Date
     finalTargetDate?: Date // Extended deadline (if revised)
     progress: number // Percentage 0-100
@@ -154,16 +487,31 @@ export interface Task {
     revisionCount?: number // Number of times task has been revised
     lastRevisionId?: string // ID of the most recent revision request
     kpiScore?: number // Performance score (0-100)
-    category?: string // Task category/type
+    category?: string // Task category
+    frequency?: TaskFrequency // Task type/frequency (Phase 1)
     taskNumber?: string // Auto-incremented ID (e.g., T-001)
     createdAt: Date
     updatedAt: Date
 
-    // Verification Fields (Phase 5)
+    // Overdue & Extension Logic
+    delayReason?: string
+    requestedExtensionDate?: Date
+    extensionStatus?: 'pending' | 'approved' | 'rejected'
+    extensionApprovedBy?: string
+    extensionApprovedAt?: Date
+
+    // Verification Fields (Phase 2 & 5)
     verificationStatus?: 'pending' | 'verified' | 'rejected'
     verifiedBy?: string // User ID
     verifiedAt?: Date
     rejectionReason?: string
+    proofOfWork?: string // Description of work done
+    proofLink?: string   // URL to proof (e.g., Google Drive, Github)
+}
+
+// Task with metadata for display purposes
+export interface TaskWithMeta extends Task {
+    assignedByName?: string
 }
 
 // Task Update Interface - Employee status updates (replicates "Tasks Update" sheets)

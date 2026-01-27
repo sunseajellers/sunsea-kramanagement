@@ -1,8 +1,126 @@
 // src/lib/teamService.ts
-import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, writeBatch, query, where } from 'firebase/firestore';
 import { db } from './firebase';
-import { Team } from '@/types';
+import { Team, Task, KRA, PerformanceScore } from '@/types';
 import { timestampToDate, handleError } from './utils';
+
+/** Get weekly report for a team */
+export async function getTeamWeeklyReport(teamId: string, weekStart: string): Promise<{
+    teamId: string;
+    teamName: string;
+    weekStart: Date;
+    weekEnd: Date;
+    totalTasks: number;
+    completedTasks: number;
+    totalKRAs: number;
+    completedKRAs: number;
+    teamMembers: number;
+    averageScore: number;
+    topPerformers: string[];
+    issues: string[];
+}> {
+    try {
+        const weekStartDate = new Date(weekStart);
+        const weekEndDate = new Date(weekStartDate);
+        weekEndDate.setDate(weekStartDate.getDate() + 6);
+
+        // Get team data
+        const teamSnap = await getDocs(collection(db, 'teams'));
+        const teamDoc = teamSnap.docs.find(d => d.id === teamId);
+        const team = teamDoc?.data() as Team | undefined;
+
+        if (!team) {
+            throw new Error('Team not found');
+        }
+
+        const memberIds = team.memberIds || [];
+        if (memberIds.length === 0) {
+            return {
+                teamId,
+                teamName: team.name,
+                weekStart: weekStartDate,
+                weekEnd: weekEndDate,
+                totalTasks: 0,
+                completedTasks: 0,
+                totalKRAs: 0,
+                completedKRAs: 0,
+                teamMembers: 0,
+                averageScore: 0,
+                topPerformers: [],
+                issues: ['No personnel assigned to this strategic unit']
+            };
+        }
+
+        // Fetch all tasks for team members (limited to first 10 for basic support)
+        const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', 'array-contains-any', memberIds.slice(0, 10)));
+        const tasksSnap = await getDocs(tasksQuery);
+        const teamTasks = tasksSnap.docs.map(d => d.data() as Task);
+
+        // Fetch all KRAs for team members
+        const krasQuery = query(collection(db, 'kras'), where('assignedTo', 'array-contains-any', memberIds.slice(0, 10)));
+        const krasSnap = await getDocs(krasQuery);
+        const teamKRAs = krasSnap.docs.map(d => d.data() as KRA);
+
+        // Aggregate stats
+        const totalTasks = teamTasks.length;
+        const completedTasks = teamTasks.filter(t => t.status === 'completed').length;
+        const totalKRAs = teamKRAs.length;
+        const completedKRAs = teamKRAs.filter(k => k.status === 'completed').length;
+
+        // Fetch user scores
+        const scoresQuery = query(collection(db, 'performanceScores'), where('userId', 'in', memberIds.slice(0, 10)));
+        const scoresSnap = await getDocs(scoresQuery);
+        const scores = scoresSnap.docs.map(d => d.data() as PerformanceScore);
+
+        const averageScore = scores.length > 0
+            ? scores.reduce((acc, curr) => acc + (curr.score || 0), 0) / scores.length
+            : 0;
+
+        // Find top performers (simple logic: highest score)
+        const sortedScores = [...scores].sort((a, b) => (b.score || 0) - (a.score || 0));
+        const topPerformerIds = sortedScores.slice(0, 3).map(s => s.userId);
+
+        // Fetch user names for top performers
+        const topPerformers: string[] = [];
+        if (topPerformerIds.length > 0) {
+            const usersQuery = query(collection(db, 'users'), where('id', 'in', topPerformerIds));
+            const usersSnap = await getDocs(usersQuery);
+            usersSnap.docs.forEach(d => {
+                const userData = d.data();
+                topPerformers.push(userData.fullName || userData.email);
+            });
+        }
+
+        const issues: string[] = [];
+        const now = new Date();
+        const overdueTasks = teamTasks.filter(t => {
+            const dueDate = t.dueDate ? (t.dueDate instanceof Date ? t.dueDate : new Date(t.dueDate)) : null;
+            return dueDate && dueDate < now && t.status !== 'completed';
+        }).length;
+
+        if (overdueTasks > 0) issues.push(`${overdueTasks} tactical objectives overdue`);
+        if (completedTasks < totalTasks * 0.5 && totalTasks > 0) issues.push('Throughput velocity below tactical threshold');
+        if (averageScore < 60 && scores.length > 0) issues.push('Average unit efficiency indicates performance variance');
+
+        return {
+            teamId,
+            teamName: team.name,
+            weekStart: weekStartDate,
+            weekEnd: weekEndDate,
+            totalTasks,
+            completedTasks,
+            totalKRAs,
+            completedKRAs,
+            teamMembers: memberIds.length,
+            averageScore,
+            topPerformers: topPerformers.length > 0 ? topPerformers : ['Data synchronization pending'],
+            issues: issues.length > 0 ? issues : ['No critical impediments detected']
+        };
+    } catch (error) {
+        handleError(error, 'Failed to generate team weekly report');
+        throw error;
+    }
+}
 
 /** Fetch all teams */
 export async function getAllTeams(): Promise<Team[]> {
@@ -146,57 +264,3 @@ export async function getTeamById(teamId: string): Promise<Team | null> {
     }
 }
 
-/** Get weekly report for a team */
-export async function getTeamWeeklyReport(teamId: string, weekStart: string): Promise<{
-    teamId: string;
-    teamName: string;
-    weekStart: Date;
-    weekEnd: Date;
-    totalTasks: number;
-    completedTasks: number;
-    totalKRAs: number;
-    completedKRAs: number;
-    teamMembers: number;
-    averageScore: number;
-    topPerformers: string[];
-    issues: string[];
-}> {
-    try {
-        // In a real implementation, this would aggregate data from tasks, kras, and user performance
-        // For now, return mock data
-        const weekStartDate = new Date(weekStart);
-        const weekEndDate = new Date(weekStartDate);
-        weekEndDate.setDate(weekStartDate.getDate() + 6);
-
-        // Get team data
-        const teams = await getAllTeams();
-        const team = teams.find(t => t.id === teamId);
-
-        if (!team) {
-            throw new Error('Team not found');
-        }
-
-        // Mock report data - in real app, this would be calculated from actual data
-        return {
-            teamId,
-            teamName: team.name,
-            weekStart: weekStartDate,
-            weekEnd: weekEndDate,
-            totalTasks: 25,
-            completedTasks: 20,
-            totalKRAs: 15,
-            completedKRAs: 12,
-            teamMembers: team.memberIds?.length || 5,
-            averageScore: 85.5,
-            topPerformers: ['John Doe', 'Jane Smith', 'Bob Johnson'],
-            issues: [
-                '2 tasks overdue',
-                '3 KRAs need review',
-                'Performance metrics below target for 1 member'
-            ]
-        };
-    } catch (error) {
-        handleError(error, 'Failed to generate team weekly report');
-        throw error;
-    }
-}

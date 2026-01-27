@@ -2,6 +2,7 @@
 import { adminDb } from '../firebase-admin';
 import { Task } from '@/types';
 import { timestampToDate, handleError } from '../utils';
+import { format } from 'date-fns';
 
 /**
  * Fetch tasks assigned to a specific user using Admin SDK.
@@ -114,14 +115,50 @@ export async function verifyTask(taskId: string, status: 'verified' | 'rejected'
             verificationStatus: status,
             verifiedBy: adminId,
             verifiedAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            status: status === 'verified' ? 'completed' : 'revision_requested'
         };
 
         if (reason) {
             updateData.rejectionReason = reason;
         }
 
+        // If rejected, clear proof of work so they can submit fresh proof
+        if (status === 'rejected') {
+            updateData.proofOfWork = null;
+            updateData.proofLink = null;
+        } else {
+            // If verified, ensure progress is 100%
+            updateData.progress = 100;
+        }
+
         await adminDb.collection('tasks').doc(taskId).update(updateData);
+
+        // Add to activity log
+        const taskDoc = await adminDb.collection('tasks').doc(taskId).get();
+        const taskData = taskDoc.data();
+
+        await adminDb.collection('taskUpdates').add({
+            taskId,
+            taskTitle: taskData?.title || 'Unknown',
+            userId: adminId,
+            userName: 'System Admin', // In a real app, fetch admin's name
+            statusUpdate: updateData.status,
+            remarks: status === 'verified' ? 'Task verified and completed' : `Revision requested: ${reason}`,
+            timestamp: new Date()
+        });
+
+        // 5. Trigger Notifications
+        const { notifyTaskVerified, notifyTaskRejected } = await import('./notificationService');
+        const assignedTo = taskData?.assignedTo || [];
+
+        if (assignedTo.length > 0) {
+            if (status === 'verified') {
+                await notifyTaskVerified(taskId, taskData?.title || 'Unknown', assignedTo);
+            } else {
+                await notifyTaskRejected(taskId, taskData?.title || 'Unknown', assignedTo, reason || 'No reason provided');
+            }
+        }
     } catch (error) {
         handleError(error, 'Error verifying task');
         throw error;
@@ -163,5 +200,99 @@ export async function deleteTask(taskId: string): Promise<void> {
     } catch (error) {
         handleError(error, 'Failed to delete task');
         throw error;
+    }
+}
+
+/**
+ * Handle Extension Request
+ */
+export async function approveExtension(taskId: string, adminId: string) {
+    try {
+        const taskRef = adminDb.collection('tasks').doc(taskId);
+        const doc = await taskRef.get();
+        const data = doc.data();
+
+        if (!data?.requestedExtensionDate) throw new Error('No extension requested');
+
+        await taskRef.update({
+            dueDate: data.requestedExtensionDate,
+            extensionStatus: 'approved',
+            extensionApprovedBy: adminId,
+            extensionApprovedAt: new Date(),
+            updatedAt: new Date(),
+            status: 'assigned' // Revert to assigned so they can work on it
+        });
+
+        // Log to activity
+        await adminDb.collection('taskUpdates').add({
+            taskId,
+            taskTitle: data.title,
+            userId: adminId,
+            userName: 'System Admin',
+            statusUpdate: 'extension_approved',
+            remarks: `Extension approved to ${format(timestampToDate(data.requestedExtensionDate), 'yyyy-MM-dd')}`,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        handleError(error, 'Error approving extension');
+        throw error;
+    }
+}
+
+export async function rejectExtension(taskId: string, adminId: string, reason: string) {
+    try {
+        const taskRef = adminDb.collection('tasks').doc(taskId);
+        const doc = await taskRef.get();
+        const data = doc.data();
+
+        await taskRef.update({
+            extensionStatus: 'rejected',
+            updatedAt: new Date(),
+        });
+
+        await adminDb.collection('taskUpdates').add({
+            taskId,
+            taskTitle: data?.title,
+            userId: adminId,
+            userName: 'System Admin',
+            statusUpdate: 'extension_rejected',
+            remarks: `Extension rejected: ${reason}`,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        handleError(error, 'Error rejecting extension');
+        throw error;
+    }
+}
+
+/**
+ * Global Overdue Audit - Auto-switches status to overdue if deadline passed
+ */
+export async function runOverdueAudit() {
+    try {
+        const now = new Date();
+        const snap = await adminDb.collection('tasks')
+            .where('status', 'in', ['assigned', 'in_progress', 'blocked', 'revision_requested'])
+            .where('dueDate', '<', now)
+            .get();
+
+        const batch = adminDb.batch();
+        let count = 0;
+
+        snap.docs.forEach((doc) => {
+            batch.update(doc.ref, {
+                status: 'overdue',
+                updatedAt: now
+            });
+            count++;
+        });
+
+        if (count > 0) {
+            await batch.commit();
+        }
+        return count;
+    } catch (error) {
+        console.error('Overdue audit failed:', error);
+        return 0;
     }
 }

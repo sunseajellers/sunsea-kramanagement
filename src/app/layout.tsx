@@ -35,8 +35,8 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" suppressHydrationWarning className={`${rajdhani.variable} ${jetbrainsMono.variable}`}>
-            <body suppressHydrationWarning className="min-h-screen bg-white text-slate-900 font-sans selection:bg-purple-500 selection:text-white antialiased">
+        <html lang="en" suppressHydrationWarning className={`${rajdhani.variable} ${jetbrainsMono.variable}`} data-scroll-behavior="smooth">
+            <body suppressHydrationWarning className="min-h-screen selection:bg-indigo-500/30 selection:text-indigo-900">
                 <ErrorBoundary>
                     <AuthProvider>
                         {children}
@@ -45,11 +45,15 @@ export default function RootLayout({
                             toastOptions={{
                                 duration: 4000,
                                 style: {
-                                    background: '#fff',
-                                    color: '#363636',
-                                    padding: '16px',
-                                    borderRadius: '12px',
-                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                    background: 'rgba(255, 255, 255, 0.9)',
+                                    backdropFilter: 'blur(12px)',
+                                    color: '#1e293b',
+                                    border: '1px solid rgba(255, 255, 255, 0.5)',
+                                    borderRadius: '16px',
+                                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    padding: '16px 24px',
                                 },
                             }}
                         />

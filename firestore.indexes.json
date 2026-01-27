@@ -1,6 +1,154 @@
 {
     "indexes": [
         {
+            "collectionGroup": "tasks",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "assignedTo",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "tasks",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "extensionStatus",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "tasks",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "dueDate",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "performanceScores",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "userId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "calculatedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "performanceScores",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "userId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "weekStart",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "kras",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "assignedTo",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "tickets",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "requesterId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "tickets",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "assignedTo",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "tickets",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "departmentId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "tickets",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "activityLogs",
             "queryScope": "COLLECTION",
             "fields": [
@@ -15,49 +163,7 @@
             ]
         },
         {
-            "collectionGroup": "activityLogs",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "module",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "timestamp",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "activityLogs",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "action",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "timestamp",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "activityLogs",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "resourceId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "timestamp",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "activityLogs",
+            "collectionGroup": "taskUpdates",
             "queryScope": "COLLECTION",
             "fields": [
                 {
@@ -65,11 +171,25 @@
                     "order": "ASCENDING"
                 },
                 {
-                    "fieldPath": "module",
+                    "fieldPath": "timestamp",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "objectives",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "timeframe",
                     "order": "ASCENDING"
                 },
                 {
-                    "fieldPath": "timestamp",
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "year",
                     "order": "DESCENDING"
                 }
             ]

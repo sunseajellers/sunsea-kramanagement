@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createTask, updateTask } from '@/lib/taskService'
 import { fetchKRAs } from '@/lib/kraService'
-import { Task, Priority, TaskStatus } from '@/types'
+import { Task, Priority, TaskStatus, TaskFrequency } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2, X, Calendar, Flag, FileText, Type, Link as LinkIcon, Users } from 'lucide-react'
 
@@ -22,6 +22,7 @@ interface TaskFormData {
     assignedTo: string
     dueDate: string
     category: string
+    frequency: TaskFrequency
     finalTargetDate?: string
 }
 
@@ -41,6 +42,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         assignedTo: '',
         dueDate: '',
         category: 'General',
+        frequency: 'one-time',
         finalTargetDate: ''
     })
 
@@ -85,6 +87,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 assignedTo: initialData.assignedTo[0] || '',
                 dueDate: formatDate(initialData.dueDate),
                 category: initialData.category || 'General',
+                frequency: initialData.frequency || 'one-time',
                 finalTargetDate: formatDate(initialData.finalTargetDate)
             })
         }
@@ -114,6 +117,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 assignedBy: user.uid,
                 dueDate: new Date(form.dueDate),
                 category: form.category,
+                frequency: form.frequency,
                 progress: isEdit ? initialData?.progress : 0,
                 updatedAt: new Date()
             }
@@ -225,10 +229,31 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                                         onChange={handleChange}
                                     >
                                         <option value="General">General</option>
-                                        <option value="Recurring">Recurring</option>
-                                        <option value="One-time">One-time</option>
-                                        <option value="Urgent">Urgent</option>
-                                        <option value="Delegated">Delegated</option>
+                                        <option value="Operational">Operational</option>
+                                        <option value="Administrative">Administrative</option>
+                                        <option value="Technical">Technical</option>
+                                        <option value="Project">Project</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Task Type (Frequency)</label>
+                                <div className="relative">
+                                    <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                    <select
+                                        name="frequency"
+                                        className="w-full py-3 pl-12 pr-10 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white font-bold"
+                                        value={form.frequency}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="one-time">One-time</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="fortnightly">Fortnightly</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="quarterly">Quarterly</option>
+                                        <option value="yearly">Yearly</option>
                                     </select>
                                 </div>
                             </div>
@@ -252,17 +277,17 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Initial Status</label>
                                 <select
                                     name="status"
                                     className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-300 appearance-none bg-white"
                                     value={form.status}
                                     onChange={handleChange}
                                 >
+                                    <option value="not_started">Not Started</option>
                                     <option value="assigned">Assigned</option>
-                                    <option value="in-progress">In Progress</option>
+                                    <option value="in_progress">In Progress</option>
                                     <option value="completed">Completed</option>
-                                    <option value="blocked">Blocked</option>
                                 </select>
                             </div>
                         </div>

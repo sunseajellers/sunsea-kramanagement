@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ScoringConfig as IScoringConfig } from '@/types'
 import { Loader2, Award, Info, RotateCcw, CheckCircle, XCircle } from 'lucide-react'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
 
@@ -135,62 +136,72 @@ export default function ScoringConfig() {
     ]
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="space-y-10 animate-in">
+            {/* Page Header */}
+            <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Scoring Algorithm</h2>
-                    <p className="text-gray-400 text-xs font-medium">Define weights for performance calculation</p>
+                    <h2 className="section-title">Scoring Logic Matrix</h2>
+                    <p className="section-subtitle">Define algorithmic weights for performance and efficiency computation</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleReset} className="h-9 px-4 rounded-xl text-xs font-medium border-gray-200">
-                        <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                        Reset
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="ghost"
+                        onClick={handleReset}
+                        className="h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100"
+                    >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Reset Defaults
                     </Button>
                     <Button
                         onClick={handleSave}
                         disabled={saving || !isValid}
-                        className="h-9 px-4 bg-gray-900 hover:bg-black rounded-xl text-xs font-medium disabled:opacity-40"
+                        className="btn-primary h-12 px-8 min-w-[200px]"
                     >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Configuration'}
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Authorize Logic'}
                     </Button>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Weight Configuration */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Info Notice */}
-                    <div className="glass-card p-4 flex items-start gap-3">
-                        <div className="icon-box icon-box-sm bg-blue-50 text-blue-500 flex-shrink-0">
-                            <Info className="w-4 h-4" />
+                <div className="lg:col-span-2 space-y-8">
+                    {/* Strategic Guidance */}
+                    <div className="glass-panel p-6 flex items-start gap-5 border-l-4 border-l-indigo-500 bg-indigo-50/10">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center flex-shrink-0 border border-indigo-100 shadow-sm">
+                            <Award className="w-5 h-5" />
                         </div>
-                        <div>
-                            <p className="text-sm font-semibold text-gray-700">Weight Balancing</p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Performance scores are calculated from four weighted factors. Adjust the sliders below. Total must equal 100%.
+                        <div className="space-y-1">
+                            <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Algorithmic Balancing</p>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed italic">
+                                Performance scores are derived from four weighted vectors. Adjust the deployment intensity below. Final coefficient must aggregate precisely to <span className="text-indigo-600 font-black">100%</span>.
                             </p>
                         </div>
                     </div>
 
                     {/* Weight Sliders */}
-                    <div className="glass-card p-6 space-y-8">
+                    <div className="glass-panel p-10 space-y-12">
                         {weightItems.map((item) => (
-                            <div key={item.id} className="space-y-4">
+                            <div key={item.id} className="space-y-5 group/slider">
                                 <div className="flex items-end justify-between">
-                                    <div>
-                                        <label className="text-sm font-bold text-gray-900">{item.label}</label>
-                                        <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{item.label}</label>
+                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight group-hover/slider:text-indigo-600 transition-colors">{item.desc}</p>
                                     </div>
-                                    <div className="text-2xl font-black text-gray-900">
-                                        {formData[item.id as keyof typeof formData]}%
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-4xl font-black text-slate-900 tracking-tighter">
+                                            {formData[item.id as keyof typeof formData]}
+                                        </span>
+                                        <span className="text-xs font-black text-slate-400 uppercase">%</span>
                                     </div>
                                 </div>
-                                <div className="relative">
-                                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="relative pt-2">
+                                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-50">
                                         <div
-                                            className={`h-full bg-gradient-to-r ${item.color} transition-all duration-300 rounded-full shadow-sm`}
+                                            className={cn(
+                                                "h-full rounded-full transition-all duration-500 shadow-lg",
+                                                `bg-gradient-to-r ${item.color}`
+                                            )}
                                             style={{ width: `${formData[item.id as keyof typeof formData]}%` }}
                                         />
                                     </div>
@@ -200,8 +211,14 @@ export default function ScoringConfig() {
                                         max="100"
                                         value={formData[item.id as keyof typeof formData]}
                                         onChange={(e) => handleChange(item.id as keyof typeof formData, parseInt(e.target.value))}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
+                                    {/* Tick Marks */}
+                                    <div className="flex justify-between px-1 mt-3">
+                                        {[0, 25, 50, 75, 100].map(val => (
+                                            <span key={val} className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{val}%</span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -209,53 +226,78 @@ export default function ScoringConfig() {
                 </div>
 
                 {/* Status Panel */}
-                <div className="space-y-6">
-                    {/* Validation Status */}
-                    <div className={`glass-card p-8 text-center ${!isValid ? 'ring-2 ring-red-200' : ''}`}>
-                        <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 ${isValid ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className="space-y-8">
+                    {/* Validation Feedback */}
+                    <div className={cn(
+                        "glass-panel p-10 text-center transition-all duration-500 border-2",
+                        isValid ? 'border-emerald-100 shadow-emerald-100/20' : 'border-rose-100 shadow-rose-100/20 animate-pulse'
+                    )}>
+                        <div className={cn(
+                            "w-20 h-20 mx-auto rounded-[2rem] flex items-center justify-center mb-6 shadow-xl ring-8 ring-white transition-all transform",
+                            isValid ? 'bg-emerald-50 text-emerald-500 scale-100' : 'bg-rose-50 text-rose-500 scale-95'
+                        )}>
                             {isValid ? (
-                                <CheckCircle className="w-8 h-8 text-green-500" />
+                                <CheckCircle className="w-10 h-10" />
                             ) : (
-                                <XCircle className="w-8 h-8 text-red-500" />
+                                <XCircle className="w-10 h-10" />
                             )}
                         </div>
-                        <p className="text-xs text-gray-400 font-medium mb-1">Current Balance</p>
-                        <h3 className={`text-4xl font-black mb-3 ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 leading-none">Aggregated Coefficient</p>
+                        <h3 className={cn(
+                            "text-6xl font-black mb-4 tracking-tighter",
+                            isValid ? 'text-emerald-600' : 'text-rose-600'
+                        )}>
                             {totalWeight}%
                         </h3>
-                        <span className={`badge ${isValid ? 'badge-success py-1' : 'badge-danger py-1'}`}>
-                            {isValid ? 'VALID' : 'INVALID'}
+                        <span className={cn(
+                            "status-badge",
+                            isValid ? "status-badge-success" : "status-badge-danger"
+                        )}>
+                            {isValid ? 'VALID EQUILIBRIUM' : 'RECALIBRATION REQUIRED'}
                         </span>
                     </div>
 
-                    {/* Weight Distribution */}
-                    <div className="glass-card p-6">
-                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Distribution Map</h3>
-                        <div className="space-y-4">
+                    {/* Distribution Map */}
+                    <div className="glass-panel p-8">
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 leading-none">Visual Allocation Map</h3>
+                        <div className="space-y-5">
                             {weightItems.map((item) => {
                                 const value = formData[item.id as keyof typeof formData]
                                 return (
-                                    <div key={item.id} className="flex items-center gap-3">
-                                        <div className={`w-3 h-3 rounded-full ${item.bgColor}`} />
-                                        <span className="text-xs font-bold text-gray-600 flex-1">{item.label}</span>
-                                        <span className="text-xs font-black text-gray-900">{value}%</span>
+                                    <div key={item.id} className="flex items-center gap-4">
+                                        <div className={cn("w-3 h-3 rounded-full shadow-sm ring-2 ring-white", item.bgColor)} />
+                                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex-1">{item.label}</span>
+                                        <span className="text-xs font-black text-slate-900 font-mono">{value}%</span>
                                     </div>
                                 )
                             })}
                         </div>
 
-                        {/* Visual Bar */}
-                        <div className="mt-8 h-6 rounded-2xl overflow-hidden flex shadow-inner border border-gray-50">
+                        {/* Integrated Bar */}
+                        <div className="mt-10 h-10 rounded-[1.25rem] overflow-hidden flex shadow-2xl shadow-indigo-100 ring-4 ring-white border border-slate-100">
                             {weightItems.map((item) => {
                                 const value = formData[item.id as keyof typeof formData]
                                 return (
                                     <div
                                         key={item.id}
-                                        className={`h-full ${item.bgColor} transition-all duration-300`}
+                                        className={cn("h-full transition-all duration-700", item.bgColor)}
                                         style={{ width: `${value}%` }}
                                     />
                                 )
                             })}
+                        </div>
+                        <p className="text-[9px] font-medium text-slate-400 italic text-center mt-4">Proportional mapping of performance indices</p>
+                    </div>
+
+                    {/* Legend Info */}
+                    <div className="glass-panel p-6 bg-slate-50/50">
+                        <div className="flex gap-4">
+                            <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
+                                <Info className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                                Configuration updates are logged in the <span className="font-bold text-slate-700">Audit Trail</span> and take effect immediately across all calculations.
+                            </p>
                         </div>
                     </div>
                 </div>
