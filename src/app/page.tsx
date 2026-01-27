@@ -74,7 +74,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="glass-card w-full max-w-md p-8 md:p-12 space-y-8 animate-float">
+            <div className="glass-panel w-full max-w-md p-8 md:p-12 space-y-8 animate-float">
                 {/* Logo */}
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -103,7 +103,7 @@ export default function LoginPage() {
                                 placeholder="name@company.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="premium-input bg-white/50 focus:bg-white"
+                                className="form-input bg-white/50 focus:bg-white"
                                 required
                             />
                         </div>
@@ -115,7 +115,7 @@ export default function LoginPage() {
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="premium-input bg-white/50 focus:bg-white"
+                                className="form-input bg-white/50 focus:bg-white"
                                 required
                             />
                         </div>
@@ -123,7 +123,7 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        className="premium-button w-full h-12 flex items-center justify-center gap-3 text-sm font-extrabold uppercase tracking-wider"
+                        className="btn-primary w-full h-12 flex items-center justify-center gap-3 text-sm font-extrabold uppercase tracking-wider"
                         disabled={loginLoading}
                     >
                         {loginLoading ? (
