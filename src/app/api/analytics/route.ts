@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({
                 success: true,
-                report
+                data: report
             });
         } catch (error) {
             console.error('Failed to generate report:', error);

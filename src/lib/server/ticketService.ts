@@ -89,7 +89,7 @@ export async function createTicket(data: any): Promise<string> {
     }
 }
 
-export async function getTicketStats(filters?: { departmentId?: string }): Promise<TicketStats> {
+export async function getTicketStats(filters?: { departmentId?: string; requesterId?: string }): Promise<TicketStats> {
     try {
         const tickets = await getTickets(filters);
 

@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
 export function TicketDashboard() {
-    const { isAdmin } = useAuth()
+    const { user, isAdmin } = useAuth()
     const [tickets, setTickets] = useState<Ticket[]>([])
     const [stats, setStats] = useState<TicketStats | null>(null)
     const [loading, setLoading] = useState(true)
@@ -28,11 +28,15 @@ export function TicketDashboard() {
     }, [filter])
 
     const fetchTickets = async () => {
+        if (!user) return
         try {
             setLoading(true)
             const params = new URLSearchParams()
             if (filter !== 'all') {
                 params.append('status', filter)
+            }
+            if (!isAdmin) {
+                params.append('requesterId', user.uid)
             }
 
             const result = await authenticatedJsonFetch(`/api/tickets?${params}`)
@@ -50,8 +54,13 @@ export function TicketDashboard() {
     }
 
     const fetchStats = async () => {
+        if (!user) return
         try {
-            const result = await authenticatedJsonFetch('/api/tickets/stats')
+            const params = new URLSearchParams()
+            if (!isAdmin) {
+                params.append('requesterId', user.uid)
+            }
+            const result = await authenticatedJsonFetch(`/api/tickets/stats?${params}`)
             if (result.success) {
                 setStats(result.data)
             }

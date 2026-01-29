@@ -50,7 +50,34 @@ export async function GET(request: NextRequest) {
                 createdAt: timestampToDate(data.createdAt),
                 updatedAt: timestampToDate(data.updatedAt)
             };
-        }) as Task[];
+        }) as any[];
+
+        // Fetch assigner names for metadata
+        const assignerIds = Array.from(new Set(tasks.map(t => t.assignedBy).filter(Boolean)));
+        const assignersMap: Record<string, string> = {};
+
+        if (assignerIds.length > 0) {
+            // Firestore 'in' query supports up to 30 elements in newer SDKs, but let's stick to safe chunks
+            const chunks = [];
+            for (let i = 0; i < assignerIds.length; i += 10) {
+                chunks.push(assignerIds.slice(i, i + 10));
+            }
+
+            for (const chunk of chunks) {
+                const assignersSnap = await adminDb.collection('users')
+                    .where('__name__', 'in', chunk)
+                    .get();
+                assignersSnap.docs.forEach(doc => {
+                    const d = doc.data();
+                    assignersMap[doc.id] = d.fullName || d.displayName || d.email || 'Admin';
+                });
+            }
+        }
+
+        const tasksWithMeta = tasks.map(t => ({
+            ...t,
+            assignedByName: assignersMap[t.assignedBy] || 'Admin'
+        }));
 
         // Stats reflect the returned tasks
         const total = tasks.length;
@@ -69,7 +96,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            tasks,
+            tasks: tasksWithMeta,
             stats
         });
     }).catch(error => {

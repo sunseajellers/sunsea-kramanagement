@@ -18,8 +18,10 @@ import {
     Filter,
     Trophy,
     Target,
-    BookOpen
+    BookOpen,
+    Ticket
 } from 'lucide-react';
+import { TicketDashboard } from '@/components/features/tickets/TicketDashboard';
 import { isPast, isToday, differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import TaskForm from '@/components/features/tasks/TaskForm';
@@ -27,6 +29,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import PerformanceScoreboard from '@/components/features/performance/PerformanceScoreboard';
 import OKRList from '@/components/features/okr/OKRList';
 import LearningHub from '@/components/features/learning/LearningHub';
+import PersonalTaskWorkboard from '@/components/features/tasks/PersonalTaskWorkboard';
 
 const priorityColors: Record<Priority, string> = {
     critical: 'bg-red-100 text-red-700 border-red-200',
@@ -45,6 +48,7 @@ const statusColors: Record<TaskStatus, string> = {
     cancelled: 'bg-slate-200 text-slate-500',
     on_hold: 'bg-yellow-100 text-yellow-700',
     revision_requested: 'bg-pink-100 text-pink-700',
+    overdue: 'bg-red-200 text-red-800'
 };
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -57,12 +61,13 @@ const statusLabels: Record<TaskStatus, string> = {
     cancelled: 'Cancelled',
     on_hold: 'On Hold',
     revision_requested: 'Revision Requested',
+    overdue: 'Overdue'
 };
 
 export default function EmployeeDashboard() {
     const { user, loading: authLoading, signOut } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'tasks' | 'delegated' | 'history' | 'profile' | 'performance' | 'okr' | 'academy'>('tasks');
+    const [activeTab, setActiveTab] = useState<'tasks' | 'delegated' | 'history' | 'profile' | 'performance' | 'okr' | 'academy' | 'helpdesk'>('tasks');
     const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed' | 'overdue'>('all');
     const [editingProfile, setEditingProfile] = useState(false);
     const [profileForm, setProfileForm] = useState({ fullName: '', phone: '' });
@@ -71,10 +76,9 @@ export default function EmployeeDashboard() {
     const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [changingPassword, setChangingPassword] = useState(false);
     const [showCreateTask, setShowCreateTask] = useState(false);
-    const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
 
     // Use optimized data hook
-    const { tasks, delegatedTasks, userProfile, loading, setUserProfile, setTasks } = useDashboardData(
+    const { tasks, delegatedTasks, userProfile, loading, setUserProfile, setTasks, refetch } = useDashboardData(
         user?.uid,
         () => user?.getIdToken() || Promise.resolve(undefined)
     );
@@ -178,24 +182,6 @@ export default function EmployeeDashboard() {
         }
     }, [passwordForm, user?.uid]);
 
-    // Memoized task calculations
-    const todaysTasks = useMemo(() => tasks.filter(task => {
-        const dueDate = new Date(task.finalTargetDate || task.dueDate);
-        const isActive = !['completed', 'cancelled'].includes(task.status);
-        return isActive && (isToday(dueDate) || isPast(dueDate));
-    }), [tasks]);
-
-    const currentWeekWindow = useMemo(() => ({
-        start: startOfWeek(new Date(), { weekStartsOn: 1 }),
-        end: endOfWeek(new Date(), { weekStartsOn: 1 })
-    }), []);
-
-    const weeklyTasks = useMemo(() => tasks.filter(task => {
-        const dueDate = new Date(task.finalTargetDate || task.dueDate);
-        const isActive = !['completed', 'cancelled'].includes(task.status);
-        const inWeek = dueDate >= currentWeekWindow.start && dueDate <= currentWeekWindow.end;
-        return isActive && inWeek && !isToday(dueDate);
-    }), [tasks, currentWeekWindow]);
 
     const filteredAllTasks = useMemo(() => {
         let filtered = tasks;
@@ -231,36 +217,6 @@ export default function EmployeeDashboard() {
         return `Due in ${differenceInDays(dueDate, new Date())} days`;
     }, []);
 
-    const handleQuickStatusUpdate = useCallback(async (taskId: string, newStatus: TaskStatus) => {
-        setCompletingTasks(prev => new Set(prev).add(taskId));
-        try {
-            const token = await user?.getIdToken();
-            const response = await fetch(`/api/tasks/${taskId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: newStatus, updatedAt: new Date() })
-            });
-
-            if (response.ok) {
-                // Update local state instead of refetching
-                const updatedTasks = tasks.map(t =>
-                    t.id === taskId ? { ...t, status: newStatus } : t
-                );
-                setTasks(updatedTasks as any);
-            }
-        } catch (error) {
-            console.error('Failed to update task status:', error);
-        } finally {
-            setCompletingTasks(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(taskId);
-                return newSet;
-            });
-        }
-    }, [user?.uid]);
 
     if (authLoading || loading) {
         return (
@@ -295,6 +251,7 @@ export default function EmployeeDashboard() {
                         { id: 'history', label: 'History', icon: History },
                         { id: 'performance', label: 'Score', icon: Trophy },
                         { id: 'okr', label: 'Goals', icon: Target },
+                        { id: 'helpdesk', label: 'Helpdesk', icon: Ticket },
                         { id: 'academy', label: 'Academy', icon: BookOpen },
                         { id: 'profile', label: 'Profile', icon: User },
                     ].map((tab) => (
@@ -477,6 +434,12 @@ export default function EmployeeDashboard() {
                         </div>
                     )}
 
+                    {activeTab === 'helpdesk' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <TicketDashboard />
+                        </div>
+                    )}
+
                     {activeTab === 'academy' && (
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <LearningHub />
@@ -484,139 +447,13 @@ export default function EmployeeDashboard() {
                     )}
 
                     {activeTab === 'tasks' && (
-                        <>
-                            <div className="glass-card p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                                    <div>
-                                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-                                            <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500" />
-                                            My Tasks
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-2 flex-wrap">
-                                        <button
-                                            onClick={() => location.reload()}
-                                            className="px-3 py-2 text-xs font-bold rounded-lg sm:rounded-xl border border-slate-200 text-slate-600 bg-white hover:border-indigo-200 hover:text-indigo-600 transition-all"
-                                        >
-                                            Refresh
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {todaysTasks.length === 0 ? (
-                                    <div className="p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-white/60 border border-white/60 backdrop-blur-xl text-center">
-                                        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-500">
-                                            <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" />
-                                        </div>
-                                        <h3 className="text-base sm:text-lg font-bold text-slate-900">You're caught up</h3>
-                                        <p className="text-xs sm:text-sm text-slate-500 mt-1">Nothing due right now. You can delegate below.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2.5 sm:space-y-3">
-                                        {todaysTasks.map(task => (
-                                            <div
-                                                key={task.id}
-                                                className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/70 border border-white/70 backdrop-blur-xl shadow-sm hover:shadow-md transition-shadow"
-                                            >
-                                                <button
-                                                    onClick={() => handleQuickStatusUpdate(task.id, 'completed')}
-                                                    disabled={completingTasks.has(task.id)}
-                                                    className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white text-slate-500 flex items-center justify-center hover:border-green-200 hover:text-green-600 transition-all disabled:opacity-60 self-start sm:self-center"
-                                                    aria-label="Mark complete"
-                                                >
-                                                    {completingTasks.has(task.id) ? (
-                                                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                                                    ) : (
-                                                        <Square className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                    )}
-                                                </button>
-
-                                                <div className="flex-1 min-w-0 space-y-1">
-                                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[9px] sm:text-[11px] font-black uppercase tracking-wider">
-                                                        {task.taskNumber && (
-                                                            <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700">{task.taskNumber}</span>
-                                                        )}
-                                                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-md border text-slate-800 ${priorityColors[task.priority as Priority]}`}>
-                                                            {task.priority}
-                                                        </span>
-                                                        <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600">
-                                                            {task.category || 'General'}
-                                                        </span>
-                                                    </div>
-                                                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight line-clamp-2 sm:truncate">{task.title}</h3>
-                                                    {task.description && (
-                                                        <p className="text-xs sm:text-sm text-slate-500 line-clamp-2">{task.description}</p>
-                                                    )}
-                                                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold text-slate-500">
-                                                        <span className="flex items-center gap-1 sm:gap-1.5 text-indigo-600">
-                                                            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                            <span className="line-clamp-1">{getDueDateLabel(task)}</span>
-                                                        </span>
-                                                        {task.assignedByName && (
-                                                            <span className="px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-slate-100 text-slate-600 text-[9px] sm:text-xs truncate max-w-[150px]">From {task.assignedByName}</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    onClick={() => handleQuickStatusUpdate(task.id, 'completed')}
-                                                    disabled={completingTasks.has(task.id)}
-                                                    className="w-full sm:w-auto px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs sm:text-sm font-bold shadow-sm sm:shadow-md shadow-emerald-500/20 hover:shadow-lg active:scale-95 transition-all"
-                                                >
-                                                    {completingTasks.has(task.id) ? 'Finishing…' : 'Mark Complete'}
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="glass-card p-6 sm:p-8 space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div>
-                                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">This Week</p>
-                                        <h3 className="text-xl font-black text-slate-900 mt-1">Tasks scheduled this week</h3>
-                                        <p className="text-sm text-slate-500">See what is planned for the current week.</p>
-                                    </div>
-                                </div>
-
-                                {weeklyTasks.length === 0 ? (
-                                    <div className="p-6 rounded-2xl bg-white/60 border border-white/70 backdrop-blur-xl text-slate-600 text-sm">
-                                        Nothing scheduled for this week yet.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {weeklyTasks.map(task => (
-                                            <div
-                                                key={task.id}
-                                                className="flex items-start justify-between gap-3 p-4 rounded-2xl bg-white/70 border border-white/70 backdrop-blur-xl"
-                                            >
-                                                <div className="min-w-0 space-y-1">
-                                                    <p className="text-sm font-bold text-slate-900 truncate">{task.title}</p>
-                                                    <p className="text-xs text-slate-500 truncate">Assigned by {task.assignedByName || 'manager'}</p>
-                                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                                                        <span className="flex items-center gap-1.5 text-indigo-600">
-                                                            <Calendar className="w-3.5 h-3.5" />
-                                                            {getDueDateLabel(task)}
-                                                        </span>
-                                                        <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${statusColors[task.status]}`}>
-                                                            {statusLabels[task.status]}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleQuickStatusUpdate(task.id, 'completed')}
-                                                    disabled={completingTasks.has(task.id)}
-                                                    className="px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-60"
-                                                >
-                                                    {completingTasks.has(task.id) ? 'Finishing…' : 'Mark done'}
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </>
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <PersonalTaskWorkboard
+                                tasks={tasks}
+                                loading={loading}
+                                onRefresh={refetch}
+                            />
+                        </div>
                     )}
 
                     {/* Delegated Tasks Tab */}
@@ -725,15 +562,6 @@ export default function EmployeeDashboard() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                {task.status !== 'completed' && (
-                                                    <button
-                                                        onClick={() => handleQuickStatusUpdate(task.id, 'completed')}
-                                                        disabled={completingTasks.has(task.id)}
-                                                        className="w-full sm:w-auto px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap"
-                                                    >
-                                                        {completingTasks.has(task.id) ? 'Finishing…' : 'Mark Done'}
-                                                    </button>
-                                                )}
                                             </div>
                                         );
                                     })}

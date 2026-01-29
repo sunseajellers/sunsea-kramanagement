@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
-import { BarChart3, Users, Target, Download, FileText, PieChart, Activity, TrendingUp, RefreshCw } from 'lucide-react'
+import { BarChart3, Users, Target, Download, FileText, PieChart, Activity, TrendingUp, RefreshCw, ChevronDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, Pie } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,12 +13,18 @@ export default function AnalyticsHub() {
     const { user, loading: authLoading } = useAuth()
     const [analytics, setAnalytics] = useState<any>(null)
     const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'reports'>('overview')
+    const searchParams = useSearchParams()
+    const [activeTab, setActiveTab] = useState<'overview' | 'personnel' | 'teams' | 'reports'>((searchParams.get('tab') as any) || 'overview')
     const [isMounted, setIsMounted] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
 
     useEffect(() => {
         setIsMounted(true)
-    }, [])
+        const tab = searchParams.get('tab')
+        if (tab && ['overview', 'personnel', 'teams', 'reports'].includes(tab)) {
+            setActiveTab(tab as any)
+        }
+    }, [searchParams])
 
     useEffect(() => {
         if (!authLoading && user) {
@@ -87,6 +94,11 @@ export default function AnalyticsHub() {
         )
     }
 
+    const filteredPersonnel = (analytics?.userPerformance || []).filter((u: any) =>
+        u.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.department || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="space-y-10 animate-in">
             {/* Header */}
@@ -96,10 +108,10 @@ export default function AnalyticsHub() {
                     <p className="section-subtitle">Real-time metrics and system-wide strategic insights</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Inner Tabs for better organization within analytics */}
                     <div className="flex bg-slate-100/50 p-1 rounded-2xl border border-slate-200/60">
                         {[
                             { id: 'overview', label: 'Overview', icon: Activity },
+                            { id: 'personnel', label: 'Personnel', icon: Target },
                             { id: 'teams', label: 'Teams', icon: Users },
                             { id: 'reports', label: 'Reports', icon: FileText }
                         ].map(tab => (
@@ -124,10 +136,9 @@ export default function AnalyticsHub() {
                 </div>
             </div>
 
-            {/* Content */}
+            {/* Overview Tab */}
             {activeTab === 'overview' && analytics && (
                 <div className="space-y-10">
-                    {/* Key Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
                             { label: 'Total Personnel', value: analytics.overview.totalUsers, color: 'text-blue-600', bg: 'bg-blue-50/50' },
@@ -136,7 +147,7 @@ export default function AnalyticsHub() {
                             { label: 'KRA Density', value: analytics.overview.activeKRAs, color: 'text-rose-600', bg: 'bg-rose-50/50' }
                         ].map((stat, i) => (
                             <div key={i} className="dashboard-card group">
-                                <div className="flex flex-col gap-1.5">
+                                <div className="flex flex-col gap-1.5" >
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">{stat.label}</p>
                                     <h3 className={cn("text-3xl font-black tracking-tight transition-colors", stat.color)}>{stat.value}</h3>
                                     {stat.sub && (
@@ -150,9 +161,7 @@ export default function AnalyticsHub() {
                         ))}
                     </div>
 
-                    {/* Charts Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Priority Distribution */}
                         <div className="glass-panel p-8 flex flex-col h-[450px]">
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
@@ -191,17 +200,8 @@ export default function AnalyticsHub() {
                                     </ResponsiveContainer>
                                 )}
                             </div>
-                            <div className="flex flex-wrap items-center justify-center gap-8 mt-6">
-                                {Object.entries(analytics.distributions.priority).map(([key], index) => (
-                                    <div key={key} className="flex items-center gap-2.5">
-                                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{key}</span>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
 
-                        {/* KRA Types Distribution */}
                         <div className="glass-panel p-8 flex flex-col h-[450px]">
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
@@ -241,63 +241,102 @@ export default function AnalyticsHub() {
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
 
-                    {/* Team Performance Table */}
-                    <div className="glass-panel p-0 flex flex-col overflow-hidden max-h-[600px]">
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Departmental Efficiency Ledger</h3>
-                            <Button variant="ghost" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-slate-50">
-                                Expand Registry
+            {/* Personnel Tab */}
+            {activeTab === 'personnel' && analytics && (
+                <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50">
+                        <div className="flex-1 w-full max-w-md relative group">
+                            <input
+                                type="text"
+                                placeholder="Search by name or department..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full h-14 pl-14 pr-6 rounded-2xl border-2 border-slate-100 bg-slate-50/50 text-sm font-black uppercase tracking-tight focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                            />
+                            <Activity className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Button variant="outline" className="h-14 px-6 rounded-2xl border-2 border-slate-100 font-black text-[10px] uppercase tracking-widest text-slate-500 hover:bg-slate-50">
+                                All Departments
                             </Button>
                         </div>
+                    </div>
+
+                    <div className="glass-panel p-0 overflow-hidden border-slate-100 shadow-2xl shadow-slate-100/40">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-slate-50/50 sticky top-0 z-10">
+                                <thead className="bg-slate-50/50">
                                     <tr className="border-b border-slate-100">
-                                        <th className="px-8 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Department identity</th>
-                                        <th className="px-8 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Force Matrix</th>
-                                        <th className="px-8 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Success Delta</th>
-                                        <th className="px-8 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Efficiency Rating</th>
+                                        <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Employee Identity</th>
+                                        <th className="px-6 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Weekly Score</th>
+                                        <th className="px-6 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Cumulative</th>
+                                        <th className="px-6 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Task Matrix</th>
+                                        <th className="px-6 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Operations</th>
+                                        <th className="px-10 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Analysis</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {analytics.teamPerformance.map((team: any) => (
-                                        <tr key={team.teamId} className="hover:bg-slate-50/50 transition-colors group">
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
-                                                        <Users className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                                    {filteredPersonnel.map((user: any) => (
+                                        <tr key={user.userId} className="hover:bg-slate-50/30 transition-colors group">
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="w-14 h-14 rounded-[1.25rem] bg-slate-900 flex items-center justify-center text-white font-black text-xs shadow-xl shadow-slate-200 group-hover:bg-indigo-600 transition-all duration-500">
+                                                        {user.userName.split(' ').map((n: string) => n[0]).join('')}
                                                     </div>
-                                                    <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{team.teamName}</span>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{user.userName}</span>
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{user.department} • {user.teamName}</span>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5 text-center">
-                                                <span className="status-badge status-badge-info">{team.memberCount} PERSONNEL</span>
-                                            </td>
-                                            <td className="px-8 py-5 text-center">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-sm font-black text-slate-900">{team.completedTasks} / {team.totalTasks}</span>
-                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tasks Finalized</span>
+                                            <td className="px-6 py-6 text-center">
+                                                <div className="inline-flex flex-col items-center">
+                                                    <span className={cn(
+                                                        "text-3xl font-black tracking-tighter leading-none mb-1",
+                                                        user.score >= 80 ? 'text-emerald-500' : user.score >= 60 ? 'text-indigo-500' : 'text-rose-500'
+                                                    )}>
+                                                        {user.score}
+                                                    </span>
+                                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Current</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center justify-center gap-4">
-                                                    <div className="w-32 h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/60 shadow-inner">
+                                            <td className="px-6 py-6 text-center">
+                                                <span className="text-lg font-black text-slate-400 tracking-tighter">{user.cumulativeScore}</span>
+                                            </td>
+                                            <td className="px-6 py-6 text-center">
+                                                <div className="flex flex-col gap-2 items-center">
+                                                    <div className="flex gap-2.5 items-baseline">
+                                                        <span className="text-sm font-black text-slate-900" title="Completed">{user.completedTasks}</span>
+                                                        <span className="text-[10px] font-black text-slate-200">/</span>
+                                                        <span className="text-[10px] font-black text-slate-400" title="Total">{user.totalTasks}</span>
+                                                    </div>
+                                                    <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
                                                         <div
-                                                            className={cn(
-                                                                "h-full rounded-full shadow-sm transition-all duration-1000",
-                                                                team.completionRate >= 80 ? 'bg-emerald-500' : team.completionRate >= 60 ? 'bg-amber-500' : 'bg-rose-500'
-                                                            )}
-                                                            style={{ width: `${team.completionRate}%` }}
+                                                            className="h-full bg-slate-900 rounded-full group-hover:bg-indigo-500 transition-all duration-700"
+                                                            style={{ width: `${user.completionRate}%` }}
                                                         />
                                                     </div>
-                                                    <span className={cn(
-                                                        "text-[11px] font-black w-12",
-                                                        team.completionRate >= 80 ? 'text-emerald-500' : team.completionRate >= 60 ? 'text-amber-500' : 'text-rose-500'
-                                                    )}>
-                                                        {team.completionRate}%
-                                                    </span>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-6 text-center text-xs">
+                                                <div className="flex flex-col gap-1.5 items-center">
+                                                    {user.overdueTasks > 0 ? (
+                                                        <span className="status-badge status-badge-danger px-3 py-1 font-black shadow-sm shadow-rose-100">{user.overdueTasks} OVERDUE</span>
+                                                    ) : (
+                                                        <span className="status-badge status-badge-success px-3 py-1 font-black opacity-40">STABLE</span>
+                                                    )}
+                                                    {user.pendingTasks > 0 && (
+                                                        <span className="status-badge status-badge-info px-3 py-1 font-black">{user.pendingTasks} ACTIVE</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-6 text-right">
+                                                <Button variant="ghost" className="h-12 w-12 p-0 rounded-2xl hover:bg-slate-100 text-slate-300 hover:text-indigo-600 transition-all border border-transparent hover:border-slate-100 shadow-sm">
+                                                    <TrendingUp className="w-5 h-5" />
+                                                </Button>
                                             </td>
                                         </tr>
                                     ))}
@@ -308,6 +347,7 @@ export default function AnalyticsHub() {
                 </div>
             )}
 
+            {/* Teams Tab */}
             {activeTab === 'teams' && analytics && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
                     {analytics.teamPerformance.map((team: any) => (
@@ -360,6 +400,7 @@ export default function AnalyticsHub() {
                 </div>
             )}
 
+            {/* Reports Tab */}
             {activeTab === 'reports' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-12">
                     {[

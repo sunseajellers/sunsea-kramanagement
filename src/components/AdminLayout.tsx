@@ -13,7 +13,8 @@ import {
     Settings,
     Ticket,
     Target,
-    BookOpen
+    BookOpen,
+    Users
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,11 @@ const menuItems = [
         href: '/admin/organization',
         label: 'Team',
         icon: Shield,
+    },
+    {
+        href: '/admin/performance?tab=personnel',
+        label: 'Personnel',
+        icon: Users,
     },
     {
         href: '/admin/operations',
@@ -55,7 +61,7 @@ const menuItems = [
     },
     {
         href: '/admin/helpdesk',
-        label: 'Box',
+        label: 'Helpdesk',
         icon: Ticket,
     },
     {

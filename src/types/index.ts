@@ -13,7 +13,7 @@ export type UserRole = SystemRole
 
 // COMMON TYPES
 export type Priority = 'low' | 'medium' | 'high' | 'critical'
-export type TaskStatus = 'not_started' | 'assigned' | 'in_progress' | 'blocked' | 'completed' | 'cancelled' | 'on_hold' | 'pending_review' | 'revision_requested'
+export type TaskStatus = 'not_started' | 'assigned' | 'in_progress' | 'blocked' | 'completed' | 'cancelled' | 'on_hold' | 'pending_review' | 'revision_requested' | 'overdue'
 export type KRAStatus = 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold'
 export type RevisionStatus = 'pending' | 'resolved' | 'rejected'
 

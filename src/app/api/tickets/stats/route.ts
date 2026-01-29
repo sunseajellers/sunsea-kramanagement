@@ -11,8 +11,9 @@ export async function GET(request: NextRequest) {
         try {
             const { searchParams } = new URL(request.url)
             const departmentId = searchParams.get('departmentId') || undefined
+            const requesterId = searchParams.get('requesterId') || undefined
 
-            const stats = await getTicketStats({ departmentId })
+            const stats = await getTicketStats({ departmentId, requesterId })
 
             return NextResponse.json({
                 success: true,

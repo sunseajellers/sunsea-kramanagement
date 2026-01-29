@@ -3,6 +3,7 @@ import { adminDb } from '../firebase-admin';
 import { Task } from '@/types';
 import { timestampToDate, handleError } from '../utils';
 import { format } from 'date-fns';
+import { recalculateEmployeeScores } from './scoringEngine';
 
 /**
  * Fetch tasks assigned to a specific user using Admin SDK.
@@ -61,7 +62,7 @@ export async function getAllTasks(maxResults: number = 200): Promise<Task[]> {
  */
 export async function createTask(taskData: Partial<Task>): Promise<string> {
     try {
-        return await adminDb.runTransaction(async (transaction) => {
+        const taskId = await adminDb.runTransaction(async (transaction) => {
             // 1. Get the counter ref
             const counterRef = adminDb.collection('config').doc('counters');
             const counterDoc = await transaction.get(counterRef);
@@ -99,6 +100,13 @@ export async function createTask(taskData: Partial<Task>): Promise<string> {
 
             return newTaskRef.id;
         });
+
+        // Trigger recalculation for all assignees
+        if (taskData.assignedTo) {
+            await Promise.all(taskData.assignedTo.map(uid => recalculateEmployeeScores(uid)));
+        }
+
+        return taskId;
     } catch (error) {
         handleError(error, 'Failed to create task with atomic ID');
         throw error;
@@ -132,11 +140,16 @@ export async function verifyTask(taskId: string, status: 'verified' | 'rejected'
             updateData.progress = 100;
         }
 
-        await adminDb.collection('tasks').doc(taskId).update(updateData);
-
-        // Add to activity log
-        const taskDoc = await adminDb.collection('tasks').doc(taskId).get();
+        const taskRef = adminDb.collection('tasks').doc(taskId);
+        const taskDoc = await taskRef.get();
         const taskData = taskDoc.data();
+
+        await taskRef.update(updateData);
+
+        // recalculate scores
+        if (taskData?.assignedTo) {
+            await Promise.all(taskData.assignedTo.map((uid: string) => recalculateEmployeeScores(uid)));
+        }
 
         await adminDb.collection('taskUpdates').add({
             taskId,
@@ -185,6 +198,11 @@ export async function updateTask(taskId: string, updates: Partial<Task>): Promis
             ...updates,
             updatedAt: new Date()
         });
+
+        // Trigger recalculation
+        const taskSnap = await taskRef.get();
+        const assignees = taskSnap.data()?.assignedTo || [];
+        await Promise.all(assignees.map((uid: string) => recalculateEmployeeScores(uid)));
     } catch (error) {
         handleError(error, 'Failed to update task');
         throw error;
@@ -222,6 +240,10 @@ export async function approveExtension(taskId: string, adminId: string) {
             updatedAt: new Date(),
             status: 'assigned' // Revert to assigned so they can work on it
         });
+
+        // Trigger recalculation
+        const assignees = data?.assignedTo || [];
+        await Promise.all(assignees.map((uid: string) => recalculateEmployeeScores(uid)));
 
         // Log to activity
         await adminDb.collection('taskUpdates').add({
@@ -278,17 +300,24 @@ export async function runOverdueAudit() {
 
         const batch = adminDb.batch();
         let count = 0;
+        const affectedUsers = new Set<string>();
 
         snap.docs.forEach((doc) => {
+            const data = doc.data();
             batch.update(doc.ref, {
                 status: 'overdue',
                 updatedAt: now
             });
+            if (data.assignedTo) {
+                data.assignedTo.forEach((uid: string) => affectedUsers.add(uid));
+            }
             count++;
         });
 
         if (count > 0) {
             await batch.commit();
+            // Recalculate scores for all affected users
+            await Promise.all(Array.from(affectedUsers).map(uid => recalculateEmployeeScores(uid)));
         }
         return count;
     } catch (error) {

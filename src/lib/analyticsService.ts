@@ -329,7 +329,12 @@ export async function getAdminDashboardAnalytics() {
         });
 
         // User performance metrics
+        const performanceSnap = await adminDb.collection('employeePerformance').get();
+        const performanceMap = new Map();
+        performanceSnap.docs.forEach(doc => performanceMap.set(doc.id, doc.data()));
+
         const userPerformance = users.map(user => {
+            const perf = performanceMap.get(user.id);
             const userTasks = allTasks.filter(t => t.assignedTo.includes(user.id));
             const userKRAs = uniqueKRAs.filter(k => k.assignedTo.includes(user.id) || (user.teamId && k.teamIds?.includes(user.teamId)));
 
@@ -340,10 +345,18 @@ export async function getAdminDashboardAnalytics() {
                 userId: user.id,
                 userName: user.fullName,
                 role: 'Employee',
+                department: user.department || 'Unassigned',
                 teamName: teams.find(t => t.id === user.teamId)?.name || 'No Team',
                 totalTasks: userTasks.length,
                 completedTasks: completedUserTasks,
+                pendingTasks: userTasks.filter(t => ['assigned', 'in_progress', 'pending_review'].includes(t.status)).length,
+                overdueTasks: userTasks.filter(t => {
+                    const now = new Date();
+                    return t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed';
+                }).length,
                 completionRate: userCompletionRate,
+                score: perf?.weeklyScore || 0,
+                cumulativeScore: perf?.cumulativeScore || 0,
                 activeKRAs: userKRAs.filter(k => k.status === 'in_progress').length,
                 totalKRAs: userKRAs.length
             };
