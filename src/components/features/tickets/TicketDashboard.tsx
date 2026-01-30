@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+
 import { Plus, RefreshCw } from 'lucide-react'
 import type { Ticket, TicketStats, TicketStatus } from '@/types'
 import { TicketStatsCards } from './TicketStatsCards'
@@ -88,27 +88,26 @@ export function TicketDashboard() {
     }
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-12 animate-in">
             {/* Header */}
-            <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-10">
                 <div>
-                    <h1 className="section-title">Support Intelligence</h1>
-                    <p className="section-subtitle">Infrastructure support, service requests, and resolution tracking</p>
+                    <h1 className="section-title">Help & Support</h1>
+                    <p className="section-subtitle">Need help with something? Submit a request and we'll handle it.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="ghost"
+                <div className="flex items-center gap-5">
+                    <button
                         onClick={handleRefresh}
                         disabled={loading}
-                        className="btn-secondary"
+                        className="btn-secondary h-14"
                     >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Sync Data
-                    </Button>
-                    <Button onClick={() => setIsCreateModalOpen(true)} className="btn-primary">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Initialize Ticket
-                    </Button>
+                        <RefreshCw className={cn("w-5 h-5 mr-3", loading && "animate-spin")} />
+                        Refresh
+                    </button>
+                    <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary h-14 px-8">
+                        <Plus className="w-5 h-5 mr-3" />
+                        New Request
+                    </button>
                 </div>
             </div>
 
@@ -116,29 +115,29 @@ export function TicketDashboard() {
             {stats && <TicketStatsCards stats={stats} loading={loading} />}
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-slate-100/40 p-2 rounded-2xl border border-slate-200/50">
-                <div className="flex bg-white/50 p-1.5 rounded-xl shadow-sm border border-slate-200/50 overflow-x-auto scrollbar-none">
+            <div className="glass-panel p-2 flex flex-col sm:flex-row items-center justify-between gap-8 border-border/40">
+                <div className="flex bg-muted/30 p-1.5 rounded-[1.5rem] border border-border/40 overflow-x-auto scrollbar-none w-full sm:w-auto">
                     <button
                         onClick={() => setFilter('all')}
                         className={cn(
-                            "px-5 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all min-w-max",
-                            filter === 'all' ? "bg-white text-indigo-600 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700"
+                            "px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all min-w-max",
+                            filter === 'all' ? "bg-white text-primary shadow-sm border border-border" : "text-muted-foreground/60 hover:text-primary"
                         )}
                     >
-                        All Requests
+                        History
                     </button>
                     <button
                         onClick={() => setFilter('open')}
                         className={cn(
-                            "px-5 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all flex items-center gap-3 min-w-max",
-                            filter === 'open' ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-200" : "text-slate-500 hover:text-slate-700"
+                            "px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 min-w-max",
+                            filter === 'open' ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100" : "text-muted-foreground/60 hover:text-primary"
                         )}
                     >
-                        Open
+                        New
                         {stats && stats.open > 0 && (
                             <span className={cn(
-                                "px-2 py-0.5 rounded-md text-[10px] font-black",
-                                filter === 'open' ? "bg-rose-100" : "bg-slate-100"
+                                "px-2.5 py-1 rounded-lg text-[9px] font-black",
+                                filter === 'open' ? "bg-rose-100" : "bg-muted/50"
                             )}>
                                 {stats.open}
                             </span>
@@ -147,15 +146,15 @@ export function TicketDashboard() {
                     <button
                         onClick={() => setFilter('in_progress')}
                         className={cn(
-                            "px-5 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all flex items-center gap-3 min-w-max",
-                            filter === 'in_progress' ? "bg-amber-50 text-amber-600 shadow-sm border border-amber-200" : "text-slate-500 hover:text-slate-700"
+                            "px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 min-w-max",
+                            filter === 'in_progress' ? "bg-amber-50 text-amber-600 shadow-sm border border-amber-100" : "text-muted-foreground/60 hover:text-primary"
                         )}
                     >
-                        Processing
+                        In Work
                         {stats && stats.inProgress > 0 && (
                             <span className={cn(
-                                "px-2 py-0.5 rounded-md text-[10px] font-black",
-                                filter === 'in_progress' ? "bg-amber-100" : "bg-slate-100"
+                                "px-2.5 py-1 rounded-lg text-[9px] font-black",
+                                filter === 'in_progress' ? "bg-amber-100" : "bg-muted/50"
                             )}>
                                 {stats.inProgress}
                             </span>
@@ -164,15 +163,15 @@ export function TicketDashboard() {
                     <button
                         onClick={() => setFilter('resolved')}
                         className={cn(
-                            "px-5 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all flex items-center gap-3 min-w-max",
-                            filter === 'resolved' ? "bg-emerald-50 text-emerald-600 shadow-sm border border-emerald-200" : "text-slate-500 hover:text-slate-700"
+                            "px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 min-w-max",
+                            filter === 'resolved' ? "bg-emerald-50 text-emerald-600 shadow-sm border border-emerald-100" : "text-muted-foreground/60 hover:text-primary"
                         )}
                     >
-                        Resolved
+                        Fixed
                         {stats && stats.resolved > 0 && (
                             <span className={cn(
-                                "px-2 py-0.5 rounded-md text-[10px] font-black",
-                                filter === 'resolved' ? "bg-emerald-100" : "bg-slate-100"
+                                "px-2.5 py-1 rounded-lg text-[9px] font-black",
+                                filter === 'resolved' ? "bg-emerald-100" : "bg-muted/50"
                             )}>
                                 {stats.resolved}
                             </span>
@@ -181,15 +180,13 @@ export function TicketDashboard() {
                     <button
                         onClick={() => setFilter('closed')}
                         className={cn(
-                            "px-5 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all min-w-max",
-                            filter === 'closed' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"
+                            "px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all min-w-max",
+                            filter === 'closed' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-muted-foreground/60 hover:text-primary"
                         )}
                     >
-                        Archived
+                        Closed
                     </button>
                 </div>
-
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden lg:block">Support Ledger V2.6</p>
             </div>
 
             {/* Ticket List */}

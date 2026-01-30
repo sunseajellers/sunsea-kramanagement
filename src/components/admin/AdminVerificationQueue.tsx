@@ -68,14 +68,14 @@ export default function AdminVerificationQueue({ tasks, onVerificationComplete }
 
     if (pendingTasks.length === 0) {
         return (
-            <div className="glass-panel border-dashed border-4 border-slate-100 bg-slate-50/30 py-32 text-center rounded-[3.5rem] hover:border-emerald-100 hover:bg-emerald-50/20 transition-all duration-700 group/queue animate-in">
-                <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-100/20 group-hover/queue:scale-110 transition-transform duration-700">
-                    <CheckSquare className="w-12 h-12 text-slate-200 group-hover/queue:text-emerald-500 transition-colors" />
+            <div className="glass-panel border-dashed border-4 border-border/40 bg-muted/5 py-32 text-center rounded-[3.5rem] hover:border-secondary/20 hover:bg-muted/10 transition-all duration-700 group/queue animate-in">
+                <div className="w-24 h-24 rounded-[3rem] bg-white border border-border flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-primary/5 group-hover/queue:scale-110 transition-transform duration-700">
+                    <CheckSquare className="w-12 h-12 text-muted-foreground/20 group-hover/queue:text-secondary transition-colors" />
                 </div>
-                <div className="space-y-2">
-                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Queue Operational</h3>
-                    <p className="text-sm text-slate-400 font-medium max-w-xs mx-auto uppercase tracking-widest leading-relaxed">
-                        No pending tactical validations required. System at peak efficiency.
+                <div className="space-y-3">
+                    <h3 className="text-2xl font-black text-primary uppercase tracking-tight">All Caught Up!</h3>
+                    <p className="text-sm text-muted-foreground/50 font-medium max-w-xs mx-auto uppercase tracking-widest leading-relaxed">
+                        No work is waiting for approval. Everything is reviewed and up to date.
                     </p>
                 </div>
             </div>
@@ -83,98 +83,114 @@ export default function AdminVerificationQueue({ tasks, onVerificationComplete }
     }
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in">
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="section-title">Verification Protocol</h2>
-                    <p className="section-subtitle">Audit and authorize completed tactical objectives</p>
+                    <h2 className="section-title">Work Approvals</h2>
+                    <p className="section-subtitle">Review and approve work submitted by your team members</p>
                 </div>
-                <div className="bg-indigo-600 text-white text-[12px] h-10 px-5 flex items-center rounded-[1.25rem] font-black shadow-xl shadow-indigo-100">
-                    {pendingTasks.length} PENDING
+                <div className="status-badge bg-primary text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-primary/10 tracking-[0.2em] uppercase text-[10px]">
+                    {pendingTasks.length} WAITING
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-10">
                 {pendingTasks.map(task => (
-                    <div key={task.id} className="glass-panel group p-10 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
-                        <div className="flex flex-col xl:flex-row justify-between items-start gap-10">
-                            <div className="flex-1 space-y-6">
-                                <div className="flex items-center gap-4">
-                                    <span className="px-4 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg">
-                                        {task.taskNumber || 'T-XXX'}
-                                    </span>
-                                    <h3 className="text-2xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight leading-tight">
-                                        {task.title}
-                                    </h3>
+                    <div key={task.id} className="glass-panel group p-0 overflow-hidden border-border/40 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                        <div className="flex flex-col xl:flex-row items-stretch">
+                            <div className="flex-1 p-10 space-y-10">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-5">
+                                        <span className="px-5 py-2 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-primary/10">
+                                            {task.taskNumber || 'TASK'}
+                                        </span>
+                                        <h3 className="text-3xl font-black text-primary transition-colors group-hover:text-secondary uppercase tracking-tight">
+                                            {task.title}
+                                        </h3>
+                                    </div>
+
+                                    {task.description && (
+                                        <p className="text-base text-muted-foreground/60 font-medium leading-relaxed max-w-4xl italic">
+                                            "{task.description}"
+                                        </p>
+                                    )}
                                 </div>
 
-                                <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-3xl italic">
-                                    {task.description}
-                                </p>
-
-                                {/* Proof of Work */}
+                                {/* Evidence of Work */}
                                 {(task.proofOfWork || task.proofLink) && (
-                                    <div className="bg-slate-50/50 rounded-[2rem] p-8 border border-slate-100 space-y-4 relative overflow-hidden group/proof">
-                                        <div className="absolute top-0 right-0 p-6 opacity-[0.03] -rotate-12 pointer-events-none group-hover/proof:scale-110 transition-transform">
-                                            <CheckSquare className="w-24 h-24" />
+                                    <div className="bg-muted/30 rounded-[3rem] p-10 border border-border/40 space-y-8 relative overflow-hidden group/proof transition-colors hover:bg-muted/50">
+                                        <div className="absolute top-0 right-0 p-10 opacity-[0.03] -rotate-12 pointer-events-none group-hover/proof:scale-110 transition-transform duration-700">
+                                            <CheckSquare className="w-32 h-32 text-primary" />
                                         </div>
-                                        <div className="flex items-center gap-3 text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] relative">
-                                            <CheckSquare className="w-5 h-5" />
-                                            Personnel Submission Data
+                                        <div className="flex items-center gap-5 text-[10px] font-black text-secondary uppercase tracking-[0.3em] relative">
+                                            <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-border">
+                                                <CheckSquare className="w-5 h-5" />
+                                            </div>
+                                            Evidence Submitted
                                         </div>
                                         {task.proofOfWork && (
-                                            <p className="text-base text-slate-600 font-bold leading-relaxed relative">
-                                                "{task.proofOfWork}"
+                                            <p className="text-xl text-primary font-bold leading-relaxed relative pl-1">
+                                                {task.proofOfWork}
                                             </p>
                                         )}
                                         {task.proofLink && (
-                                            <div className="relative">
+                                            <div className="relative pt-4">
                                                 <a
                                                     href={task.proofLink}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-3 text-[10px] font-black text-indigo-600 bg-white hover:bg-indigo-600 hover:text-white px-6 py-3 rounded-2xl border-2 border-indigo-100 transition-all shadow-sm"
+                                                    className="h-14 px-8 inline-flex items-center gap-3 bg-white border border-border rounded-2xl text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
                                                 >
-                                                    EXTERNAL ARTIFACT <ExternalLink className="w-4 h-4" />
+                                                    View Shared Link <ExternalLink className="w-4 h-4" />
                                                 </a>
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                <div className="flex flex-wrap items-center gap-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                    <span className="flex items-center gap-3 px-4 py-2 bg-white border border-slate-100 rounded-xl shadow-sm"><User className="w-4 h-4 text-indigo-500" /> {task.assignedTo?.join(', ') || 'UNASSIGNED'}</span>
-                                    <span className="flex items-center gap-3 px-4 py-2 bg-white border border-slate-100 rounded-xl shadow-sm"><Calendar className="w-4 h-4 text-indigo-500" /> {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'NO DATE'}</span>
+                                <div className="flex flex-wrap items-center gap-10 text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">
+                                    <span className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-2xl bg-muted/20 flex items-center justify-center border border-border/40">
+                                            <User className="w-5 h-5 text-secondary" />
+                                        </div>
+                                        <span>Sent By: <span className="text-primary">{task.assignedTo?.join(', ') || 'Unknown'}</span></span>
+                                    </span>
+                                    <span className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-2xl bg-muted/20 flex items-center justify-center border border-border/40">
+                                            <Calendar className="w-5 h-5 text-secondary" />
+                                        </div>
+                                        <span>Due Date: <span className="text-primary">{task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'No date'}</span></span>
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row xl:flex-col gap-4 shrink-0 sm:w-full xl:w-[320px]">
+                            <div className="xl:w-80 bg-muted/20 border-l border-border/20 p-10 flex flex-col justify-center gap-4">
                                 {rejectingTaskId === task.id ? (
-                                    <div className="flex flex-col gap-5 bg-rose-50/30 p-8 rounded-[2.5rem] border-2 border-rose-100 animate-in zoom-in-95 duration-300">
+                                    <div className="flex flex-col gap-6 bg-destructive/5 p-8 rounded-[2.5rem] border-2 border-destructive/10 animate-in fade-in slide-in-from-right-4 duration-500">
                                         <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] ml-1">Calibration Directives</label>
+                                            <label className="text-[10px] font-black text-destructive uppercase tracking-[0.3em] ml-2">What needs fixing?</label>
                                             <textarea
-                                                placeholder="Specify necessary adjustments..."
+                                                placeholder="Write your instructions here..."
                                                 value={rejectionReason}
                                                 onChange={(e) => setRejectionReason(e.target.value)}
-                                                className="form-input h-32 py-4 resize-none bg-white border-rose-100 focus:ring-rose-200"
+                                                className="form-input h-32 p-5 resize-none bg-white/50"
                                                 autoFocus
                                             />
                                         </div>
                                         <div className="flex gap-4">
                                             <button
                                                 onClick={() => setRejectingTaskId(null)}
-                                                className="flex-1 h-14 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                                                className="flex-1 h-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
                                             >
-                                                Abort
+                                                Cancel
                                             </button>
                                             <button
                                                 onClick={() => handleReject(task.id)}
                                                 disabled={!!processingId}
-                                                className="flex-1 h-14 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-[1.25rem] hover:bg-rose-700 flex items-center justify-center gap-3 shadow-xl shadow-rose-100 transition-all border-none"
+                                                className="flex-1 h-12 bg-destructive text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 flex items-center justify-center gap-3 shadow-xl shadow-destructive/10 transition-all active:translate-y-0.5"
                                             >
                                                 {processingId === task.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                                                CONFIRM REJECTION
+                                                Send
                                             </button>
                                         </div>
                                     </div>
@@ -183,22 +199,24 @@ export default function AdminVerificationQueue({ tasks, onVerificationComplete }
                                         <button
                                             onClick={() => handleVerify(task.id)}
                                             disabled={!!processingId}
-                                            className="btn-primary h-16 w-full text-[11px] tracking-[0.2em]"
+                                            className="btn-primary h-20 w-full shadow-xl shadow-primary/10"
                                         >
                                             {processingId === task.id ? (
-                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                <Loader2 className="w-6 h-6 animate-spin" />
                                             ) : (
-                                                <Check className="w-6 h-6 mr-2" />
+                                                <>
+                                                    <Check className="w-5 h-5" />
+                                                    Approve Work
+                                                </>
                                             )}
-                                            AUTHORIZE OBJECTIVE
                                         </button>
                                         <button
                                             onClick={() => setRejectingTaskId(task.id)}
                                             disabled={!!processingId}
-                                            className="h-16 w-full bg-white border-2 border-slate-100 text-slate-600 rounded-[1.5rem] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 flex items-center justify-center gap-3 transition-all duration-300 text-[11px] font-black uppercase tracking-[0.2em] shadow-sm"
+                                            className="h-20 w-full bg-white border border-border text-muted-foreground rounded-2xl hover:bg-destructive/5 hover:text-destructive hover:border-destructive/20 flex items-center justify-center gap-4 transition-all duration-500 font-black text-[10px] uppercase tracking-[0.3em] shadow-sm active:translate-y-0.5"
                                         >
                                             <X className="w-5 h-5" />
-                                            REVISION REQUIRED
+                                            Needs Changes
                                         </button>
                                     </>
                                 )}

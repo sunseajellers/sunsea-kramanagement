@@ -1,13 +1,13 @@
 // Reusable skeleton components for loading states
 
 export const StatCardSkeleton = () => (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 animate-pulse">
-        <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-            <div className="w-16 h-8 bg-gray-200 rounded" />
+    <div className="bg-card/40 backdrop-blur-sm rounded-3xl p-6 border border-border/50 animate-pulse">
+        <div className="flex items-center justify-between mb-8">
+            <div className="w-14 h-14 bg-muted rounded-2xl" />
+            <div className="w-16 h-4 bg-muted rounded" />
         </div>
-        <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
-        <div className="h-3 bg-gray-200 rounded w-32" />
+        <div className="h-2 bg-muted rounded w-24 mb-4" />
+        <div className="h-8 bg-muted rounded w-16" />
     </div>
 );
 
@@ -40,12 +40,12 @@ export const TaskCardSkeleton = () => (
 );
 
 export const TaskListSkeleton = () => (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div className="h-6 bg-gray-200 rounded w-32 animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded w-20 animate-pulse" />
+    <div className="bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden">
+        <div className="p-8 border-b border-border/50 flex items-center justify-between">
+            <div className="h-6 bg-muted rounded w-32 animate-pulse" />
+            <div className="h-4 bg-muted rounded w-20 animate-pulse" />
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border/50">
             {[1, 2, 3, 4, 5].map((i) => (
                 <TaskCardSkeleton key={i} />
             ))}
@@ -120,24 +120,24 @@ export const FormSkeleton = () => (
 );
 
 export const TableSkeleton = ({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) => (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted/50 border-b border-border/50">
                     <tr>
                         {Array.from({ length: columns }).map((_, i) => (
-                            <th key={i} className="px-6 py-3">
-                                <div className="h-4 bg-gray-200 rounded w-20 animate-pulse" />
+                            <th key={i} className="px-6 py-4">
+                                <div className="h-3 bg-muted rounded w-20 animate-pulse" />
                             </th>
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border/50">
                     {Array.from({ length: rows }).map((_, rowIndex) => (
                         <tr key={rowIndex}>
                             {Array.from({ length: columns }).map((_, colIndex) => (
                                 <td key={colIndex} className="px-6 py-4">
-                                    <div className="h-4 bg-gray-200 rounded w-full animate-pulse" />
+                                    <div className="h-4 bg-muted rounded w-full animate-pulse" />
                                 </td>
                             ))}
                         </tr>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { okrService } from '@/lib/okrService'
+import { serverOKRService } from '@/lib/server/okrService'
 
 /**
  * GET /api/okrs/objectives/[id]
@@ -11,7 +11,7 @@ export async function GET(
 ) {
     try {
         const { id } = await params
-        const objective = await okrService.getObjective(id)
+        const objective = await serverOKRService.getObjective(id)
 
         if (!objective) {
             return NextResponse.json(
@@ -46,7 +46,7 @@ export async function PATCH(
         if (data.startDate) data.startDate = new Date(data.startDate)
         if (data.endDate) data.endDate = new Date(data.endDate)
 
-        await okrService.updateObjective(id, data)
+        await serverOKRService.updateObjective(id, data)
 
         return NextResponse.json({ success: true })
     } catch (error) {
@@ -68,7 +68,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        await okrService.deleteObjective(id)
+        await serverOKRService.deleteObjective(id)
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('Error deleting objective:', error)

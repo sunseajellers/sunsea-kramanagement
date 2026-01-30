@@ -30,6 +30,7 @@ const statusColors = {
     completed: 'bg-green-100 text-green-700',
     cancelled: 'bg-gray-100 text-gray-700',
     on_hold: 'bg-yellow-100 text-yellow-700',
+    overdue: 'bg-red-100 text-red-700',
 }
 
 export default function TaskCard({ task, onEdit, onDelete, onUpdate }: TaskCardProps) {
@@ -149,8 +150,8 @@ export default function TaskCard({ task, onEdit, onDelete, onUpdate }: TaskCardP
                 {/* KPI Score badge */}
                 {task.kpiScore !== undefined && task.kpiScore !== null && (
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter ${task.kpiScore >= 80 ? 'bg-green-50 text-green-700 border-green-200' :
-                            task.kpiScore >= 60 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                'bg-red-50 text-red-700 border-red-200'
+                        task.kpiScore >= 60 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                            'bg-red-50 text-red-700 border-red-200'
                         }`}>
                         <TrendingUp className="w-3 h-3 mr-1" />
                         KPI: {task.kpiScore}%

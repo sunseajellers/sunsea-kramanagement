@@ -136,6 +136,7 @@ export interface Objective {
 
     // Key Results
     keyResultIds: string[]   // IDs of associated key results
+    keyResults?: KeyResult[] // Embedded Key Results (optional)
 
     // Linkages
     linkedTaskIds?: string[]  // Tasks contributing to this objective
@@ -507,6 +508,7 @@ export interface Task {
     rejectionReason?: string
     proofOfWork?: string // Description of work done
     proofLink?: string   // URL to proof (e.g., Google Drive, Github)
+    completedAt?: Date   // Date when task was completed
 }
 
 // Task with metadata for display purposes

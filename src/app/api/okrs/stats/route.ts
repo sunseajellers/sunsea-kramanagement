@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { okrService } from '@/lib/okrService'
+import { serverOKRService } from '@/lib/server/okrService'
 import { withAuth } from '@/lib/authMiddleware'
 
 /**
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
             const teamId = searchParams.get('teamId') || undefined
             const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : undefined
 
-            const stats = await okrService.getOKRStats({ teamId, year })
+            const stats = await serverOKRService.getOKRStats({ teamId, year })
 
             return NextResponse.json({
                 success: true,

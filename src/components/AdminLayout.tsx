@@ -32,46 +32,41 @@ const menuItems = [
     {
         href: '/admin/organization',
         label: 'Team',
-        icon: Shield,
-    },
-    {
-        href: '/admin/performance?tab=personnel',
-        label: 'Personnel',
         icon: Users,
     },
     {
         href: '/admin/operations',
-        label: 'Tasks',
+        label: 'Workplace',
         icon: FileText,
     },
     {
         href: '/admin/okr',
-        label: 'OKRs',
+        label: 'Goals',
         icon: Target,
     },
     {
-        href: '/admin/learning-hub',
-        label: 'Academy',
-        icon: BookOpen,
-    },
-    {
         href: '/admin/performance',
-        label: 'Score',
+        label: 'Results',
         icon: BarChart3,
     },
     {
+        href: '/admin/learning-hub',
+        label: 'Guides',
+        icon: BookOpen,
+    },
+    {
         href: '/admin/helpdesk',
-        label: 'Helpdesk',
+        label: 'Help',
         icon: Ticket,
     },
     {
         href: '/admin/activity-log',
-        label: 'Logs',
+        label: 'History',
         icon: Activity,
     },
     {
         href: '/admin/system',
-        label: 'Settings',
+        label: 'Setup',
         icon: Settings,
     },
 ];
@@ -103,13 +98,13 @@ export default function AdminLayout({
     // Show loading state
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#fcfdfe]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-6">
                     <div className="relative">
-                        <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-indigo-500 to-purple-600 animate-pulse shadow-2xl shadow-indigo-200/50" />
+                        <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-primary to-secondary animate-pulse shadow-2xl shadow-primary/20" />
                         <Loader2 className="absolute inset-0 m-auto h-8 w-8 animate-spin text-white" />
                     </div>
-                    <p className="text-slate-400 text-xs font-black tracking-[0.2em] uppercase">Initializing</p>
+                    <p className="text-muted-foreground text-xs font-bold tracking-[0.2em] uppercase">Initializing</p>
                 </div>
             </div>
         );
@@ -118,29 +113,29 @@ export default function AdminLayout({
     if (!user) return null;
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#fcfdfe]">
+        <div className="min-h-screen flex flex-col bg-background">
             {/* Top Brand Bar */}
             <nav className="fixed top-0 left-0 right-0 z-[100] px-6 py-4">
                 <div className="max-w-[1700px] mx-auto">
-                    <div className="glass-panel px-6 py-3 flex items-center justify-between border-slate-200/60 shadow-xl shadow-slate-100/50">
+                    <div className="glass-panel px-6 py-3 flex items-center justify-between border-border shadow-xl shadow-primary/5">
                         {/* Brand */}
                         <div className="flex items-center gap-10">
                             <Link href="/admin" className="flex items-center group">
-                                <div className="p-2.5 rounded-2xl bg-slate-900 group-hover:bg-indigo-600 transition-all duration-500 shadow-xl shadow-slate-200">
-                                    <Shield className="w-5 h-5 text-white" />
+                                <div className="p-2.5 rounded-2xl bg-foreground group-hover:bg-primary transition-all duration-500 shadow-xl shadow-foreground/10">
+                                    <Shield className="w-5 h-5 text-primary-foreground" />
                                 </div>
                                 <div className="ml-4 flex flex-col">
-                                    <span className="text-lg font-black tracking-tight text-slate-900 leading-none">
+                                    <span className="text-lg font-bold tracking-tight text-foreground leading-none">
                                         JewelMatrix
                                     </span>
-                                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mt-1">
+                                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">
                                         Executive Command
                                     </span>
                                 </div>
                             </Link>
 
                             {/* Desktop Menu (2xl and above) */}
-                            <div className="hidden 2xl:flex items-center gap-2 bg-slate-100/60 p-1.5 rounded-2xl border border-slate-200/60">
+                            <div className="hidden 2xl:flex items-center gap-2 bg-muted/50 p-1.5 rounded-2xl border border-border">
                                 {menuItems.map((item) => {
                                     const isActive = item.href === '/admin'
                                         ? pathname === '/admin'
@@ -150,13 +145,13 @@ export default function AdminLayout({
                                             key={item.href}
                                             href={item.href}
                                             className={cn(
-                                                "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                                "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300",
                                                 isActive
-                                                    ? "bg-white text-indigo-600 shadow-sm border border-slate-200/60"
-                                                    : "text-slate-500 hover:text-indigo-600 hover:bg-white/50"
+                                                    ? "bg-background text-primary shadow-sm border border-border"
+                                                    : "text-muted-foreground hover:text-primary hover:bg-background/50"
                                             )}
                                         >
-                                            <item.icon className={cn("h-4 w-4", isActive ? "text-indigo-600" : "text-slate-400")} />
+                                            <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground/60")} />
                                             <span>{item.label}</span>
                                         </Link>
                                     );
@@ -193,10 +188,10 @@ export default function AdminLayout({
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                                        "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
                                         isActive
-                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
-                                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                                            ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     )}
                                 >
                                     <item.icon className={cn("h-3.5 w-3.5", isActive ? "text-white" : "text-slate-400")} />
@@ -210,7 +205,7 @@ export default function AdminLayout({
 
             {/* Main Content Area */}
             <main className="flex-1 pt-44 2xl:pt-36 pb-20">
-                <div className="admin-container animate-in">
+                <div className="admin-container">
                     {children}
                 </div>
             </main>

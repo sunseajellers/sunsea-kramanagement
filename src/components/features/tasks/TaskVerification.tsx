@@ -7,7 +7,7 @@ import {
     CheckCircle2,
     Loader2
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'react-hot-toast'
@@ -71,110 +71,111 @@ export default function TaskVerification() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 gap-6">
-                <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-                <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Scanning Verification Queue...</p>
+            <div className="flex flex-col items-center justify-center py-32 gap-6">
+                <Loader2 className="w-14 h-14 animate-spin text-primary/40" />
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Checking for new work...</p>
             </div>
         )
     }
 
     if (tasks.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 gap-6 text-center">
-                <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center">
-                    <CheckCircle2 className="w-10 h-10 text-slate-200" />
+            <div className="flex flex-col items-center justify-center py-32 gap-6 text-center">
+                <div className="w-24 h-24 rounded-[3.5rem] bg-muted/30 flex items-center justify-center">
+                    <CheckCircle2 className="w-10 h-10 text-muted-foreground/20" />
                 </div>
-                <div>
-                    <h3 className="text-lg font-black text-slate-900">Queue Empty</h3>
-                    <p className="text-slate-400 text-sm font-medium mt-1">All submitted tasks have been processed.</p>
+                <div className="space-y-2">
+                    <h3 className="text-xl font-black text-primary uppercase tracking-tight">All caught up!</h3>
+                    <p className="text-muted-foreground/60 text-sm font-medium">All submitted work has been approved or reviewed.</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in">
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="section-title">Verification Protocol</h2>
-                    <p className="section-subtitle">Awaiting administrative validation and quality clearance</p>
+                    <h2 className="section-title">Work Approvals</h2>
+                    <p className="section-subtitle">Review and approve work submitted by your team members</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-10">
                 {tasks.map(task => (
                     <div
                         key={task.id}
-                        className="glass-panel p-8 flex flex-col lg:flex-row gap-8 items-start justify-between group"
+                        className="glass-panel p-0 flex flex-col lg:flex-row items-stretch border-border/40 overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500"
                     >
-                        <div className="space-y-6 flex-1 w-full">
-                            <div className="flex items-center gap-3">
-                                <span className="inline-flex h-6 px-2.5 items-center rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
-                                    {task.taskNumber || 'REQ-ALPHA'}
+                        <div className="p-10 space-y-8 flex-1">
+                            <div className="flex items-center gap-4">
+                                <span className="inline-flex h-7 px-4 items-center rounded-xl bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-sm">
+                                    {task.taskNumber || 'TASK'}
                                 </span>
                                 <span className={cn(
-                                    "inline-flex h-6 px-2.5 items-center rounded-lg text-[10px] font-black uppercase tracking-widest border shadow-sm",
-                                    task.priority === 'critical' ? "bg-rose-50 text-rose-700 border-rose-100" :
-                                        task.priority === 'high' ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-slate-50 text-slate-700 border-slate-200"
+                                    "inline-flex h-7 px-4 items-center rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm",
+                                    task.priority === 'critical' ? "bg-destructive/5 text-destructive border-destructive/10" :
+                                        task.priority === 'high' ? "bg-amber-500/5 text-amber-600 border-amber-500/10" : "bg-muted text-muted-foreground/60 border-border"
                                 )}>
-                                    {task.priority} PHASE
+                                    {task.priority === 'critical' ? 'Urgent' : task.priority} Priority
                                 </span>
                             </div>
 
-                            <div className="space-y-3">
-                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">
+                            <div className="space-y-4">
+                                <h3 className="text-2xl font-black text-primary uppercase tracking-tight group-hover:text-secondary transition-colors">
                                     {task.title}
                                 </h3>
-                                <div className="flex items-center gap-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                                    <span className="flex items-center gap-2 italic">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                        Personnel: <span className="text-slate-900">{task.assignedTo?.join(', ') || 'UNASSIGNED'}</span>
+                                <div className="flex flex-wrap items-center gap-8 text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
+                                    <span className="flex items-center gap-2.5">
+                                        <div className="w-2 h-2 rounded-full bg-border" />
+                                        Assigned To: <span className="text-primary">{task.assignedTo?.join(', ') || 'Nobody'}</span>
                                     </span>
-                                    <span className="flex items-center gap-2 italic">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                        Target: <span className="text-slate-900">{new Date(task.dueDate).toLocaleDateString()}</span>
+                                    <span className="flex items-center gap-2.5">
+                                        <div className="w-2 h-2 rounded-full bg-border" />
+                                        Due Date: <span className="text-primary">{new Date(task.dueDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Evidence Vault */}
-                            <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100/80 relative overflow-hidden group/proof">
-                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/proof:opacity-10 transition-opacity">
-                                    <CheckCircle2 className="w-12 h-12" />
+                            {/* Evidence Box */}
+                            <div className="bg-muted/30 p-8 rounded-[2.5rem] border border-border/40 relative overflow-hidden group/proof transition-colors hover:bg-muted/50">
+                                <div className="absolute top-0 right-0 p-8 opacity-5 transition-opacity group-hover/proof:opacity-10">
+                                    <CheckCircle2 className="w-16 h-16" />
                                 </div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Manifest Evidence</p>
-                                <p className="text-sm font-medium text-slate-700 leading-relaxed italic pr-12">
-                                    "{task.proofOfWork || 'No specific textual evidence provided for this submission cycle.'}"
+                                <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.3em] mb-4">Team Member Notes</p>
+                                <p className="text-sm font-medium text-primary leading-relaxed italic pr-12">
+                                    "{task.proofOfWork || 'No notes provided with this submission.'}"
                                 </p>
                                 {task.proofLink && (
-                                    <a
-                                        href={task.proofLink}
-                                        target="_blank"
-                                        className="mt-6 inline-flex items-center px-4 py-2 bg-white rounded-xl border border-slate-200 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
-                                    >
-                                        Inspect External Document
-                                    </a>
+                                    <div className="mt-8">
+                                        <a
+                                            href={task.proofLink}
+                                            target="_blank"
+                                            className="inline-flex items-center px-6 py-3 bg-white rounded-2xl border border-border text-[10px] font-black text-secondary uppercase tracking-[0.2em] hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
+                                        >
+                                            View Attached Link
+                                        </a>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Tactical Controls */}
-                        <div className="flex lg:flex-col gap-3 shrink-0 w-full lg:w-48 pt-2">
-                            <Button
-                                variant="outline"
+                        {/* Controls Sidebar */}
+                        <div className="lg:w-72 bg-muted/20 border-l border-border/20 p-10 flex flex-col gap-4 justify-center">
+                            <button
                                 onClick={() => setRejectingTask(task)}
                                 disabled={!!verifying}
-                                className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-rose-600 hover:bg-rose-50 border-2 border-rose-100 hover:border-rose-200 transition-all shadow-sm"
+                                className="w-full h-16 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] text-destructive hover:bg-destructive/5 border-2 border-destructive/10 hover:border-destructive/30 transition-all shadow-sm active:translate-y-0.5"
                             >
-                                Request Revision
-                            </Button>
-                            <Button
+                                Needs Changes
+                            </button>
+                            <button
                                 onClick={() => handleVerify(task.id)}
                                 disabled={!!verifying}
-                                className="flex-1 h-14 btn-primary"
+                                className="w-full h-16 btn-primary shadow-xl shadow-primary/10"
                             >
-                                {verifying === task.id ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Authorize Completion'}
-                            </Button>
+                                {verifying === task.id ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Approve Work'}
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -182,39 +183,38 @@ export default function TaskVerification() {
 
             {/* Rejection Interface Overlay */}
             <Dialog open={!!rejectingTask} onOpenChange={(open) => !open && setRejectingTask(null)}>
-                <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-                    <div className="bg-gradient-to-br from-rose-600 to-rose-700 px-8 py-10 text-white relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <CheckCircle2 className="w-24 h-24 rotate-12" />
+                <DialogContent className="sm:max-w-[540px] p-0 overflow-hidden border-none rounded-[3.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+                    <div className="bg-destructive px-12 py-16 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-12 opacity-10">
+                            <CheckCircle2 className="w-32 h-32 rotate-12" />
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight uppercase">Correction Directive</h2>
-                        <p className="text-rose-100 text-[10px] font-black mt-1 uppercase tracking-widest opacity-80">Define specific parameters for revision</p>
+                        <h2 className="text-4xl font-black tracking-tight uppercase mb-2">Request Changes</h2>
+                        <p className="text-rose-100 text-[10px] font-black uppercase tracking-[0.4em]">Tell the team member what needs fixing</p>
                     </div>
 
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Deficiency Notes</label>
+                    <div className="p-12 space-y-10 bg-white">
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">What needs to change?</label>
                             <Textarea
-                                placeholder="Specify exact reasons for revision request..."
-                                className="form-input min-h-[140px] pt-4 resize-none"
+                                placeholder="Write your instructions for the team member here..."
+                                className="form-input min-h-[160px] p-6 resize-none"
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
                             />
                         </div>
-                        <div className="flex gap-4 pt-2">
-                            <Button
-                                variant="ghost"
+                        <div className="flex gap-6 pt-4">
+                            <button
                                 onClick={() => setRejectingTask(null)}
-                                className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
+                                className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all"
                             >
-                                Abort
-                            </Button>
-                            <Button
+                                Cancel
+                            </button>
+                            <button
                                 onClick={handleReject}
-                                className="flex-1 h-14 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-rose-100"
+                                className="flex-1 h-16 bg-destructive text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-destructive/20 active:translate-y-0.5"
                             >
-                                Issue Directive
-                            </Button>
+                                Send Request
+                            </button>
                         </div>
                     </div>
                 </DialogContent>

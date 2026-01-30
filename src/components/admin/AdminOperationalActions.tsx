@@ -48,27 +48,29 @@ export default function AdminOperationalActions() {
             <button
                 onClick={handleRunAudit}
                 disabled={auditing}
-                className="h-14 px-8 rounded-2xl border-2 border-slate-100 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 transition-all font-black text-[11px] uppercase tracking-widest flex items-center gap-3 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                title="Checks for overdue items and alerts team members"
+                className="btn-secondary h-14"
             >
                 {auditing ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                     <ShieldAlert className="w-5 h-5" />
                 )}
-                Analyze Constraints
+                System Health Check
             </button>
 
             <button
                 onClick={handleRunPulse}
                 disabled={pulsing}
-                className="btn-primary h-14 px-8 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                title="Updates performance scores based on recent work"
+                className="btn-primary h-14"
             >
                 {pulsing ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                     <Zap className="w-5 h-5" />
                 )}
-                Pulse Logic Engine
+                Refresh All Scores
             </button>
         </div>
     )

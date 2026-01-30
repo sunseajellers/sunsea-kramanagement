@@ -9,9 +9,15 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function isAdmin() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (getUserData().isAdmin == true || 
+         getUserData().isAdmin == 'true' || 
+         'admin' in getUserData().roleIds);
     }
 
     function isOwner(userId) {
@@ -25,32 +31,59 @@ service cloud.firestore {
     // Users: Users can read all (directory), update own profile. Admins can manage all.
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated(); // For signup
+      allow create: if isAuthenticated();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
-    // Tasks: Collaborative. 
-    // Ideally: Assignees can update status/progress. Admins can do all.
-    // Current: Open to all authenticated for internal collaboration.
+    // Tasks: Collaborative but restricted updates.
     match /tasks/{taskId} {
-      allow read, write: if isAuthenticated();
-      match /checklist/{itemId} { allow read, write: if isAuthenticated(); }
-      match /activityLog/{logId} { allow read, write: if isAuthenticated(); }
-      match /comments/{commentId} { allow read, write: if isAuthenticated(); }
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() || 
+                      (request.auth.uid in resource.data.assignedTo) || 
+                      (request.auth.uid == resource.data.assignedBy);
+      allow delete: if isAdmin();
+
+      // Subcollections follow parent restriction or specific logic
+      match /checklist/{itemId} { 
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || (request.auth.uid in get(/databases/$(database)/documents/tasks/$(taskId)).data.assignedTo);
+      }
+      match /activityLog/{logId} { 
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAdmin();
+      }
+      match /comments/{commentId} { 
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
     }
     
-    // Tickets: Collaborative.
+    // Tickets: Privacy for requester and assignee
     match /tickets/{ticketId} {
-      allow read, write: if isAuthenticated();
-      match /comments/{commentId} { allow read, write: if isAuthenticated(); }
+      allow read: if isAdmin() || 
+                   resource.data.requesterId == request.auth.uid || 
+                   resource.data.assignedTo == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() || 
+                      resource.data.requesterId == request.auth.uid || 
+                      resource.data.assignedTo == request.auth.uid;
+      allow delete: if isAdmin();
+      
+      match /comments/{commentId} { 
+        allow read: if isAdmin() || 
+                     get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid || 
+                     get(/databases/$(database)/documents/tickets/$(ticketId)).data.assignedTo == request.auth.uid;
+        allow write: if isAuthenticated();
+      }
     }
     
     // ========================================
     // ADMIN / CONFIG (PROTECTED)
     // ========================================
     
-    // Departments & Teams - Managed by Admin/Strategies
     match /departments/{deptId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
@@ -61,7 +94,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // System Config
     match /config/{docId} { 
       allow read: if isAuthenticated();
       allow write: if isAdmin(); 
@@ -75,35 +107,93 @@ service cloud.firestore {
     // ========================================
     // PERFORMANCE MODULES
     // ========================================
-    match /kras/{kraId} { allow read, write: if isAuthenticated(); }
-    match /kraTemplates/{templateId} { allow read, write: if isAuthenticated(); }
-    match /kpis/{kpiId} { allow read, write: if isAuthenticated(); } 
-    match /kpiTemplates/{templateId} { allow read, write: if isAuthenticated(); }
-    match /objectives/{objId} { allow read, write: if isAuthenticated(); }
-    match /keyResults/{krId} { allow read, write: if isAuthenticated(); }
-    match /performanceScores/{scoreId} { allow read: if isAuthenticated(); allow write: if isAdmin(); } // Scores are system-generated
-    match /performanceParameters/{paramId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    // These are critical business records
+    match /kras/{kraId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /kraTemplates/{templateId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /kpis/{kpiId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    } 
+    match /kpiTemplates/{templateId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /objectives/{objId} { 
+      allow read: if isAuthenticated(); 
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAdmin() || resource.data.ownerId == request.auth.uid; 
+      allow delete: if isAdmin();
+    }
+    match /keyResults/{krId} { 
+      allow read: if isAuthenticated(); 
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() || get(/databases/$(database)/documents/objectives/$(resource.data.objectiveId)).data.ownerId == request.auth.uid; 
+      allow delete: if isAdmin();
+    }
+    match /performanceScores/{scoreId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /performanceParameters/{paramId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    
+    match /weeklyReports/{reportId} {
+      allow read: if isAdmin() || resource.data.userId == request.auth.uid;
+      allow write: if isAdmin();
+    }
+    
+    match /teamWeeklyReports/{reportId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
 
     // ========================================
     // KNOWLEDGE BASE
     // ========================================
-    match /learningHub/{docId} { allow read, write: if isAuthenticated(); }
-    match /articles/{articleId} { allow read, write: if isAuthenticated(); }
-    match /categories/{catId} { allow read, write: if isAuthenticated(); }
-    match /faqs/{faqId} { allow read, write: if isAuthenticated(); }
+    match /learningHub/{docId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /articles/{articleId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /categories/{catId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /faqs/{faqId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
 
     // ========================================
     // LOGS & NOTIFICATIONS
     // ========================================
     match /notifications/{notifId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated(); // For marking as read
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource.data.userId); 
+      allow delete: if isOwner(resource.data.userId);
     }
 
     match /activityLogs/{logId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated(); // Client-side logging allowed
-      allow update, delete: if isAdmin(); // Audit logs should be immutable
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
     
     match /taskUpdates/{updateId} {
@@ -115,15 +205,40 @@ service cloud.firestore {
     // ========================================
     // MISC
     // ========================================
-    match /holidays/{holidayId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /scoringWeights/{weightId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /taskRevisions/{revId} { allow read, write: if isAuthenticated(); }
-    match /bulkTaskOperations/{opId} { allow read, write: if isAuthenticated(); }
-    match /misReports/{reportId} { allow read, write: if isAuthenticated(); }
+    match /filterPresets/{presetId} {
+      allow read, write: if isOwner(resource.data.userId) || isOwner(request.resource.data.userId);
+    }
+    match /holidays/{holidayId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /scoringWeights/{weightId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+    match /taskRevisions/{revId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAuthenticated(); 
+    }
+    match /bulkTaskOperations/{opId} { 
+      allow read: if isAdmin(); 
+      allow write: if isAdmin(); 
+    }
+    match /misReports/{reportId} { 
+      allow read: if isAdmin() || resource.data.userId == request.auth.uid; 
+      allow write: if isAdmin(); 
+    }
+    match /reminders/{reminderId} {
+      allow read, write: if isOwner(resource.data.userId) || isOwner(request.resource.data.userId) || isAdmin();
+    }
+    match /taskTemplates/{templateId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
     
     // Catch-all
     match /{path=**} {
-      allow read, write: if false; // Default deny for everything else
+      allow read, write: if false;
     }
   }
 }

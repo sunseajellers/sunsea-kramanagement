@@ -4,9 +4,17 @@ import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { User } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import toast from 'react-hot-toast'
 import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import {
@@ -267,98 +275,108 @@ export default function UserManagement() {
     if (loading) {
         return (
             <div className="page-container flex-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center animate-pulse">
-                        <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <p className="text-sm text-gray-400 font-medium">Loading users...</p>
+                <div className="flex flex-col items-center gap-6">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary/40" />
+                    <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Loading people list...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in">
             {/* Header */}
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h1 className="section-title">Personnel Command</h1>
-                    <p className="section-subtitle">Manage organization structure, access vectors and member identities</p>
+                    <h1 className="section-title">People Management</h1>
+                    <p className="section-subtitle">Manage everyone in your team and their access levels</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
+                <div className="flex items-center gap-4">
+                    <button
                         onClick={exportUsers}
-                        className="h-12 w-12 p-0 rounded-2xl border-2 border-slate-100 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm"
+                        className="btn-secondary h-12 w-12 p-0 flex items-center justify-center rounded-xl"
+                        title="Download as CSV"
                     >
                         <Download className="h-5 w-5" />
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                         onClick={() => setCreateDialogOpen(true)}
-                        className="btn-primary h-12 px-6"
+                        className="btn-primary h-12 px-8"
                     >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Instate Personnel
-                    </Button>
+                        <UserPlus className="h-5 w-5 mr-3" />
+                        Add New Person
+                    </button>
                 </div>
             </div>
 
-            {/* Strategic Filters */}
-            <div className="glass-panel p-6 flex items-center gap-4">
-                <div className="flex-1 relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                    <input
-                        placeholder="Scan registry by name, identity or email vector..."
+            {/* Filters */}
+            <div className="glass-panel p-8 flex items-center gap-6">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+                    <Input
+                        placeholder="Search by name or email address..."
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        className="form-input pl-12 h-12"
+                        className="pl-10 h-12 bg-white/50"
                     />
                 </div>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                        className="form-input h-12 px-5 text-[10px] font-black uppercase tracking-widest appearance-none min-w-[140px]"
-                    >
-                        <option value="all">Every Status</option>
-                        <option value="active">Operational</option>
-                        <option value="inactive">Suspended</option>
-                    </select>
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="form-input h-12 px-5 text-[10px] font-black uppercase tracking-widest appearance-none min-w-[140px]"
-                    >
-                        <option value="name">Sort: Identity</option>
-                        <option value="email">Sort: Liaison</option>
-                        <option value="joined">Sort: Onboarded</option>
-                    </select>
-                    <Button
-                        variant="ghost"
-                        size="icon"
+                <div className="flex items-center gap-4">
+                    <div className="w-[180px]">
+                        <Select
+                            value={statusFilter}
+                            onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
+                        >
+                            <SelectTrigger className="h-12 bg-white/50 border-input">
+                                <SelectValue placeholder="Any Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Any Status</SelectItem>
+                                <SelectItem value="active">Active Now</SelectItem>
+                                <SelectItem value="inactive">Suspended</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="w-[180px]">
+                        <Select
+                            value={sortBy}
+                            onValueChange={(v) => setSortBy(v)}
+                        >
+                            <SelectTrigger className="h-12 bg-white/50 border-input">
+                                <SelectValue placeholder="Sort by Name" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="name">Sort by Name</SelectItem>
+                                <SelectItem value="email">Sort by Email</SelectItem>
+                                <SelectItem value="joined">Sort by Date</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <button
                         onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className="h-12 w-12 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-600 transition-all"
+                        className="h-12 w-12 rounded-2xl bg-muted/50 border border-border/50 hover:bg-muted text-primary transition-all flex items-center justify-center font-bold"
                     >
                         {sortOrder === 'asc' ? '↑' : '↓'}
-                    </Button>
+                    </button>
                 </div>
             </div>
 
-            {/* Personnel Ledger Table */}
-            <div className="glass-panel p-0 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-indigo-600" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            {filteredUsers.length} MEMBERS REGISTERED
+            {/* People List */}
+            <div className="glass-panel p-0 flex flex-col overflow-hidden shadow-2xl shadow-black/[0.02]">
+                <div className="flex items-center justify-between px-10 py-8 border-b border-border/40 bg-muted/30">
+                    <div className="flex items-center gap-4">
+                        <Users className="w-6 h-6 text-primary/60" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">
+                            {filteredUsers.length} Team Members
                         </span>
                     </div>
-                    <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Master Select</span>
+                    <div className="flex items-center gap-5 bg-white px-6 py-3 rounded-2xl border border-border/50 shadow-sm">
+                        <span className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-widest">Select All</span>
                         <Checkbox
                             checked={bulkSelection.isAllSelected}
                             onCheckedChange={() => bulkSelection.toggleAll()}
-                            className="w-5 h-5 rounded-md border-slate-200"
+                            className="w-5 h-5 rounded-lg border-border"
                         />
                     </div>
                 </div>
@@ -366,97 +384,97 @@ export default function UserManagement() {
                 <div className="overflow-x-auto scroll-panel">
                     <table className="w-full border-collapse min-w-[1000px]">
                         <thead>
-                            <tr className="bg-slate-50/30">
-                                <th className="px-8 py-5 text-left w-16"></th>
-                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Personnel Profile</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Identity ID</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Tactical Status</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Strategic Sector</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Onboarded</th>
-                                <th className="px-8 py-5 w-20"></th>
+                            <tr className="border-b border-border/20">
+                                <th className="px-10 py-6 text-left w-20"></th>
+                                <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Full Name</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Employee ID</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Status</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Department</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Joined On</th>
+                                <th className="px-10 py-6 w-24"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-border/20">
                             {paginatedUsers.length > 0 ? (
                                 paginatedUsers.map((u) => (
                                     <tr key={u.id} className={cn(
-                                        "group transition-all duration-300",
-                                        bulkSelection.isSelected(u.id) ? 'bg-indigo-50/50' : 'hover:bg-slate-50/30'
+                                        "group table-row",
+                                        bulkSelection.isSelected(u.id) && 'bg-primary/[0.03]'
                                     )}>
-                                        <td className="px-8 py-6">
+                                        <td className="px-10 py-8">
                                             <div className="flex items-center justify-center">
                                                 <Checkbox
                                                     checked={bulkSelection.isSelected(u.id)}
                                                     onCheckedChange={() => bulkSelection.toggleSelection(u.id)}
-                                                    className="w-5 h-5 rounded-md border-slate-200"
+                                                    className="w-5 h-5 rounded-lg border-border"
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-xl shadow-indigo-100 ring-4 ring-white">
+                                        <td className="px-10 py-8">
+                                            <div className="flex items-center gap-5">
+                                                <div className="w-14 h-14 rounded-3xl bg-primary text-white flex items-center justify-center font-black text-sm shadow-xl shadow-primary/20 ring-4 ring-white">
                                                     {u.fullName.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">{u.fullName}</p>
-                                                    <p className="text-[11px] text-slate-400 font-medium italic">{u.email}</p>
+                                                    <p className="text-lg font-black text-primary uppercase tracking-tight group-hover:text-secondary transition-colors">{u.fullName}</p>
+                                                    <p className="text-xs text-muted-foreground/60 font-medium">{u.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <span className="text-[11px] font-black text-slate-600 font-mono tracking-widest bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                        <td className="px-10 py-8 text-center">
+                                            <span className="text-[11px] font-black text-primary font-mono tracking-widest bg-muted px-3 py-1.5 rounded-xl border border-border shadow-sm">
                                                 {(u as any).employeeId || 'NX-000'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
+                                        <td className="px-10 py-8 text-center">
                                             <span className={cn(
                                                 "status-badge",
                                                 u.isActive !== false ? "status-badge-success" : "status-badge-danger"
                                             )}>
-                                                {u.isActive !== false ? 'OPERATIONAL' : 'SUSPENDED'}
+                                                {u.isActive !== false ? 'ACTIVE' : 'SUSPENDED'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <Badge variant="outline" className="border-indigo-100 text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50/30 rounded-xl px-3 py-1.5">
-                                                {(u as any).department || 'GENERAL SERVICES'}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <span className="text-[11px] text-slate-400 font-black uppercase tracking-tighter">
-                                                {u.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                                        <td className="px-10 py-8 text-center">
+                                            <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
+                                                {(u as any).department || 'General'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
+                                        <td className="px-10 py-8 text-center">
+                                            <span className="text-xs text-muted-foreground font-bold uppercase">
+                                                {u.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </span>
+                                        </td>
+                                        <td className="px-10 py-8 text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-slate-200">
-                                                        <MoreHorizontal className="h-5 w-5 text-slate-400" />
-                                                    </Button>
+                                                    <button className="h-12 w-12 flex items-center justify-center rounded-2xl opacity-0 group-hover:opacity-100 transition-all border border-border/50 hover:bg-muted">
+                                                        <MoreHorizontal className="h-6 w-6 text-muted-foreground" />
+                                                    </button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-64 p-2 rounded-[2rem] border-none shadow-2xl animate-in fade-in slide-in-from-top-2">
-                                                    <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-4 py-3">Vector Controls</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator className="bg-slate-50 mx-2" />
+                                                <DropdownMenuContent align="end" className="w-64 p-3 rounded-[2.5rem] border-none shadow-2xl animate-in fade-in slide-in-from-top-2">
+                                                    <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 px-5 py-4">Manage Access</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator className="bg-muted mx-3" />
                                                     <DropdownMenuItem
                                                         onClick={() => updateUser(u.id, { isAdmin: !u.isAdmin })}
-                                                        className="rounded-xl text-[11px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer transition-colors"
+                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
                                                     >
-                                                        <Shield className="h-4 w-4 opacity-70" />
-                                                        {u.isAdmin ? 'Revoke High Access' : 'Authorize High Access'}
+                                                        <Shield className="h-5 w-5 opacity-40" />
+                                                        {u.isAdmin ? 'Remove Admin' : 'Make Admin'}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onClick={() => updateUser(u.id, { isActive: u.isActive === false })}
-                                                        className="rounded-xl text-[11px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 focus:bg-slate-50 cursor-pointer transition-colors"
+                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-muted cursor-pointer transition-colors"
                                                     >
-                                                        <Activity className="h-4 w-4 opacity-70" />
-                                                        {u.isActive === false ? 'Activate Identity' : 'Suspend Identity'}
+                                                        <Activity className="h-5 w-5 opacity-40" />
+                                                        {u.isActive === false ? 'Unsuspend' : 'Suspend Account'}
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-slate-50 mx-2" />
+                                                    <DropdownMenuSeparator className="bg-muted mx-3" />
                                                     <DropdownMenuItem
                                                         onClick={() => handleDeleteUser(u.id, u.fullName)}
-                                                        className="rounded-xl text-[11px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer transition-colors"
+                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer transition-colors"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
-                                                        Expunge Record
+                                                        <Trash2 className="h-5 w-5" />
+                                                        Delete Permanently
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -466,12 +484,12 @@ export default function UserManagement() {
                             ) : (
                                 <tr>
                                     <td colSpan={7} className="py-32 text-center">
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center border border-slate-100">
-                                                <Users className="w-10 h-10 text-slate-200" />
+                                        <div className="flex flex-col items-center gap-6">
+                                            <div className="w-24 h-24 rounded-[3.5rem] bg-muted flex items-center justify-center">
+                                                <Users className="w-10 h-10 text-muted-foreground/20" />
                                             </div>
-                                            <p className="text-lg font-black text-slate-400 uppercase tracking-tight">Personnel Not Located</p>
-                                            <p className="text-sm text-slate-400 font-medium">Refine search vector or initialize new onboarding</p>
+                                            <p className="text-xl font-black text-primary/30 uppercase tracking-tight">No people found</p>
+                                            <p className="text-sm text-muted-foreground/40 font-medium">Try a different search or add a new person</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -480,80 +498,74 @@ export default function UserManagement() {
                     </table>
                 </div>
 
-                {/* Pagination Matrix */}
+                {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-8 py-6 border-t border-slate-100 bg-slate-50/30">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            DATA GRID PAGE {currentPage} OF {totalPages}
+                    <div className="flex items-center justify-between px-10 py-8 border-t border-border/20 bg-muted/20">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">
+                            Page {currentPage} of {totalPages}
                         </span>
-                        <div className="flex items-center gap-1.5">
-                            <Button
-                                variant="ghost"
-                                size="icon"
+                        <div className="flex items-center gap-2">
+                            <button
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
-                                className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 disabled:opacity-30"
+                                className="h-12 w-12 flex items-center justify-center rounded-2xl hover:bg-white border border-transparent hover:border-border disabled:opacity-20 transition-all font-bold"
                             >
-                                <ChevronLeft className="h-5 w-5" />
-                            </Button>
+                                <ChevronLeft className="h-6 w-6" />
+                            </button>
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                 const page = i + 1
                                 return (
-                                    <Button
+                                    <button
                                         key={page}
-                                        variant={currentPage === page ? "default" : "ghost"}
-                                        size="sm"
                                         onClick={() => setCurrentPage(page)}
                                         className={cn(
-                                            "h-10 w-10 rounded-xl text-[11px] font-black transition-all",
+                                            "h-12 w-12 rounded-2xl text-xs font-black transition-all",
                                             currentPage === page
-                                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100"
-                                                : "text-slate-500 hover:bg-white hover:border-slate-200 border border-transparent"
+                                                ? "bg-primary text-white shadow-xl shadow-primary/20"
+                                                : "text-muted-foreground hover:bg-white border border-transparent hover:border-border"
                                         )}
                                     >
                                         {page}
-                                    </Button>
+                                    </button>
                                 )
                             })}
-                            <Button
-                                variant="ghost"
-                                size="icon"
+                            <button
                                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
-                                className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 disabled:opacity-30"
+                                className="h-12 w-12 flex items-center justify-center rounded-2xl hover:bg-white border border-transparent hover:border-border disabled:opacity-20 transition-all font-bold"
                             >
-                                <ChevronRight className="h-5 w-5" />
-                            </Button>
+                                <ChevronRight className="h-6 w-6" />
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Mass Control Interface */}
+            {/* Bulk Actions */}
             <BulkActionBar
                 selectedCount={bulkSelection.selectedCount}
                 onClear={bulkSelection.clearSelection}
                 actions={[
                     {
-                        label: 'Suspend Active',
+                        label: 'Suspend Selected',
                         icon: EyeOff,
                         onClick: () => handleBulkDeactivate(false),
                         disabled: bulkActionLoading
                     },
                     {
-                        label: 'Authorize Admin',
+                        label: 'Make Admin',
                         icon: Shield,
                         onClick: () => handleBulkRoleChange(true),
                         disabled: bulkActionLoading
                     },
                     {
-                        label: 'Revoke Admin',
+                        label: 'Remove Admin',
                         icon: UserCheck,
                         onClick: () => handleBulkRoleChange(false),
                         disabled: bulkActionLoading
                     },
                     {
-                        label: 'Expunge Records',
+                        label: 'Delete Selected',
                         icon: Trash2,
                         onClick: handleBulkDelete,
                         disabled: bulkActionLoading,
@@ -562,148 +574,145 @@ export default function UserManagement() {
                 ]}
             />
 
-            {/* Personnel Onboarding Overlay */}
+            {/* Add Person Dialog */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogContent className="sm:max-w-[540px] p-0 overflow-hidden border-none rounded-[3rem] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-800 px-10 py-12 text-white relative">
-                        <div className="absolute top-0 right-0 p-10 opacity-10">
-                            <UserPlus className="w-32 h-32 rotate-6" />
-                        </div>
-                        <h2 className="text-3xl font-black tracking-tight uppercase">Instate Staff</h2>
-                        <p className="text-indigo-100 text-[10px] font-black mt-1 uppercase tracking-[0.3em] opacity-80">Initialize internal liaison access</p>
-                    </div>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>New Person</DialogTitle>
+                        <DialogDescription>Add a new team member to the portal</DialogDescription>
+                    </DialogHeader>
 
-                    <div className="p-10 space-y-8 bg-white overflow-y-auto max-h-[75vh] scroll-panel">
-                        {/* Primary Identity */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Legal Nomenclature *</label>
-                                <input
-                                    placeholder="Ex: Alexander Vanguard"
+                    <div className="grid gap-6 py-4">
+                        {/* Name & ID */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="fullName">Full Name</Label>
+                                <Input
+                                    id="fullName"
+                                    placeholder="Ex: John Smith"
                                     value={newUserName}
                                     onChange={(e) => setNewUserName(e.target.value)}
                                     disabled={createLoading}
-                                    className="form-input h-14"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Registry ID *</label>
-                                <input
-                                    placeholder="Ex: EMP-99X"
+                            <div className="grid gap-2">
+                                <Label htmlFor="employeeId">Employee ID</Label>
+                                <Input
+                                    id="employeeId"
+                                    placeholder="Ex: EMP101"
                                     value={newEmployeeId}
                                     onChange={(e) => setNewEmployeeId(e.target.value)}
                                     disabled={createLoading}
-                                    className="form-input h-14"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Liaison Email Vector *</label>
-                            <input
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <Input
+                                id="email"
                                 type="email"
-                                placeholder="name@organization.com"
+                                placeholder="name@company.com"
                                 value={newUserEmail}
                                 onChange={(e) => setNewUserEmail(e.target.value)}
                                 disabled={createLoading}
-                                className="form-input h-14"
                             />
                         </div>
 
-                        {/* Structural Vectors */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Strategic Sector</label>
-                                <select
+                        {/* Dept & Role */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Department</Label>
+                                <Select
                                     value={newDepartment}
-                                    onChange={(e) => setNewDepartment(e.target.value)}
+                                    onValueChange={(v) => setNewDepartment(v)}
                                     disabled={createLoading}
-                                    className="form-input h-14 appearance-none px-5"
                                 >
-                                    <option value="">Select Domain</option>
-                                    {departments.map(d => (
-                                        <option key={d.id} value={d.name}>{d.name}</option>
-                                    ))}
-                                    <option value="Sales">Sales Force</option>
-                                    <option value="Accounts">Capital Management</option>
-                                    <option value="IT">Systems Ops</option>
-                                    <option value="Operations">Tactical Hub</option>
-                                </select>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {departments.map(d => (
+                                            <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Operational Role</label>
-                                <input
-                                    placeholder="Ex: Mission Architect"
+                            <div className="grid gap-2">
+                                <Label htmlFor="position">Job Title</Label>
+                                <Input
+                                    id="position"
+                                    placeholder="Ex: Senior Designer"
                                     value={newPosition}
                                     onChange={(e) => setNewPosition(e.target.value)}
                                     disabled={createLoading}
-                                    className="form-input h-14"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Classification Vector</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {['full-time', 'part-time', 'contract'].map((type) => (
-                                    <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => setNewEmployeeType(type as any)}
-                                        className={cn(
-                                            "h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all duration-300",
-                                            newEmployeeType === type
-                                                ? "bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-100"
-                                                : "bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300"
-                                        )}
-                                    >
-                                        {type}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Secure Passkey *</label>
-                            <div className="relative group/pass">
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="MIN 8 CHARACTERS"
-                                    value={newUserPassword}
-                                    onChange={(e) => setNewUserPassword(e.target.value)}
+                        {/* Type & Password */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Account Type</Label>
+                                <Select
+                                    value={newEmployeeType}
+                                    onValueChange={(v: any) => setNewEmployeeType(v)}
                                     disabled={createLoading}
-                                    className="form-input h-14 pr-14"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 px-5 flex items-center text-slate-300 hover:text-indigo-600 transition-colors"
                                 >
-                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                </button>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="full-time">Full-Time</SelectItem>
+                                        <SelectItem value="part-time">Part-Time</SelectItem>
+                                        <SelectItem value="contract">Contractor</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        </div>
-
-                        <div className="flex gap-4 pt-4">
-                            <Button
-                                variant="ghost"
-                                onClick={() => setCreateDialogOpen(false)}
-                                disabled={createLoading}
-                                className="flex-1 h-16 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:bg-slate-50 transition-all"
-                            >
-                                Abort
-                            </Button>
-                            <Button
-                                onClick={handleCreateUser}
-                                disabled={createLoading}
-                                className="flex-1 h-16 btn-primary"
-                            >
-                                {createLoading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Authorize Entry'}
-                            </Button>
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password</Label>
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="Min 6 characters"
+                                        value={newUserPassword}
+                                        onChange={(e) => setNewUserPassword(e.target.value)}
+                                        disabled={createLoading}
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 px-3 flex items-center text-muted-foreground/40 hover:text-primary transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setCreateDialogOpen(false)}
+                            disabled={createLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleCreateUser}
+                            disabled={createLoading}
+                        >
+                            {createLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
+                            Create Account
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
     )
 }
+

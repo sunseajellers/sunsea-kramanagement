@@ -261,31 +261,37 @@ export async function getDatabaseStats(): Promise<{
     kras: number;
     reports: number;
 }> {
-    try {
-        const [users, teams, tasks, kras, reports] = await Promise.all([
-            getDocs(collection(db, 'users')),
-            getDocs(collection(db, 'teams')),
-            getDocs(collection(db, 'tasks')),
-            getDocs(collection(db, 'kras')),
-            getDocs(collection(db, 'weeklyReports'))
-        ]);
+    const stats = {
+        users: 0,
+        teams: 0,
+        tasks: 0,
+        kras: 0,
+        reports: 0
+    };
 
-        return {
-            users: users.size,
-            teams: teams.size,
-            tasks: tasks.size,
-            kras: kras.size,
-            reports: reports.size
-        };
+    try {
+        const collections = [
+            { name: 'users', key: 'users' },
+            { name: 'teams', key: 'teams' },
+            { name: 'tasks', key: 'tasks' },
+            { name: 'kras', key: 'kras' },
+            { name: 'weeklyReports', key: 'reports' }
+        ];
+
+        await Promise.all(collections.map(async (coll) => {
+            try {
+                const snap = await getDocs(collection(db, coll.name));
+                (stats as any)[coll.key] = snap.size;
+            } catch (error) {
+                console.error(`Permission denied or error fetching collection "${coll.name}":`, error);
+                // We keep it as 0 but log the specific collection that failed
+            }
+        }));
+
+        return stats;
     } catch (error) {
         console.error('Failed to get database stats:', error);
-        return {
-            users: 0,
-            teams: 0,
-            tasks: 0,
-            kras: 0,
-            reports: 0
-        };
+        return stats;
     }
 }
 

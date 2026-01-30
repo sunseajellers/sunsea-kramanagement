@@ -2,7 +2,7 @@
 // BACKGROUND INTELLIGENCE SERVICE - Pattern detection and predictive analytics
 // Runs as background jobs to detect issues before they become critical
 
-import { Task, Ticket } from '@/types';
+import { Task } from '@/types';
 import { adminDb } from './firebase-admin';
 import { EnhancedScoringService } from './enhancedScoringService';
 
@@ -112,8 +112,8 @@ export class IntelligenceService {
                 if (tasks.length === 0) continue;
 
                 // Calculate overdue metrics
-                const overdueTasks = tasks.filter(t => 
-                    t.status === 'overdue' || 
+                const overdueTasks = tasks.filter(t =>
+                    t.status === 'overdue' ||
                     (t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'completed')
                 );
 
@@ -142,15 +142,15 @@ export class IntelligenceService {
                 const avgDaysOverdue = overdueCount > 0 ? Math.round(totalDaysOverdue / overdueCount) : 0;
 
                 // Detect consecutive overdue tasks
-                const sortedTasks = tasks.sort((a, b) => 
+                const sortedTasks = tasks.sort((a, b) =>
                     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                 );
-                
+
                 let consecutiveOverdue = 0;
                 let maxConsecutive = 0;
-                
+
                 sortedTasks.forEach(task => {
-                    if (task.status === 'overdue' || 
+                    if (task.status === 'overdue' ||
                         (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed')) {
                         consecutiveOverdue++;
                         maxConsecutive = Math.max(maxConsecutive, consecutiveOverdue);
@@ -277,7 +277,7 @@ export class IntelligenceService {
                 const previousScore = previousScoreCount > 0 ? Math.round(previousScoreTotal / previousScoreCount) : 0;
 
                 // Calculate trend
-                const changePercentage = previousScore > 0 
+                const changePercentage = previousScore > 0
                     ? Math.round(((currentScore - previousScore) / previousScore) * 100)
                     : 0;
 

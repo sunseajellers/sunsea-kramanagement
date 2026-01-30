@@ -4,8 +4,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { getAllTeams, updateTeam, deleteTeam, createTeam, bulkUpdateTeams } from '@/lib/teamService';
 import { getAllUsers } from '@/lib/userService';
 import { Team, User } from '@/types';
-import { Plus, Search, Users, Trash2, Edit, Copy, ChevronLeft, ChevronRight, Shield, GitBranch } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Plus, Search, Users, Trash2, Edit, Copy, ChevronLeft, ChevronRight, Shield, GitBranch, Loader2 } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -199,50 +199,46 @@ export default function TeamManagement() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center animate-pulse">
-                        <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <p className="text-sm text-gray-400 font-medium">Loading teams...</p>
-                </div>
+            <div className="flex flex-col items-center justify-center py-32 gap-6">
+                <Loader2 className="w-14 h-14 animate-spin text-primary/40" />
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Loading teams...</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in">
             {/* Header */}
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="section-title">Team Hierarchy</h2>
-                    <p className="section-subtitle">Manage organizational units, member assignments, and reporting structures</p>
+                    <h2 className="section-title">Staff Teams</h2>
+                    <p className="section-subtitle">Manage your staff groups, team leaders, and who reports to whom</p>
                 </div>
-                <Button
+                <button
                     onClick={() => setCreateDialogOpen(true)}
-                    className="btn-primary h-12"
+                    className="btn-primary h-14 px-8"
                 >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Assemble Team
-                </Button>
+                    <Plus className="h-5 w-5 mr-3" />
+                    Create New Team
+                </button>
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 {[
-                    { label: 'Total Units', value: teams.length, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50/50' },
+                    { label: 'Total Teams', value: teams.length, icon: Users, color: 'text-primary', bg: 'bg-primary/5' },
                     { label: 'Active Teams', value: teams.filter(t => t.isActive !== false).length, icon: Shield, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-                    { label: 'Avg Force Size', value: teams.length > 0 ? Math.round(teams.reduce((acc, t) => acc + (t.memberIds?.length || 0), 0) / teams.length) : 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50/50' },
-                    { label: 'Sub-Structures', value: teams.filter(t => t.parentId).length, icon: GitBranch, color: 'text-amber-600', bg: 'bg-amber-50/50' }
+                    { label: 'Avg Team Size', value: teams.length > 0 ? Math.round(teams.reduce((acc, t) => acc + (t.memberIds?.length || 0), 0) / teams.length) : 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50/50' },
+                    { label: 'Sub-Teams', value: teams.filter(t => t.parentId).length, icon: GitBranch, color: 'text-amber-600', bg: 'bg-amber-50/50' }
                 ].map((stat, i) => (
-                    <div key={i} className="dashboard-card border-none">
+                    <div key={i} className="dashboard-card border-none bg-white p-8 group">
                         <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{stat.label}</p>
-                                <h3 className="text-3xl font-black text-slate-900">{stat.value}</h3>
+                            <div className="space-y-2">
+                                <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] leading-none mb-1">{stat.label}</p>
+                                <h3 className="text-4xl font-black text-primary transition-colors group-hover:text-secondary">{stat.value}</h3>
                             </div>
-                            <div className={cn("p-2.5 rounded-2xl shadow-sm", stat.bg, stat.color)}>
-                                <stat.icon className="h-5 w-5" />
+                            <div className={cn("p-4 rounded-[1.5rem] shadow-sm transition-transform group-hover:scale-110 duration-500", stat.bg, stat.color)}>
+                                <stat.icon className="h-6 w-6" />
                             </div>
                         </div>
                     </div>
@@ -250,34 +246,36 @@ export default function TeamManagement() {
             </div>
 
             {/* Search & Bulk Actions */}
-            <div className="glass-panel p-4 flex flex-col md:flex-row items-center gap-4">
+            <div className="glass-panel p-8 flex flex-col md:flex-row items-center gap-6">
                 <div className="flex-1 relative w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/40" />
                     <Input
-                        placeholder="Search teams by name or description..."
+                        placeholder="Search for a team by name..."
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        className="form-input pl-12 h-12 bg-slate-50/50 border-none shadow-none"
+                        className="form-input pl-14 h-14 bg-muted/20 border-none shadow-none"
                     />
                 </div>
                 {selectedTeams.size > 0 && (
-                    <div className="flex items-center gap-2 p-1 bg-slate-100/50 rounded-2xl border border-slate-200/60">
-                        <span className="text-[10px] font-black uppercase text-slate-400 px-3">{selectedTeams.size} selected</span>
-                        <Button size="sm" variant="ghost" onClick={() => handleBulkAction('activate')} className="h-9 px-4 text-xs font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl">
-                            Activate
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleBulkAction('deactivate')} className="h-9 px-4 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-xl">
-                            Suspend
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleBulkAction('delete')} className="h-9 px-4 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl">
-                            Disband
-                        </Button>
+                    <div className="flex items-center gap-4 p-2 bg-white rounded-2xl border border-border/50 shadow-sm">
+                        <span className="text-[10px] font-black uppercase text-muted-foreground/60 px-4">{selectedTeams.size} selected</span>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => handleBulkAction('activate')} className="h-10 px-5 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors">
+                                Activate
+                            </button>
+                            <button onClick={() => handleBulkAction('deactivate')} className="h-10 px-5 text-[10px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 rounded-xl transition-colors">
+                                Suspend
+                            </button>
+                            <button onClick={() => handleBulkAction('delete')} className="h-10 px-5 text-[10px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/5 rounded-xl transition-colors">
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Teams Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 pb-16">
                 {paginatedTeams.length > 0 ? (
                     paginatedTeams.map((team) => (
                         <div
@@ -292,36 +290,22 @@ export default function TeamManagement() {
                                 setSelectedTeams(newSelected);
                             }}
                             className={cn(
-                                "glass-panel-hover p-6 flex flex-col cursor-pointer group relative overflow-hidden",
-                                selectedTeams.has(team.id) ? 'ring-2 ring-indigo-500 border-indigo-200' : ''
+                                "glass-panel p-0 flex flex-col cursor-pointer group relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border-border/40",
+                                selectedTeams.has(team.id) ? 'ring-2 ring-primary border-primary/20 bg-primary/5' : ''
                             )}
                         >
-                            {/* Selected Indicator */}
-                            {selectedTeams.has(team.id) && (
-                                <div className="absolute top-0 right-0 p-3">
-                                    <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-white shadow-lg">
-                                        <Shield className="w-3 h-3 text-white" />
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex items-start justify-between mb-6">
-                                <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm">
-                                    <Users className="h-6 w-6" />
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-2 group-hover:translate-y-0">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 rounded-xl hover:bg-white/80 shadow-sm"
+                            <div className="p-10 flex flex-col h-full">
+                                {/* Actions Overlay */}
+                                <div className="absolute top-8 right-8 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 scale-90 group-hover:scale-100">
+                                    <button
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white shadow-xl border border-border hover:text-primary transition-all"
                                         onClick={(e) => { e.stopPropagation(); openEditDialog(team); }}
+                                        title="Edit Team"
                                     >
-                                        <Edit className="h-4 w-4 text-slate-600" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 rounded-xl hover:bg-white/80 shadow-sm"
+                                        <Edit className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white shadow-xl border border-border hover:text-primary transition-all"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setTeamForm({
@@ -333,64 +317,69 @@ export default function TeamManagement() {
                                             });
                                             setCreateDialogOpen(true);
                                         }}
+                                        title="Copy Team"
                                     >
-                                        <Copy className="h-4 w-4 text-slate-600" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 rounded-xl hover:bg-rose-50 text-rose-500 shadow-sm"
+                                        <Copy className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white shadow-xl border border-border hover:text-destructive transition-all"
                                         onClick={(e) => { e.stopPropagation(); openDeleteDialog(team); }}
+                                        title="Delete Team"
                                     >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{team.name}</h3>
-                            {team.description && (
-                                <p className="text-sm text-slate-500 font-medium line-clamp-2 mb-6 leading-relaxed">{team.description}</p>
-                            )}
-
-                            <div className="mt-auto space-y-4 pt-4 border-t border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200">
-                                        <Shield className="w-4 h-4 text-indigo-500" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Director</span>
-                                        <span className="text-xs font-bold text-slate-900">{getManagerName(team.managerId)}</span>
-                                    </div>
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                    <span className="status-badge status-badge-info">
-                                        {team.memberIds?.length || 0} Members
-                                    </span>
-                                    {team.parentId && (
-                                        <span className="status-badge status-badge-warning">
-                                            Sub-Team
-                                        </span>
+                                <div className="mb-8">
+                                    <div className="w-16 h-16 rounded-[1.75rem] bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/20 group-hover:bg-secondary transition-all duration-500 group-hover:scale-110 mb-6">
+                                        <Users className="h-7 w-7" />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-primary mb-3 leading-tight transition-colors uppercase tracking-tight group-hover:text-secondary">{team.name}</h3>
+                                    {team.description && (
+                                        <p className="text-sm text-muted-foreground/70 font-medium line-clamp-2 leading-relaxed italic">{team.description}</p>
                                     )}
-                                    <span className={cn(
-                                        "status-badge",
-                                        team.isActive !== false ? "status-badge-success" : "status-badge-danger"
-                                    )}>
-                                        {team.isActive !== false ? 'Operational' : 'Suspended'}
-                                    </span>
+                                </div>
+
+                                <div className="mt-auto space-y-6 pt-8 border-t border-border/20">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-2xl bg-muted/40 flex items-center justify-center border border-border/50 group-hover:border-secondary/30 transition-colors">
+                                            <Shield className="w-5 h-5 text-secondary" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] leading-none mb-1.5">Team Manager</span>
+                                            <span className="text-xs font-black text-primary uppercase tracking-tight">{getManagerName(team.managerId)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="status-badge bg-primary/5 text-primary border-primary/10">
+                                            {team.memberIds?.length || 0} Members
+                                        </span>
+                                        {team.parentId && (
+                                            <span className="status-badge bg-secondary/10 text-secondary border-secondary/20">
+                                                Sub-Team
+                                            </span>
+                                        )}
+                                        <span className={cn(
+                                            "status-badge",
+                                            team.isActive !== false ? "status-badge-success" : "status-badge-danger"
+                                        )}>
+                                            {team.isActive !== false ? 'ACTIVE' : 'SUSPENDED'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-full py-24 text-center">
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center">
-                                <Users className="w-10 h-10 text-slate-200" />
+                    <div className="col-span-full py-32 text-center">
+                        <div className="flex flex-col items-center gap-6">
+                            <div className="w-24 h-24 rounded-[3.5rem] bg-muted flex items-center justify-center">
+                                <Users className="w-10 h-10 text-muted-foreground/20" />
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-lg font-black text-slate-400">Tactical Units Not Found</p>
-                                <p className="text-sm text-slate-400 font-medium">Reset filters or initialize a new team structure</p>
+                            <div className="space-y-2">
+                                <p className="text-xl font-black text-primary/30 uppercase tracking-tight">No teams found</p>
+                                <p className="text-sm text-muted-foreground/40 font-medium">Try a different search or create a new team</p>
                             </div>
                         </div>
                     </div>
@@ -399,88 +388,83 @@ export default function TeamManagement() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-6 mt-8 border-t border-slate-100">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="flex items-center justify-between px-10 py-8 border-t border-border/20 bg-muted/20">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">
                         Page {currentPage} of {totalPages}
                     </span>
-                    <div className="flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
+                    <div className="flex items-center gap-2">
+                        <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="h-9 w-9 rounded-xl hover:bg-slate-100"
+                            className="h-12 w-12 flex items-center justify-center rounded-2xl hover:bg-white border border-transparent hover:border-border disabled:opacity-20 transition-all font-bold"
                         >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
+                            <ChevronLeft className="h-6 w-6" />
+                        </button>
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                             const page = i + 1;
                             return (
-                                <Button
+                                <button
                                     key={page}
-                                    variant={currentPage === page ? "default" : "ghost"}
-                                    size="sm"
                                     onClick={() => setCurrentPage(page)}
                                     className={cn(
-                                        "h-9 w-9 rounded-xl text-xs font-bold transition-all",
-                                        currentPage === page ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "text-slate-500 hover:bg-slate-50"
+                                        "h-12 w-12 rounded-2xl text-xs font-black transition-all",
+                                        currentPage === page ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-white border border-transparent hover:border-border"
                                     )}
                                 >
                                     {page}
-                                </Button>
+                                </button>
                             );
                         })}
-                        <Button
-                            variant="ghost"
-                            size="icon"
+                        <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="h-9 w-9 rounded-xl hover:bg-slate-100"
+                            className="h-12 w-12 flex items-center justify-center rounded-2xl hover:bg-white border border-transparent hover:border-border disabled:opacity-20 transition-all font-bold"
                         >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                            <ChevronRight className="h-6 w-6" />
+                        </button>
                     </div>
                 </div>
             )}
+
             {/* Create Team Dialog */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl">
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-8 py-10 text-white relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <Users className="w-24 h-24" />
+                <DialogContent>
+                    <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
+                            <Users className="w-48 h-48" />
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight">Create Team</h2>
-                        <p className="text-indigo-100 text-sm font-medium mt-1 uppercase tracking-widest opacity-80">Assemble a new unit</p>
+                        <h2 className="text-4xl font-black tracking-tight uppercase mb-2">New Team</h2>
+                        <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Create a new staff group</p>
                     </div>
 
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Team Identity *</label>
+                    <div className="p-12 space-y-10 bg-white">
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Name *</label>
                             <Input
                                 value={teamForm.name}
                                 onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                                placeholder="e.g. Design Operations"
-                                className="form-input"
+                                placeholder="e.g. Creative Design"
+                                className="form-input h-14"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission / Description</label>
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description</label>
                             <Textarea
                                 value={teamForm.description}
                                 onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
-                                placeholder="Describe the unit's core objectives..."
-                                className="form-input min-h-[100px] py-3 resize-none"
+                                placeholder="What does this team focus on?"
+                                className="form-input min-h-[120px] py-5 resize-none"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Lead Manager</label>
+                        <div className="grid grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Manager</label>
                                 <select
                                     value={teamForm.managerId}
                                     onChange={(e) => setTeamForm({ ...teamForm, managerId: e.target.value })}
-                                    className="form-input"
+                                    className="form-input h-14"
                                 >
-                                    <option value="">Select Lead</option>
+                                    <option value="">Select Manager</option>
                                     {users.map(manager => (
                                         <option key={manager.id} value={manager.id}>
                                             {manager.fullName}
@@ -488,14 +472,14 @@ export default function TeamManagement() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Parent Hierarchy</label>
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Parent Team</label>
                                 <select
                                     value={teamForm.parentId}
                                     onChange={(e) => setTeamForm({ ...teamForm, parentId: e.target.value })}
-                                    className="form-input"
+                                    className="form-input h-14"
                                 >
-                                    <option value="">Independent</option>
+                                    <option value="">Independent Team</option>
                                     {teams.map(team => (
                                         <option key={team.id} value={team.id}>
                                             {team.name}
@@ -504,13 +488,13 @@ export default function TeamManagement() {
                                 </select>
                             </div>
                         </div>
-                        <div className="flex gap-4 pt-4">
-                            <Button variant="ghost" onClick={() => setCreateDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-slate-500 hover:bg-slate-50">
+                        <div className="flex gap-6 pt-6">
+                            <button onClick={() => setCreateDialogOpen(false)} className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all">
                                 Cancel
-                            </Button>
-                            <Button onClick={handleCreateTeam} className="btn-primary flex-1 h-14">
-                                Confirm Unit
-                            </Button>
+                            </button>
+                            <button onClick={handleCreateTeam} className="btn-primary flex-1 h-16">
+                                Create Team
+                            </button>
                         </div>
                     </div>
                 </DialogContent>
@@ -518,40 +502,40 @@ export default function TeamManagement() {
 
             {/* Edit Team Dialog */}
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl">
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-8 py-10 text-white relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <Edit className="w-24 h-24" />
+                <DialogContent>
+                    <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
+                            <Edit className="w-48 h-48" />
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight">Edit Unit</h2>
-                        <p className="text-indigo-100 text-sm font-medium mt-1 uppercase tracking-widest opacity-80">Modify team configurations</p>
+                        <h2 className="text-4xl font-black tracking-tight uppercase mb-2">Edit Team</h2>
+                        <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Update team settings</p>
                     </div>
 
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Team Identity</label>
+                    <div className="p-12 space-y-10 bg-white">
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Name</label>
                             <Input
                                 value={teamForm.name}
                                 onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                                className="form-input"
+                                className="form-input h-14"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission / Description</label>
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description</label>
                             <Textarea
                                 value={teamForm.description}
                                 onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
-                                className="form-input min-h-[100px] py-3 resize-none"
+                                className="form-input min-h-[120px] py-5 resize-none"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Lead Manager</label>
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Manager</label>
                             <select
                                 value={teamForm.managerId}
                                 onChange={(e) => setTeamForm({ ...teamForm, managerId: e.target.value })}
-                                className="form-input"
+                                className="form-input h-14"
                             >
-                                <option value="">Select Lead</option>
+                                <option value="">Select Manager</option>
                                 {users.map(manager => (
                                     <option key={manager.id} value={manager.id}>
                                         {manager.fullName}
@@ -559,13 +543,13 @@ export default function TeamManagement() {
                                 ))}
                             </select>
                         </div>
-                        <div className="flex gap-4 pt-4">
-                            <Button variant="ghost" onClick={() => setEditDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-slate-500 hover:bg-slate-50">
+                        <div className="flex gap-6 pt-6">
+                            <button onClick={() => setEditDialogOpen(false)} className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all">
                                 Cancel
-                            </Button>
-                            <Button onClick={handleUpdateTeam} className="btn-primary flex-1 h-14">
+                            </button>
+                            <button onClick={handleUpdateTeam} className="btn-primary flex-1 h-16">
                                 Save Changes
-                            </Button>
+                            </button>
                         </div>
                     </div>
                 </DialogContent>
@@ -573,24 +557,24 @@ export default function TeamManagement() {
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl">
-                    <div className="p-10 text-center space-y-6">
-                        <div className="w-20 h-20 mx-auto rounded-[2rem] bg-rose-50 flex items-center justify-center">
-                            <Trash2 className="h-10 w-10 text-rose-500" />
+                <DialogContent className="sm:max-w-[440px]">
+                    <div className="p-12 text-center space-y-8">
+                        <div className="w-24 h-24 mx-auto rounded-[2.5rem] bg-destructive/5 flex items-center justify-center">
+                            <Trash2 className="h-12 w-12 text-destructive" />
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-900 leading-tight">Disband Team?</h3>
-                            <p className="text-sm text-slate-500 font-medium">
-                                Are you sure you want to delete <strong>{selectedTeam?.name}</strong>? This action cannot be undone and will affect hierarchical reporting.
+                        <div className="space-y-3">
+                            <h3 className="text-3xl font-black text-primary leading-tight uppercase tracking-tight">Delete Team?</h3>
+                            <p className="text-base text-muted-foreground/70 font-medium">
+                                Are you sure you want to delete <strong>{selectedTeam?.name}</strong>? This cannot be undone.
                             </p>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-slate-500 hover:bg-slate-50">
+                            <button onClick={() => setDeleteDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all">
                                 Cancel
-                            </Button>
-                            <Button variant="destructive" onClick={handleDeleteTeam} className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest">
-                                Confirm Disband
-                            </Button>
+                            </button>
+                            <button onClick={handleDeleteTeam} className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-destructive text-white shadow-xl shadow-destructive/20 active:translate-y-0.5 transition-all">
+                                Yes, Delete
+                            </button>
                         </div>
                     </div>
                 </DialogContent>

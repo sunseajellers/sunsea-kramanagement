@@ -10,7 +10,6 @@ import PerformanceTrends from "@/components/admin/PerformanceTrends"
 import ReportGenerator from "@/components/admin/ReportGenerator"
 import ExtensionRequestQueue from "@/components/admin/ExtensionRequestQueue"
 import AdminOperationalActions from "@/components/admin/AdminOperationalActions"
-import { Button } from "@/components/ui/button"
 import { exportToCSV } from "@/lib/exportUtils"
 import { getAllTasks } from "@/lib/taskService"
 import { getAllKRAs } from "@/lib/kraService"
@@ -19,14 +18,14 @@ import { toast } from "react-hot-toast"
 
 export default function OperationsHubPage() {
     return (
-        <div className="space-y-10">
+        <div className="space-y-16 animate-in">
             {/* Header / Actions */}
-            <div className="page-header flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+            <div className="page-header flex flex-col xl:flex-row xl:items-end justify-between gap-10">
                 <div>
-                    <h1 className="section-title">Operations Command</h1>
-                    <p className="section-subtitle">Real-time task velocity and performance logistics</p>
+                    <h1 className="section-title">Workplace</h1>
+                    <p className="text-base font-semibold text-muted-foreground/70 mt-3">Manage daily tasks, verify work, and view performance results</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-4">
                     <AdminOperationalActions />
                     <ExportButtons />
                 </div>
@@ -34,19 +33,19 @@ export default function OperationsHubPage() {
 
             {/* Navigation Tabs */}
             <Tabs defaultValue="tasks" className="w-full">
-                <div className="flex items-center justify-between mb-8 overflow-x-auto pb-4 scrollbar-none">
-                    <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/60 h-auto flex gap-1">
+                <div className="flex items-center justify-between mb-12 overflow-x-auto pb-4 scrollbar-none">
+                    <TabsList className="bg-muted/50 p-2 rounded-[1.75rem] border border-border h-auto flex gap-2">
                         {[
-                            { value: 'tasks', label: 'Task Matrix' },
-                            { value: 'verification', label: 'Verification' },
-                            { value: 'requests', label: 'Extensions' },
-                            { value: 'kpis', label: 'OKR Planning' },
-                            { value: 'scores', label: 'Analytics' },
+                            { value: 'tasks', label: 'All Tasks' },
+                            { value: 'verification', label: 'Approvals' },
+                            { value: 'requests', label: 'Deadlines' },
+                            { value: 'kpis', label: 'Goals' },
+                            { value: 'scores', label: 'Reports' },
                         ].map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
                                 value={tab.value}
-                                className="rounded-xl px-5 py-2.5 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200/60 flex items-center gap-2.5 text-sm font-bold transition-all"
+                                className="rounded-[1.25rem] px-8 py-3.5 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-xl border border-transparent data-[state=active]:border-border/50 flex items-center gap-3 text-sm font-bold transition-all"
                             >
                                 {tab.label}
                             </TabsTrigger>
@@ -54,37 +53,39 @@ export default function OperationsHubPage() {
                     </TabsList>
                 </div>
 
-                <TabsContent value="tasks" className="animate-in outline-none">
-                    <MasterTaskList />
-                </TabsContent>
+                <div className="mt-8">
+                    <TabsContent value="tasks" className="animate-in outline-none">
+                        <MasterTaskList />
+                    </TabsContent>
 
-                <TabsContent value="verification" className="animate-in outline-none">
-                    <div className="max-w-5xl mx-auto">
-                        <TaskVerification />
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="requests" className="animate-in outline-none">
-                    <div className="max-w-5xl mx-auto">
-                        <ExtensionRequestQueue />
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="kpis" className="animate-in outline-none">
-                    <KRAScheduler />
-                </TabsContent>
-
-                <TabsContent value="scores" className="animate-in outline-none">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-10">
-                            <PerformanceAnalytics />
-                            <PerformanceTrends />
+                    <TabsContent value="verification" className="animate-in outline-none">
+                        <div className="max-w-6xl mx-auto">
+                            <TaskVerification />
                         </div>
-                        <div className="space-y-10">
-                            <ReportGenerator />
+                    </TabsContent>
+
+                    <TabsContent value="requests" className="animate-in outline-none">
+                        <div className="max-w-6xl mx-auto">
+                            <ExtensionRequestQueue />
                         </div>
-                    </div>
-                </TabsContent>
+                    </TabsContent>
+
+                    <TabsContent value="kpis" className="animate-in outline-none">
+                        <KRAScheduler />
+                    </TabsContent>
+
+                    <TabsContent value="scores" className="animate-in outline-none">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                            <div className="lg:col-span-2 space-y-12">
+                                <PerformanceAnalytics />
+                                <PerformanceTrends />
+                            </div>
+                            <div className="space-y-12">
+                                <ReportGenerator />
+                            </div>
+                        </div>
+                    </TabsContent>
+                </div>
             </Tabs>
         </div>
     );
@@ -98,11 +99,11 @@ function ExportButtons() {
         try {
             setExportingTasks(true);
             const tasks = await getAllTasks(1000);
-            exportToCSV(tasks, `tasks_export_${new Date().toISOString().split('T')[0]}.csv`);
-            toast.success('Tasks exported successfully');
+            exportToCSV(tasks, `task_list_${new Date().toISOString().split('T')[0]}.csv`);
+            toast.success('Task list downloaded');
         } catch (error) {
             console.error(error);
-            toast.error('Failed to export tasks');
+            toast.error('Failed to download tasks');
         } finally {
             setExportingTasks(false);
         }
@@ -112,26 +113,34 @@ function ExportButtons() {
         try {
             setExportingKRAs(true);
             const kras = await getAllKRAs(1000);
-            exportToCSV(kras, `kras_export_${new Date().toISOString().split('T')[0]}.csv`);
-            toast.success('KRAs exported successfully');
+            exportToCSV(kras, `goal_list_${new Date().toISOString().split('T')[0]}.csv`);
+            toast.success('Goal list downloaded');
         } catch (error) {
             console.error(error);
-            toast.error('Failed to export KRAs');
+            toast.error('Failed to download goals');
         } finally {
             setExportingKRAs(false);
         }
     };
 
     return (
-        <div className="flex items-center gap-3">
-            <Button onClick={handleExportTasks} disabled={exportingTasks} className="btn-secondary h-11 px-6">
-                {exportingTasks ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                Tasks
-            </Button>
-            <Button onClick={handleExportKRAs} disabled={exportingKRAs} className="btn-secondary h-11 px-6">
-                {exportingKRAs ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                KRAs
-            </Button>
+        <div className="flex items-center gap-4">
+            <button
+                onClick={handleExportTasks}
+                disabled={exportingTasks}
+                className="btn-secondary h-14"
+            >
+                {exportingTasks ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                Download Tasks
+            </button>
+            <button
+                onClick={handleExportKRAs}
+                disabled={exportingKRAs}
+                className="btn-secondary h-14"
+            >
+                {exportingKRAs ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                Download Goals
+            </button>
         </div>
     );
 }

@@ -11,12 +11,12 @@ import { adminDb } from '@/lib/firebase-admin';
  * Accessible by admins, managers, and task assignees
  */
 export async function GET(request: NextRequest) {
-    return withAuth(request, async (req: NextRequest, userId: string) => {
+    return withAuth(request, async (_req: NextRequest, userId: string) => {
         try {
             // Get user info
             const userDoc = await adminDb.collection('users').doc(userId).get();
             const userData = userDoc.data();
-            
+
             if (!userData) {
                 return NextResponse.json(
                     { success: false, error: 'User not found' },

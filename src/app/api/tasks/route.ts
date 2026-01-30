@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authMiddleware';
 import { adminDb } from '@/lib/firebase-admin';
-import { Task } from '@/types';
+
 
 // Helper to convert Firestore Timestamp to Date
 const timestampToDate = (timestamp: any): Date | null => {

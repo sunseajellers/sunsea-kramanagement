@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { TaskWithMeta } from '@/types';
+import { TaskWithMeta, Objective } from '@/types';
 
 interface DashboardData {
     tasks: TaskWithMeta[];
     delegatedTasks: TaskWithMeta[];
+    okrs: Objective[];
     userProfile: any;
 }
 
@@ -19,6 +20,7 @@ export function useDashboardData(userId: string | undefined, getToken: () => Pro
     const [data, setData] = useState<DashboardData>({
         tasks: [],
         delegatedTasks: [],
+        okrs: [],
         userProfile: null,
     });
     const [loading, setLoading] = useState(true);
@@ -55,14 +57,16 @@ export function useDashboardData(userId: string | undefined, getToken: () => Pro
             const headers: any = token ? { 'Authorization': `Bearer ${token}` } : {};
 
             // Fetch all data in parallel
-            const [tasksRes, delegatedRes, profileRes] = await Promise.all([
+            const [tasksRes, delegatedRes, okrsRes, profileRes] = await Promise.all([
                 fetch(`/api/tasks?userId=${userId}`, { headers }),
                 fetch(`/api/tasks?assignedBy=${userId}`, { headers }),
+                fetch(`/api/okrs/objectives?ownerId=${userId}`, { headers }),
                 fetch(`/api/users/${userId}`, { headers })
             ]);
 
             let tasks: TaskWithMeta[] = [];
             let delegatedTasks: TaskWithMeta[] = [];
+            let okrs: Objective[] = [];
             let userProfile: any = null;
 
             if (tasksRes.ok) {
@@ -77,11 +81,16 @@ export function useDashboardData(userId: string | undefined, getToken: () => Pro
                 );
             }
 
+            if (okrsRes.ok) {
+                const okrsData = await okrsRes.json();
+                okrs = okrsData.objectives || [];
+            }
+
             if (profileRes.ok) {
                 userProfile = await profileRes.json();
             }
 
-            const newData = { tasks, delegatedTasks, userProfile };
+            const newData = { tasks, delegatedTasks, okrs, userProfile };
             setData(newData);
 
             // Cache the data
@@ -119,6 +128,7 @@ export function useDashboardData(userId: string | undefined, getToken: () => Pro
         refetch,
         setUserProfile: (profile: any) => setData(prev => ({ ...prev, userProfile: profile })),
         setTasks: (tasks: TaskWithMeta[]) => setData(prev => ({ ...prev, tasks })),
-        setDelegatedTasks: (delegated: TaskWithMeta[]) => setData(prev => ({ ...prev, delegatedTasks: delegated }))
+        setDelegatedTasks: (delegated: TaskWithMeta[]) => setData(prev => ({ ...prev, delegatedTasks: delegated })),
+        setOkrs: (okrs: Objective[]) => setData(prev => ({ ...prev, okrs }))
     };
 }

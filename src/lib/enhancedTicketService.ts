@@ -2,7 +2,7 @@
 // ENHANCED TICKET SERVICE - Enterprise-grade helpdesk with full validation
 // Implements all business rules for ticket operations
 
-import { Ticket, TicketStatus, TicketSolution } from '@/types';
+import { Ticket, TicketSolution } from '@/types';
 import { adminDb } from './firebase-admin';
 
 /**
@@ -101,7 +101,7 @@ export class EnhancedTicketService {
             }
 
             // Check if user has appropriate role (optional - depends on requirements)
-            const userData = userDoc.data();
+            // const userData = userDoc.data();
             // You could check role here: if (!['admin', 'support', 'manager'].includes(userData?.role)) ...
 
             return { valid: true };

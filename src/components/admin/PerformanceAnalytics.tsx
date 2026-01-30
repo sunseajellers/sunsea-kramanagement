@@ -44,75 +44,77 @@ export default function PerformanceAnalytics() {
     )
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in">
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="section-title">Performance Vanguard</h2>
-                    <p className="section-subtitle">Real-time tactical execution and personnel efficiency audit</p>
+                    <h2 className="section-title">Performance Scores</h2>
+                    <p className="section-subtitle">See how your team is performing based on their completed tasks and goals</p>
                 </div>
                 <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/40 group-focus-within:text-secondary transition-colors" />
                     <input
-                        placeholder="Search personnel audit..."
-                        className="form-input pl-12 w-full md:w-80 h-14"
+                        placeholder="Filter by name or group..."
+                        className="form-input pl-14 w-full md:w-96 h-14 bg-muted/20 border-none"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-8">
                 {loading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-32 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100 animate-pulse" />
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-32 bg-muted/30 rounded-[2.5rem] border border-border/40 animate-pulse" />
                     ))
                 ) : filtered.length > 0 ? (
                     filtered.map((emp) => (
-                        <div key={emp.id} className="glass-panel p-8 flex flex-col xl:flex-row items-center justify-between gap-10 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group">
-                            <div className="flex items-center gap-6 w-full xl:w-auto">
-                                <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center text-indigo-600 font-black text-2xl border-4 border-white shadow-xl group-hover:bg-indigo-600 group-hover:text-white transition-all transform group-hover:scale-105">
+                        <div key={emp.id} className="glass-panel p-8 flex flex-col xl:flex-row items-center justify-between gap-10 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group border-border/40">
+                            <div className="flex items-center gap-8 w-full xl:w-auto">
+                                <div className="h-24 w-24 rounded-[2.25rem] bg-white flex items-center justify-center text-primary font-black text-3xl border-2 border-border shadow-xl group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all transform group-hover:scale-110 duration-500">
                                     {emp.score}%
                                 </div>
-                                <div className="space-y-1">
-                                    <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">{emp.name}</h4>
+                                <div className="space-y-2">
+                                    <h4 className="text-2xl font-black text-primary uppercase tracking-tight group-hover:text-secondary transition-colors">{emp.name}</h4>
                                     <div className="flex items-center gap-3">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">{emp.department}</span>
+                                        <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.3em] bg-muted/50 px-4 py-1.5 rounded-xl border border-border/50">{emp.department}</span>
                                         <span className={cn(
-                                            "status-badge px-3 py-1 text-[9px]",
+                                            "status-badge px-4 py-1.5 text-[9px]",
                                             emp.status === 'Elite' ? 'status-badge-success' :
-                                                emp.status === 'Master' ? 'status-badge-neutral border-indigo-200 text-indigo-600' :
+                                                emp.status === 'Master' ? 'bg-primary/5 text-primary border-primary/10' :
                                                     'status-badge-neutral'
                                         )}>
-                                            {emp.status} PROTOCOL
+                                            {emp.status}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-12 w-full xl:w-auto justify-between xl:justify-end">
+                            <div className="flex items-center gap-16 w-full xl:w-auto justify-between xl:justify-end">
                                 <div className="text-center group/stat">
-                                    <p className="text-3xl font-black text-slate-900 group-hover/stat:text-indigo-600 transition-colors tracking-tight">{emp.tasksCompleted}</p>
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Tactical Ops</p>
+                                    <p className="text-4xl font-black text-primary group-hover/stat:text-secondary transition-colors tracking-tight">{emp.tasksCompleted}</p>
+                                    <p className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.3em] mt-2">Tasks Done</p>
                                 </div>
                                 <div className="text-center group/stat">
-                                    <p className={cn("text-3xl font-black tracking-tight transition-colors", emp.tasksOverdue > 0 ? "text-rose-500" : "text-emerald-500")}>
+                                    <p className={cn("text-4xl font-black tracking-tight transition-colors", emp.tasksOverdue > 0 ? "text-destructive" : "text-emerald-600")}>
                                         {emp.tasksOverdue}
                                     </p>
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Constraints</p>
+                                    <p className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.3em] mt-2">Overdue</p>
                                 </div>
-                                <div className="h-14 px-8 flex items-center justify-center rounded-2xl bg-white border-2 border-slate-100 text-slate-900 font-black text-[11px] uppercase tracking-widest group-hover:border-indigo-100 group-hover:text-indigo-600 transition-all shadow-sm">
-                                    View Intelligence
-                                </div>
+                                <button className="h-16 px-10 flex items-center justify-center rounded-[1.5rem] bg-white border-2 border-border text-primary font-black text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition-all shadow-sm active:translate-y-0.5">
+                                    View Details
+                                </button>
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="glass-panel py-20 text-center space-y-4 border-dashed border-4 border-slate-100 bg-slate-50/10">
-                        <div className="w-20 h-20 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
-                            <UserX className="w-10 h-10 text-slate-300" />
+                    <div className="glass-panel py-32 text-center space-y-6 border-dashed border-border/60 bg-muted/5">
+                        <div className="w-24 h-24 rounded-[3.5rem] bg-white border border-border flex items-center justify-center mx-auto mb-4 shadow-sm">
+                            <UserX className="w-10 h-10 text-muted-foreground/20" />
                         </div>
-                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">No Personnel Records</h3>
-                        <p className="text-sm text-slate-400 font-medium max-w-xs mx-auto">Either no personnel matches your search, or no performance data has been synchronized yet.</p>
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-black text-primary uppercase tracking-tight">No people found</h3>
+                            <p className="text-sm text-muted-foreground/50 font-medium max-w-sm mx-auto">We couldn't find anyone matching your search or there is no performance data yet.</p>
+                        </div>
                     </div>
                 )}
             </div>

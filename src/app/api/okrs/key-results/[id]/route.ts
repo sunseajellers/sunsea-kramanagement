@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { okrService } from '@/lib/okrService'
+import { serverOKRService } from '@/lib/server/okrService'
 
 /**
  * PATCH /api/okrs/key-results/[id]
@@ -12,7 +12,7 @@ export async function PATCH(
     try {
         const { id } = await params
         const data = await request.json()
-        await okrService.updateKeyResult(id, data)
+        await serverOKRService.updateKeyResult(id, data)
 
         return NextResponse.json({ success: true })
     } catch (error) {
@@ -34,7 +34,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        await okrService.deleteKeyResult(id)
+        await serverOKRService.deleteKeyResult(id)
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('Error deleting key result:', error)

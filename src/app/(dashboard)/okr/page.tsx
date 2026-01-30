@@ -1,9 +1,17 @@
 'use client'
 
 import OKRList from '@/components/features/okr/OKRList'
-import { Target, Info } from 'lucide-react'
+import { Target, Info, Loader2 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useDashboardData } from '@/hooks/useDashboardData'
 
 export default function OKRPage() {
+    const { user } = useAuth()
+    const { okrs, loading } = useDashboardData(
+        user?.uid,
+        () => user?.getIdToken() || Promise.resolve(undefined)
+    )
+
     return (
         <div className="min-h-screen bg-[#F8FAFC]">
             {/* Simple Top Nav for Context */}
@@ -42,7 +50,13 @@ export default function OKRPage() {
                     </div>
                 </div>
 
-                <OKRList />
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+                    </div>
+                ) : (
+                    <OKRList okrs={okrs} />
+                )}
             </main>
         </div>
     )

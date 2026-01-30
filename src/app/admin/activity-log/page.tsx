@@ -35,22 +35,22 @@ export default function ActivityLogPage() {
     }
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="page-header">
-                <h1 className="section-title">Operations Ledger</h1>
-                <p className="section-subtitle">Real-time audit trail of system-wide tactical events and user interactions</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System Activity</h1>
+                    <p className="text-slate-500">Real-time log of application events</p>
+                </div>
             </div>
 
             {/* Activity Log with full features */}
-            <div className="glass-panel p-1">
-                <ActivityLogViewer
-                    limit={100}
-                    showFilters={true}
-                    maxHeight="calc(100vh - 400px)"
-                    compact={false}
-                />
-            </div>
+            <ActivityLogViewer
+                limit={500}
+                showFilters={true}
+                maxHeight="calc(100vh - 250px)"
+                compact={false}
+            />
         </div>
     );
 }

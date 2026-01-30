@@ -3,9 +3,9 @@
 // This service wraps the basic taskService with enterprise-grade logic
 
 import { Task, TaskStatus, Priority } from '@/types';
-import { TaskBusinessRules, TaskExtension, ValidationResult } from './taskBusinessRules';
+import { TaskBusinessRules, TaskExtension } from './taskBusinessRules';
 import { adminDb } from './firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+
 
 /**
  * Enhanced Task Service with full business rule enforcement
@@ -492,7 +492,7 @@ export class EnhancedTaskService {
                 if (TaskBusinessRules.isTaskOverdue(task) && task.status !== 'overdue') {
                     try {
                         const taskRef = adminDb.collection('tasks').doc(task.id);
-                        
+
                         batch.update(taskRef, {
                             status: 'overdue',
                             markedOverdueAt: now,

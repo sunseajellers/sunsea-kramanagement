@@ -158,7 +158,7 @@ export default function LearningHubPage() {
                                                 {art.title}
                                             </h3>
                                             <p className="text-sm text-slate-500 font-medium line-clamp-2 leading-relaxed mb-4">
-                                                {art.content.replace(/[#*`]/g, '').substring(0, 180)}...
+                                                {(art.content || '').replace(/[#*`]/g, '').substring(0, 180)}...
                                             </p>
                                             <div className="flex items-center text-[10px] font-black text-indigo-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all">
                                                 Full Disclosure <ChevronRight className="w-3.5 h-3.5 ml-1" />

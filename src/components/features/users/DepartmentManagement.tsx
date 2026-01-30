@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,6 +26,7 @@ import {
 import {
     Dialog,
     DialogContent,
+    DialogTitle,
 } from '@/components/ui/dialog'
 import { getAllDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/lib/departmentService'
 import { Department } from '@/types'
@@ -125,195 +128,195 @@ export default function DepartmentManagement() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-                <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Accessing Organizational Structure</p>
+            <div className="flex flex-col items-center justify-center py-32 gap-6">
+                <Loader2 className="w-14 h-14 animate-spin text-primary/40" />
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Loading groups...</p>
             </div>
         )
     }
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in pb-20">
             {/* Header */}
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="section-title">Organizational Structure</h2>
-                    <p className="section-subtitle">Management of departments, divisional heads, and cross-functional teams</p>
+                    <h2 className="section-title">Groups Management</h2>
+                    <p className="section-subtitle">Manage your departments, group leaders, and internal categories</p>
                 </div>
-                <Button
+                <button
                     onClick={() => {
                         setFormData({ name: '', code: '', description: '', headName: '', headEmail: '' })
                         setIsCreateModalOpen(true)
                     }}
-                    className="btn-primary h-12 px-6"
+                    className="btn-primary h-12 px-8"
                 >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Create Department
-                </Button>
+                    <Plus className="w-5 h-5 mr-3" />
+                    Add New Group
+                </button>
             </div>
 
-            {/* Dashboard Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="dashboard-card group">
-                    <div className="flex flex-col gap-1.5">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Total Divisions</p>
-                        <h3 className="text-3xl font-black tracking-tight text-indigo-600 transition-colors group-hover:text-indigo-700">{departments.length}</h3>
-                        <div className="flex items-center gap-1.5 mt-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Units</p>
+                    <div className="flex flex-col gap-2">
+                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] leading-none mb-1">Active Groups</p>
+                        <h3 className="text-4xl font-black tracking-tight text-primary transition-colors group-hover:text-secondary">{departments.length}</h3>
+                        <div className="flex items-center gap-2 mt-4">
+                            <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+                            <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">Live Categories</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="glass-panel p-6">
-                <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                    <input
-                        placeholder="Search departments by name or corporate code..."
-                        className="form-input h-12 pl-12"
+            <div className="glass-panel p-8">
+                <div className="relative">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/40" />
+                    <Input
+                        placeholder="Search groups by name or code..."
+                        className="pl-14 h-12"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
             </div>
 
-            {/* Department Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Group Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                 {filtered.map((dept) => (
-                    <div key={dept.id} className="glass-panel p-0 flex flex-col group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden">
-                        <div className="p-8 space-y-6">
+                    <div key={dept.id} className="glass-panel p-0 flex flex-col group hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-500 overflow-hidden border-border/40">
+                        <div className="p-10 space-y-8">
                             <div className="flex items-start justify-between">
-                                <span className="inline-flex h-6 px-2.5 items-center rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
+                                <span className="inline-flex h-7 px-4 items-center rounded-xl bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-sm">
                                     {dept.code || 'NO-CODE'}
                                 </span>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-100 transition-colors">
-                                            <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                                        </Button>
+                                        <button className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors border border-transparent hover:border-border/50">
+                                            <MoreHorizontal className="h-5 w-5 text-muted-foreground/40" />
+                                        </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-[2rem] border-none shadow-2xl animate-in fade-in slide-in-from-top-2">
-                                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 px-4 py-3 uppercase tracking-[0.2em]">Actions</DropdownMenuLabel>
-                                        <DropdownMenuSeparator className="bg-slate-50 mx-2" />
-                                        <DropdownMenuItem onClick={() => openEdit(dept)} className="rounded-xl text-[11px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer">
-                                            <Edit2 className="w-4 h-4 opacity-70" /> Edit Unit
+                                    <DropdownMenuContent align="end" className="w-60 p-3 rounded-[2.5rem] border-none shadow-2xl animate-in fade-in slide-in-from-top-2">
+                                        <DropdownMenuLabel className="text-[10px] font-black text-muted-foreground/50 px-5 py-4 uppercase tracking-[0.3em]">Group Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator className="bg-muted mx-3" />
+                                        <DropdownMenuItem onClick={() => openEdit(dept)} className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors">
+                                            <Edit2 className="w-5 h-5 opacity-40" /> Edit Details
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator className="bg-slate-50 mx-2" />
-                                        <DropdownMenuItem onClick={() => handleDelete(dept.id)} className="rounded-xl text-[11px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer">
-                                            <Trash2 className="w-4 h-4" /> Delete Unit
+                                        <DropdownMenuSeparator className="bg-muted mx-3" />
+                                        <DropdownMenuItem onClick={() => handleDelete(dept.id)} className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer transition-colors">
+                                            <Trash2 className="w-5 h-5" /> Delete Group
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
 
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{dept.name}</h3>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed italic line-clamp-2 h-10">
-                                    {dept.description || 'No description provided for this organizational division.'}
+                            <div className="space-y-3">
+                                <h3 className="text-2xl font-black text-primary group-hover:text-secondary transition-colors uppercase tracking-tight">{dept.name}</h3>
+                                <p className="text-sm text-muted-foreground/70 font-medium leading-relaxed italic line-clamp-3 min-h-[4.5rem]">
+                                    {dept.description || 'No description provided for this group.'}
                                 </p>
                             </div>
 
-                            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group/head">
-                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm group-hover/head:border-indigo-200 transition-colors">
-                                    <ShieldCheck className="w-5 h-5 text-indigo-500" />
+                            <div className="bg-muted/30 p-5 rounded-[1.75rem] border border-border/40 flex items-center gap-5 group/head">
+                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center border border-border shadow-sm group-hover/head:border-secondary/50 transition-colors">
+                                    <ShieldCheck className="w-6 h-6 text-secondary" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Division Head</p>
-                                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight line-clamp-1">{(dept as any).headName || 'Not Assigned'}</p>
+                                    <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] leading-none mb-1.5">Group Leader</p>
+                                    <p className="text-xs font-black text-primary uppercase tracking-tight line-clamp-1">{(dept as any).headName || 'Not Assigned'}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-auto px-8 py-5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                        <div className="mt-auto px-10 py-6 bg-muted/40 border-t border-border/20 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
                                 <span className={cn(
-                                    "flex w-2 h-2 rounded-full ring-4 ring-white shadow-sm",
-                                    dept.isActive !== false ? 'bg-emerald-500 shadow-emerald-200 animate-pulse' : 'bg-rose-500 shadow-rose-200'
+                                    "flex w-2.5 h-2.5 rounded-full ring-4 ring-white shadow-sm",
+                                    dept.isActive !== false ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
                                 )} />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    {dept.isActive !== false ? 'OPERATIONAL' : 'SUSPENDED'}
+                                <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">
+                                    {dept.isActive !== false ? 'ACTIVE' : 'SUSPENDED'}
                                 </span>
                             </div>
-                            <Button variant="ghost" className="h-9 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 hover:text-indigo-700 hover:bg-white px-4 rounded-xl border border-transparent hover:border-slate-100 transition-all">
-                                PERSONNEL
-                            </Button>
+                            <button className="h-10 text-[9px] font-black uppercase tracking-[0.3em] text-primary hover:text-secondary transition-colors">
+                                VIEW PEOPLE
+                            </button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Management Overlay */}
+            {/* Group Overlay */}
             <Dialog open={isCreateModalOpen || isEditModalOpen} onOpenChange={(val) => {
                 if (!val) {
                     setIsCreateModalOpen(false)
                     setIsEditModalOpen(false)
                 }
             }}>
-                <DialogContent className="sm:max-w-[540px] p-0 overflow-hidden rounded-[3rem] border-none shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                <DialogContent>
                     <form onSubmit={isCreateModalOpen ? handleCreate : handleUpdate}>
-                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 px-10 py-12 text-white relative">
-                            <div className="absolute top-0 right-0 p-10 opacity-10">
-                                <Building2 className="w-32 h-32 rotate-6" />
+                        <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
+                                <Building2 className="w-48 h-48" />
                             </div>
-                            <h2 className="text-3xl font-black tracking-tight uppercase">
-                                {isCreateModalOpen ? 'Initialize Unit' : 'Configure Unit'}
-                            </h2>
-                            <p className="text-indigo-100 text-[10px] font-black mt-1 uppercase tracking-[0.3em] opacity-80">Organizational Entity Parameters</p>
+                            <DialogTitle className="text-4xl font-black tracking-tight uppercase mb-2">
+                                {isCreateModalOpen ? 'New Group' : 'Edit Group'}
+                            </DialogTitle>
+                            <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Group Settings & Details</p>
                         </div>
 
-                        <div className="p-10 space-y-8 bg-white max-h-[70vh] overflow-y-auto scroll-panel">
-                            <div className="grid grid-cols-3 gap-6">
-                                <div className="col-span-2 space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Department Nomenclature *</label>
-                                    <input
+                        <div className="p-12 space-y-10 bg-white max-h-[75vh] overflow-y-auto scroll-panel">
+                            <div className="grid grid-cols-3 gap-8">
+                                <div className="col-span-2 space-y-4">
+                                    <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Group Name *</label>
+                                    <Input
                                         required
-                                        className="form-input h-14"
-                                        placeholder="Ex: Strategic Innovation"
+                                        className="h-12"
+                                        placeholder="Ex: Sales Team"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Unit Code *</label>
-                                    <input
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Group Code *</label>
+                                    <Input
                                         required
-                                        className="form-input h-14 uppercase font-mono tracking-widest"
-                                        placeholder="ST-IN"
+                                        className="h-12 uppercase font-mono tracking-widest text-center"
+                                        placeholder="SALES"
                                         value={formData.code}
                                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission Perspective / Purpose</label>
-                                <textarea
-                                    className="form-input min-h-[120px] py-4 resize-none"
-                                    placeholder="Define the scope and strategic objectives..."
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description / Purpose</label>
+                                <Textarea
+                                    className="min-h-[140px] py-5 resize-none"
+                                    placeholder="Briefly describe what this group does..."
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </div>
 
-                            <div className="space-y-6 pt-6 border-t border-slate-50">
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Strategic Head</label>
-                                        <input
-                                            className="form-input h-14"
-                                            placeholder="John Shepherd"
+                            <div className="space-y-8 pt-4">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Group Leader Name</label>
+                                        <Input
+                                            className="h-12"
+                                            placeholder="Ex: Marcus Aurelius"
                                             value={formData.headName}
                                             onChange={(e) => setFormData({ ...formData, headName: e.target.value })}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Head Liaison Email</label>
-                                        <input
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Leader's Email</label>
+                                        <Input
                                             type="email"
-                                            className="form-input h-14"
-                                            placeholder="head@organization.com"
+                                            className="h-12"
+                                            placeholder="leader@company.com"
                                             value={formData.headEmail}
                                             onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
                                         />
@@ -321,15 +324,16 @@ export default function DepartmentManagement() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 pt-4">
+                            <div className="flex gap-6 pt-6">
                                 <Button type="button" variant="ghost" onClick={() => {
                                     setIsCreateModalOpen(false)
                                     setIsEditModalOpen(false)
-                                }} className="flex-1 h-16 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:bg-slate-50 transition-all">
-                                    Abort
+                                }} className="flex-1 h-12">
+                                    Cancel
                                 </Button>
-                                <Button type="submit" disabled={saving} className="flex-1 h-16 btn-primary">
-                                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCreateModalOpen ? 'Authorize Unit' : 'Save Config')}
+                                <Button type="submit" disabled={saving} className="flex-1 h-12 font-bold">
+                                    {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                                    {isCreateModalOpen ? 'Create Group' : 'Save Changes'}
                                 </Button>
                             </div>
                         </div>

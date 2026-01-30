@@ -23,28 +23,28 @@ export default function EmptyState({
     onSecondaryAction,
 }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50">
             {/* Icon */}
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                <Icon className="w-10 h-10 text-gray-400" />
+            <div className="w-24 h-24 bg-muted/50 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-sm transition-transform hover:scale-110 duration-500">
+                <Icon className="w-12 h-12 text-muted-foreground/60" />
             </div>
 
             {/* Title */}
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+            <h3 className="text-2xl font-bold text-foreground mb-3">{title}</h3>
 
             {/* Description */}
-            <p className="text-gray-600 mb-8 max-w-md">{description}</p>
+            <p className="text-muted-foreground mb-10 max-w-md leading-relaxed font-medium">{description}</p>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-4">
                 {actionLabel && (
                     <>
                         {actionHref ? (
-                            <Link href={actionHref} className="btn-primary inline-flex items-center">
+                            <Link href={actionHref} className="btn-primary inline-flex items-center h-12 px-8">
                                 {actionLabel}
                             </Link>
                         ) : (
-                            <button onClick={onAction} className="btn-primary">
+                            <button onClick={onAction} className="btn-primary h-12 px-8">
                                 {actionLabel}
                             </button>
                         )}
@@ -52,7 +52,7 @@ export default function EmptyState({
                 )}
 
                 {secondaryActionLabel && onSecondaryAction && (
-                    <button onClick={onSecondaryAction} className="btn-secondary">
+                    <button onClick={onSecondaryAction} className="btn-secondary h-12 px-8">
                         {secondaryActionLabel}
                     </button>
                 )}

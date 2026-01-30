@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { okrService } from '@/lib/okrService'
+import { serverOKRService } from '@/lib/server/okrService'
 import { withAuth } from '@/lib/authMiddleware'
 
 /**
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
                 )
             }
 
-            const keyResults = await okrService.getKeyResultsByObjective(objectiveId)
+            const keyResults = await serverOKRService.getKeyResultsByObjective(objectiveId)
             return NextResponse.json({
                 success: true,
                 data: keyResults
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            const keyResultId = await okrService.createKeyResult(data)
+            const keyResultId = await serverOKRService.createKeyResult(data)
 
             return NextResponse.json(
                 { success: true, data: { id: keyResultId }, message: 'Key result created successfully' },

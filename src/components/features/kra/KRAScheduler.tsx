@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { KRATemplate, getAllKRATemplates, createKRATemplate, toggleKRATemplateStatus, deleteKRATemplate, generateScheduledKRAs } from '@/lib/kraAutomation'
 import { Trash2, Play, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
 import { useBulkSelection, executeBulkKRAAction } from '@/lib/bulkUtils'
@@ -30,7 +29,7 @@ export default function KRAScheduler() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this goal template?')) return
+        if (!confirm('Delete this goal?')) return
         try { await deleteKRATemplate(id); toast.success('Deleted'); loadTemplates() } catch (e) { toast.error('Failed') }
     }
 
@@ -42,12 +41,12 @@ export default function KRAScheduler() {
         setGenerating(true)
         try {
             const results = await generateScheduledKRAs()
-            toast.success(`Created ${results.generated} tasks`)
+            toast.success(`Created ${results.generated} new tasks`);
             loadTemplates()
         } catch (e) { toast.error('Failed') } finally { setGenerating(false) }
     }
 
-    // Bulk actions preserved but simplified
+    // Bulk actions
     const handleBulkDelete = async () => {
         if (!confirm(`Delete ${bulkSelection.selectedCount} goals?`)) return
         setBulkActionLoading(true)
@@ -55,57 +54,57 @@ export default function KRAScheduler() {
     }
 
     return (
-        <div className="space-y-10 animate-in">
+        <div className="space-y-12 animate-in">
             {/* Page Header */}
-            <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-8">
                 <div>
-                    <h2 className="section-title">Objective Planning</h2>
-                    <p className="section-subtitle">Manage recurring organizational goals and key results</p>
+                    <h2 className="section-title">Repeating Goals</h2>
+                    <p className="section-subtitle">Manage tasks that repeat automatically on a schedule</p>
                 </div>
-                <div className="flex gap-3">
-                    <Button
-                        variant="outline"
+                <div className="flex gap-4">
+                    <button
                         onClick={handleManualGenerate}
                         disabled={generating}
-                        className="h-12 px-6 rounded-2xl border-2 border-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all font-black text-[10px] uppercase tracking-widest shadow-sm"
+                        className="btn-secondary h-14"
+                        title="Creates the latest tasks for these goals right now"
                     >
-                        {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
-                        Execute Pulse
-                    </Button>
-                    <Button
+                        {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
+                        Run Automation
+                    </button>
+                    <button
                         onClick={() => setShowCreate(!showCreate)}
                         className={cn(
-                            "h-12 px-6 rounded-2xl transition-all font-black text-[10px] uppercase tracking-[0.2em] shadow-lg",
+                            "h-14 px-8 rounded-2xl transition-all font-black text-xs uppercase tracking-widest shadow-xl",
                             showCreate
-                                ? "bg-white text-rose-600 border-2 border-rose-100 hover:bg-rose-50 shadow-rose-100"
+                                ? "bg-white text-destructive border-2 border-destructive/20 hover:bg-destructive/5 shadow-destructive/10"
                                 : "btn-primary"
                         )}
                     >
-                        {showCreate ? 'Abort Registry' : 'Instate Objective'}
-                    </Button>
+                        {showCreate ? 'Cancel' : 'Add Repeating Goal'}
+                    </button>
                 </div>
             </div>
 
             {/* Create Overlay */}
             {showCreate && (
-                <div className="glass-panel p-8 animate-in slide-in-from-top-4 duration-500 overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] -rotate-12 pointer-events-none">
-                        <Play className="w-40 h-40" />
+                <div className="dashboard-card p-12 animate-in slide-in-from-top-4 duration-700 relative overflow-hidden group/form">
+                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] -rotate-12 pointer-events-none group-hover/form:scale-110 transition-transform duration-1000">
+                        <Play className="w-64 h-64" />
                     </div>
                     <div className="relative">
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-8">Define Recurring Vector</h3>
+                        <h3 className="text-2xl font-black text-primary uppercase tracking-tight mb-10">New Repeating Goal</h3>
                         <CreateTemplateForm onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); loadTemplates() }} />
                     </div>
                 </div>
             )}
 
-            {/* Objective Ledger */}
-            <div className="glass-panel p-0 flex flex-col overflow-hidden">
-                <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            RECURRING GOAL REPOSITORY
+            {/* Goal List */}
+            <div className="glass-panel p-0 flex flex-col overflow-hidden shadow-2xl shadow-black/[0.02]">
+                <div className="px-10 py-8 border-b border-border/40 bg-muted/30">
+                    <div className="flex items-center gap-4">
+                        <div className="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">
+                            Active Repeating Goals
                         </span>
                     </div>
                 </div>
@@ -113,71 +112,71 @@ export default function KRAScheduler() {
                 <div className="overflow-x-auto scroll-panel">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-slate-50/30">
-                                <th className="px-8 py-5 text-left w-16">
+                            <tr className="border-b border-border/20">
+                                <th className="px-10 py-6 text-left w-20">
                                     <div className="flex items-center justify-center">
                                         <input
                                             type="checkbox"
                                             onChange={bulkSelection.toggleAll}
                                             checked={bulkSelection.isAllSelected}
-                                            className="w-5 h-5 rounded-md border-slate-200"
+                                            className="w-5 h-5 rounded-lg border-border text-primary focus:ring-primary/20"
                                         />
                                     </div>
                                 </th>
-                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Objective Entity</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Frequency</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Tactical Priority</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Unit Coverage</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Registry Status</th>
-                                <th className="px-8 py-5 w-20"></th>
+                                <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Goal Details</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Repeats</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Priority</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Team Size</th>
+                                <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Status</th>
+                                <th className="px-10 py-6 w-24"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-border/20">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="py-24 text-center">
-                                        <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mx-auto mb-4" />
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scanning Repository...</p>
+                                    <td colSpan={7} className="py-32 text-center">
+                                        <Loader2 className="h-10 w-10 animate-spin text-primary/30 mx-auto mb-6" />
+                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Loading goals...</p>
                                     </td>
                                 </tr>
                             ) : templates.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="py-24 text-center">
-                                        <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center border border-slate-100 mx-auto mb-6">
-                                            <Play className="w-10 h-10 text-slate-200" />
+                                    <td colSpan={7} className="py-32 text-center">
+                                        <div className="w-24 h-24 rounded-[3rem] bg-muted/30 flex items-center justify-center mx-auto mb-8">
+                                            <Play className="w-10 h-10 text-muted-foreground/20" />
                                         </div>
-                                        <p className="text-lg font-black text-slate-400 uppercase tracking-tight">Repository Empty</p>
-                                        <p className="text-sm text-slate-400 font-medium">No recurring objectives registered in system.</p>
+                                        <p className="text-xl font-black text-primary/40 uppercase tracking-tight">No repeating goals yet</p>
+                                        <p className="text-sm text-muted-foreground/50 font-medium">Create your first goal to start automating tasks.</p>
                                     </td>
                                 </tr>
                             ) : (
                                 templates.map(t => (
                                     <tr key={t.id} className={cn(
-                                        "group transition-all duration-300 hover:bg-slate-50/50",
-                                        bulkSelection.isSelected(t.id) ? 'bg-indigo-50/40' : ''
+                                        "group table-row",
+                                        bulkSelection.isSelected(t.id) && 'bg-primary/[0.03]'
                                     )}>
-                                        <td className="px-8 py-6">
+                                        <td className="px-10 py-8">
                                             <div className="flex items-center justify-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={bulkSelection.isSelected(t.id)}
                                                     onChange={() => bulkSelection.toggleSelection(t.id)}
-                                                    className="w-5 h-5 rounded-md border-slate-200"
+                                                    className="w-5 h-5 rounded-lg border-border text-primary"
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">{t.title}</p>
-                                                <p className="text-[11px] text-slate-400 font-medium italic line-clamp-1">{t.description || 'No specific parameters provided.'}</p>
+                                        <td className="px-10 py-8">
+                                            <div className="space-y-1.5">
+                                                <p className="text-lg font-black text-primary uppercase tracking-tight group-hover:text-secondary transition-colors">{t.title}</p>
+                                                <p className="text-xs text-muted-foreground/70 font-medium italic line-clamp-1">{t.description || 'No description provided.'}</p>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                        <td className="px-10 py-8 text-center">
+                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] bg-white px-4 py-2 rounded-xl border border-border shadow-sm">
                                                 {t.type}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
+                                        <td className="px-10 py-8 text-center">
                                             <span className={cn(
                                                 "status-badge",
                                                 (t.priority === 'high' || t.priority === 'critical') ? "status-badge-danger" : "status-badge-neutral"
@@ -185,32 +184,30 @@ export default function KRAScheduler() {
                                                 {t.priority}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-xs font-black text-slate-700 tracking-tighter">{t.assignedTo.length}</span>
-                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PERSONNEL</span>
+                                        <td className="px-10 py-8 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className="text-sm font-black text-primary">{t.assignedTo.length}</span>
+                                                <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">People</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
+                                        <td className="px-10 py-8 text-center">
                                             <button
                                                 onClick={() => handleToggle(t.id, t.isActive)}
                                                 className={cn(
                                                     "status-badge cursor-pointer transition-all hover:scale-105 active:scale-95",
-                                                    t.isActive ? "status-badge-success" : "status-badge-neutral text-slate-300"
+                                                    t.isActive ? "status-badge-success" : "status-badge-neutral opacity-40"
                                                 )}
                                             >
-                                                {t.isActive ? 'OPERATIONAL' : 'PAUSED'}
+                                                {t.isActive ? 'ACTIVE' : 'PAUSED'}
                                             </button>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
+                                        <td className="px-10 py-8 text-right">
+                                            <button
                                                 onClick={() => handleDelete(t.id)}
-                                                className="h-10 w-10 rounded-xl text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                                                className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/5 transition-all opacity-0 group-hover:opacity-100"
                                             >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                                <Trash2 className="h-5 w-5" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -222,25 +219,24 @@ export default function KRAScheduler() {
 
             {/* Mass Control Interface */}
             {bulkSelection.selectedCount > 0 && (
-                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 glass-panel p-1.5 flex gap-1.5 items-center shadow-2xl z-50 animate-in slide-in-from-bottom-12 rounded-[2rem] border-2 border-indigo-100 scale-105">
-                    <div className="px-6 flex flex-col justify-center border-r border-slate-100 mr-2">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Batch Active</span>
-                        <span className="text-sm font-black text-indigo-600 tracking-tight">{bulkSelection.selectedCount} OBJECTIVES</span>
+                <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-2xl p-2.5 flex gap-3 items-center shadow-2xl z-50 animate-in slide-in-from-bottom-12 rounded-[2.5rem] border border-border/50 scale-105">
+                    <div className="px-8 py-2 flex flex-col justify-center border-r border-border/50 mr-2">
+                        <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-[0.3em] mb-1">Selected Items</span>
+                        <span className="text-sm font-black text-primary tracking-tight">{bulkSelection.selectedCount} GOALS</span>
                     </div>
-                    <Button
+                    <button
                         onClick={handleBulkDelete}
                         disabled={bulkActionLoading}
-                        className="h-12 px-8 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase tracking-[0.2em] transition-all"
+                        className="h-14 px-10 rounded-3xl bg-destructive text-white font-black text-xs uppercase tracking-widest hover:bg-destructive/90 transition-all shadow-xl shadow-destructive/10"
                     >
-                        {bulkActionLoading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Purge Registry'}
-                    </Button>
-                    <Button
-                        variant="ghost"
+                        {bulkActionLoading ? <Loader2 className="animate-spin h-6 w-6" /> : 'Delete All'}
+                    </button>
+                    <button
                         onClick={bulkSelection.clearSelection}
-                        className="h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600"
+                        className="h-14 px-8 rounded-3xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all"
                     >
-                        Reset
-                    </Button>
+                        Cancel
+                    </button>
                 </div>
             )}
         </div>
@@ -250,7 +246,7 @@ export default function KRAScheduler() {
 function CreateTemplateForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
     const { user } = useAuth()
     const [formData, setFormData] = useState({
-        title: '', description: '', target: '', type: 'daily' as any, priority: 'medium' as any, assignedTo: '', isActive: true
+        title: '', description: '', target: '', type: 'weekly' as any, priority: 'medium' as any, assignedTo: '', isActive: true
     })
     const [saving, setSaving] = useState(false)
 
@@ -264,81 +260,89 @@ function CreateTemplateForm({ onClose, onSuccess }: { onClose: () => void; onSuc
                 assignedTo: formData.assignedTo.split(',').map(s => s.trim()).filter(Boolean),
                 createdBy: user.uid
             })
-            toast.success('Goal created')
+            toast.success('Goal created successfully')
             onSuccess()
-        } catch (error) { toast.error('Failed') } finally { setSaving(false) }
+        } catch (error) { toast.error('Check fields and try again') } finally { setSaving(false) }
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Objective Nomenclature</Label>
+        <form onSubmit={handleSubmit} className="space-y-12 max-w-5xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Goal Title</Label>
                     <input
-                        placeholder="Ex: Weekly Asset Verification"
-                        className="form-input h-14"
+                        placeholder="Ex: Weekly Stock Audit"
+                        className="form-input"
                         value={formData.title}
                         onChange={e => setFormData({ ...formData, title: e.target.value })}
                         required
                     />
                 </div>
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Interval Pulse</Label>
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Repeats</Label>
                     <div className="relative">
                         <select
-                            className="form-input h-14 appearance-none px-5"
+                            className="form-input appearance-none"
                             value={formData.type}
                             onChange={e => setFormData({ ...formData, type: e.target.value })}
                         >
-                            <option value="daily">Daily Cycle</option>
-                            <option value="weekly">Weekly Pulse</option>
-                            <option value="monthly">Monthly Phase</option>
+                            <option value="daily">Every Day</option>
+                            <option value="weekly">Every Week</option>
+                            <option value="monthly">Every Month</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Directives & Key Results</Label>
+            <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description & Instructions</Label>
                 <textarea
-                    placeholder="Specify target parameters and deliverables..."
-                    className="form-input min-h-[140px] py-4 resize-none"
+                    placeholder="Tell your team exactly what needs to be done..."
+                    className="form-input min-h-[160px] py-6 resize-none"
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                 />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tactical Priority</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Priority Level</Label>
                     <select
-                        className="form-input h-14 appearance-none px-5"
+                        className="form-input appearance-none"
                         value={formData.priority}
                         onChange={e => setFormData({ ...formData, priority: e.target.value })}
                     >
-                        <option value="medium">Standard Operational</option>
-                        <option value="high">High Velocity</option>
-                        <option value="critical">Mission Critical</option>
+                        <option value="medium">Normal Priority</option>
+                        <option value="high">High Priority</option>
+                        <option value="critical">Urgent / Critical</option>
                     </select>
                 </div>
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Deployment Coverage (Personnel IDs)</Label>
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Assign to Team Members (IDs)</Label>
                     <input
-                        placeholder="101, 102, 205..."
-                        className="form-input h-14 font-mono text-xs"
+                        placeholder="Paste user IDs separated by commas..."
+                        className="form-input font-mono text-xs"
                         value={formData.assignedTo}
                         onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
                     />
                 </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
-                <Button type="button" variant="ghost" onClick={onClose} className="flex-1 h-16 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:bg-slate-50 transition-all">
-                    Cancel Registry
-                </Button>
-                <Button type="submit" disabled={saving} className="flex-1 h-16 btn-primary">
-                    {saving ? <Loader2 className="animate-spin h-5 w-5" /> : 'Authorize Objective'}
-                </Button>
+            <div className="flex gap-6 pt-6">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all border-2 border-transparent"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 h-16 btn-primary"
+                >
+                    {saving ? <Loader2 className="animate-spin h-6 w-6" /> : 'Create Repeating Goal'}
+                </button>
             </div>
         </form>
     )

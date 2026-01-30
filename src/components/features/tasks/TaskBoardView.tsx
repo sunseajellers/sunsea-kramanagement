@@ -36,7 +36,8 @@ export default function TaskBoardView({ tasks, onTaskClick, onRefresh }: Props) 
         blocked: [],
         completed: [],
         cancelled: [],
-        on_hold: []
+        on_hold: [],
+        overdue: []
     })
 
     useEffect(() => {
@@ -49,7 +50,8 @@ export default function TaskBoardView({ tasks, onTaskClick, onRefresh }: Props) 
             blocked: [],
             completed: [],
             cancelled: [],
-            on_hold: []
+            on_hold: [],
+            overdue: []
         }
 
         tasks.forEach(task => {

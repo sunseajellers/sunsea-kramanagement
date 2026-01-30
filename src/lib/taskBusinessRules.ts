@@ -35,14 +35,14 @@ export interface TaskExtension {
  * All state transitions and validations must go through this service
  */
 export class TaskBusinessRules {
-    
+
     /**
      * Validate if a task status transition is allowed
      */
     static validateStatusTransition(
         currentStatus: TaskStatus,
         newStatus: TaskStatus,
-        task: Task
+        _task: Task
     ): ValidationResult {
         // Define valid state transitions
         const validTransitions: Record<TaskStatus, TaskStatus[]> = {
@@ -59,7 +59,7 @@ export class TaskBusinessRules {
         };
 
         const allowedNextStates = validTransitions[currentStatus] || [];
-        
+
         if (!allowedNextStates.includes(newStatus)) {
             return {
                 valid: false,
@@ -122,7 +122,7 @@ export class TaskBusinessRules {
         // Check if actually overdue
         const now = new Date();
         const dueDate = new Date(task.dueDate);
-        
+
         if (now <= dueDate) {
             return {
                 valid: false,
@@ -143,14 +143,14 @@ export class TaskBusinessRules {
 
         // Use finalTargetDate if extension was approved
         const effectiveDueDate = task.finalTargetDate || task.dueDate;
-        
+
         const now = new Date();
         const dueDate = new Date(effectiveDueDate);
-        
+
         // Normalize to UTC midnight for fair comparison
         const nowUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
         const dueUTC = Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), dueDate.getUTCDate());
-        
+
         return nowUTC > dueUTC;
     }
 
@@ -187,7 +187,7 @@ export class TaskBusinessRules {
     static validateReassignment(
         task: Task,
         newAssignees: string[],
-        reassignedBy: string
+        _reassignedBy: string
     ): ValidationResult {
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -212,10 +212,10 @@ export class TaskBusinessRules {
         }
 
         // Warning if assigning to same users
-        const isSameAssignees = 
+        const isSameAssignees =
             newAssignees.length === task.assignedTo?.length &&
             newAssignees.every(a => task.assignedTo?.includes(a));
-        
+
         if (isSameAssignees) {
             warnings.push('Assignees are the same as current assignees');
         }
@@ -245,7 +245,7 @@ export class TaskBusinessRules {
 
         // Warn if task has subtasks or checklist items
         // (This would require checking subcollections, handled at service layer)
-        
+
         return {
             valid: true, // Deletion is always allowed but with warnings
             warnings
@@ -350,7 +350,7 @@ export class TaskBusinessRules {
         }
 
         // Warn if downgrading overdue task
-        if (task.status === 'overdue' && 
+        if (task.status === 'overdue' &&
             ['high', 'critical'].includes(task.priority || '') &&
             ['low', 'medium'].includes(newPriority)) {
             warnings.push('Downgrading priority of overdue task may delay resolution');

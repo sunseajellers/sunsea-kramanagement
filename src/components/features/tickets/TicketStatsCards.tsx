@@ -22,69 +22,80 @@ export function TicketStatsCards({ stats, loading = false }: Props) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {/* Total Tickets */}
-            <div className="stat-card">
-                <div className="flex flex-col gap-0.5">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Tickets</p>
-                    <h3 className="text-2xl font-black text-slate-900">{stats.total}</h3>
+            <div className="dashboard-card group">
+                <div className="flex items-start justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
+                        <Ticket className="w-7 h-7" />
+                    </div>
                 </div>
-                <div className="icon-box icon-box-md bg-blue-50 text-blue-600">
-                    <Ticket className="w-5 h-5" />
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em]">Total Requests</p>
+                    <h3 className="text-4xl font-black text-primary transition-colors group-hover:text-secondary">{stats.total}</h3>
+                    <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">SUBMITTED</p>
                 </div>
             </div>
 
             {/* Open Tickets */}
-            <div className="stat-card border-l-4 border-l-red-500">
-                <div className="flex flex-col gap-0.5">
-                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">Open</p>
-                    <h3 className="text-2xl font-black text-slate-900">{stats.open}</h3>
-                    <p className="text-[9px] text-slate-400 font-bold">
-                        {stats.total > 0 ? Math.round((stats.open / stats.total) * 100) : 0}% URGENCY RATE
-                    </p>
+            <div className="dashboard-card group">
+                <div className="flex items-start justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 shadow-sm group-hover:scale-110 transition-transform">
+                        <AlertCircle className="w-7 h-7" />
+                    </div>
                 </div>
-                <div className="icon-box icon-box-md bg-red-50 text-red-600">
-                    <AlertCircle className="w-5 h-5" />
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em]">Pending Action</p>
+                    <h3 className="text-4xl font-black text-rose-600">{stats.open}</h3>
+                    <p className="text-[9px] font-black text-rose-500/40 uppercase tracking-widest">
+                        {stats.total > 0 ? Math.round((stats.open / stats.total) * 100) : 0}% URGENCY
+                    </p>
                 </div>
             </div>
 
             {/* In Progress */}
-            <div className="stat-card border-l-4 border-l-amber-500">
-                <div className="flex flex-col gap-0.5">
-                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Processing</p>
-                    <h3 className="text-2xl font-black text-slate-900">{stats.inProgress}</h3>
-                    <p className="text-[9px] text-slate-400 font-bold">
-                        {stats.total > 0 ? Math.round((stats.inProgress / stats.total) * 100) : 0}% ACTIVE LOAD
-                    </p>
+            <div className="dashboard-card group">
+                <div className="flex items-start justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-sm group-hover:scale-110 transition-transform">
+                        <Clock className="w-7 h-7" />
+                    </div>
                 </div>
-                <div className="icon-box icon-box-md bg-amber-50 text-amber-600">
-                    <Clock className="w-5 h-5" />
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em]">Being Fixed</p>
+                    <h3 className="text-4xl font-black text-amber-600">{stats.inProgress}</h3>
+                    <p className="text-[9px] font-black text-amber-500/40 uppercase tracking-widest">
+                        {stats.total > 0 ? Math.round((stats.inProgress / stats.total) * 100) : 0}% ACTIVE
+                    </p>
                 </div>
             </div>
 
             {/* Resolved */}
-            <div className="stat-card border-l-4 border-l-emerald-500">
-                <div className="flex flex-col gap-0.5">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Resolved</p>
-                    <h3 className="text-2xl font-black text-slate-900">{stats.resolved}</h3>
-                    <p className="text-[9px] text-slate-400 font-bold">
-                        {stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0}% COMPLETION
-                    </p>
+            <div className="dashboard-card group">
+                <div className="flex items-start justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm group-hover:scale-110 transition-transform">
+                        <CheckCircle className="w-7 h-7" />
+                    </div>
                 </div>
-                <div className="icon-box icon-box-md bg-emerald-50 text-emerald-600">
-                    <CheckCircle className="w-5 h-5" />
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em]">Success Rate</p>
+                    <h3 className="text-4xl font-black text-emerald-600">{stats.resolved}</h3>
+                    <p className="text-[9px] font-black text-emerald-500/40 uppercase tracking-widest">
+                        {stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0}% DONE
+                    </p>
                 </div>
             </div>
 
             {/* Avg Resolution Time */}
-            <div className="stat-card border-l-4 border-l-purple-500">
-                <div className="flex flex-col gap-0.5">
-                    <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Efficiency</p>
-                    <h3 className="text-2xl font-black text-slate-900">{stats.avgResolutionTime.toFixed(1)}h</h3>
-                    <p className="text-[9px] text-slate-400 font-bold">AVG RESPONSE</p>
+            <div className="dashboard-card group">
+                <div className="flex items-start justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm group-hover:scale-110 transition-transform">
+                        <Clock className="w-7 h-7" />
+                    </div>
                 </div>
-                <div className="icon-box icon-box-md bg-purple-50 text-purple-600">
-                    <Clock className="w-5 h-5" />
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em]">Effectiveness</p>
+                    <h3 className="text-4xl font-black text-purple-600">{stats.avgResolutionTime.toFixed(1)}h</h3>
+                    <p className="text-[9px] font-black text-purple-500/40 uppercase tracking-widest">AVG RESPONSE</p>
                 </div>
             </div>
         </div>

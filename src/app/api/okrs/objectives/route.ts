@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { okrService } from '@/lib/okrService'
+import { serverOKRService } from '@/lib/server/okrService'
 import { withAuth } from '@/lib/authMiddleware'
 
 /**
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
             const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : undefined
             const quarter = searchParams.get('quarter') ? parseInt(searchParams.get('quarter')!) : undefined
 
-            const objectives = await okrService.getObjectives({
+            const objectives = await serverOKRService.getObjectives({
                 status,
                 timeframe,
                 ownerId,
@@ -26,9 +26,18 @@ export async function GET(request: NextRequest) {
                 quarter
             })
 
+            // Enrich with Key Results
+            const enrichedObjectives = await Promise.all(objectives.map(async (obj) => {
+                const keyResults = await serverOKRService.getKeyResultsByObjective(obj.id)
+                return {
+                    ...obj,
+                    keyResults
+                }
+            }))
+
             return NextResponse.json({
                 success: true,
-                data: objectives || []
+                data: enrichedObjectives || []
             })
         } catch (error) {
             console.error('Error fetching objectives:', error)
@@ -68,7 +77,7 @@ export async function POST(request: NextRequest) {
             data.createdBy = userId
             data.createdByName = data.ownerName // Fallback to ownerName if not provided
 
-            const objectiveId = await okrService.createObjective(data)
+            const objectiveId = await serverOKRService.createObjective(data)
 
             return NextResponse.json(
                 { success: true, data: { id: objectiveId }, message: 'Objective created successfully' },

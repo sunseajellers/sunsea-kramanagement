@@ -11,8 +11,7 @@ import {
     AlertCircle,
     CheckCircle,
     XCircle,
-    Loader2,
-    Eye
+    Loader2
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -106,81 +105,58 @@ export function TicketList({ tickets, loading = false, onRefresh, onTicketClick 
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-6">
             {tickets.map((ticket) => (
-                <Card
+                <div
                     key={ticket.id}
-                    className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    className="glass-panel p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer group border-border/40"
                     onClick={() => onTicketClick(ticket)}
                 >
-                    <div className="flex items-start justify-between gap-4">
-                        {/* Left: Ticket Info */}
-                        <div className="flex-1 min-w-0">
-                            {/* Ticket Number & Subject */}
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="font-mono text-sm font-semibold text-muted-foreground">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+                        <div className="flex-1 min-w-0 space-y-4">
+                            <div className="flex items-center gap-4">
+                                <span className="px-4 py-1.5 rounded-xl bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10">
                                     {ticket.ticketNumber}
                                 </span>
-                                <h3 className="font-semibold text-lg truncate">
+                                <h3 className="text-2xl font-black text-primary group-hover:text-secondary transition-colors uppercase tracking-tight truncate">
                                     {ticket.subject}
                                 </h3>
                             </div>
 
-                            {/* Description Preview */}
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            <p className="text-sm text-muted-foreground/70 font-medium leading-relaxed italic line-clamp-2 max-w-3xl">
                                 {ticket.description}
                             </p>
 
-                            {/* Meta Info */}
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                    <User className="w-4 h-4" />
-                                    <span>{ticket.requesterName}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>Due: {format(new Date(ticket.dueDate), 'MMM dd, yyyy')}</span>
-                                </div>
-                                {ticket.assignedToName && (
-                                    <div className="flex items-center gap-1">
-                                        <User className="w-4 h-4" />
-                                        <span>Assigned to: {ticket.assignedToName}</span>
+                            <div className="flex flex-wrap items-center gap-8 py-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+                                        <User className="w-4 h-4 text-muted-foreground/60" />
                                     </div>
-                                )}
-                                <div className="text-xs">
+                                    <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{ticket.requesterName}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+                                        <Calendar className="w-4 h-4 text-muted-foreground/60" />
+                                    </div>
+                                    <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">Due {format(new Date(ticket.dueDate), 'MMM dd')}</span>
+                                </div>
+                                <div className="px-4 py-1.5 rounded-xl bg-muted/20 text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest border border-border/40">
                                     {getRequestTypeLabel(ticket.requestType)}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Right: Status & Priority */}
-                        <div className="flex flex-col items-end gap-2">
-                            {getStatusBadge(ticket.status)}
-                            {getPriorityBadge(ticket.priority)}
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onTicketClick(ticket)
-                                }}
-                            >
-                                <Eye className="w-4 h-4 mr-1" />
-                                View
-                            </Button>
+                        <div className="flex flex-row xl:flex-col items-center xl:items-end gap-6 border-t xl:border-t-0 pt-6 xl:pt-0 border-border/20">
+                            <div className="flex items-center gap-3">
+                                {getPriorityBadge(ticket.priority)}
+                                {getStatusBadge(ticket.status)}
+                            </div>
+                            <button className="btn-secondary h-12 px-8 text-[10px] tracking-[0.2em] font-black">
+                                VIEW DETAILS
+                            </button>
                         </div>
                     </div>
-
-                    {/* Solutions Count */}
-                    {ticket.solutions && ticket.solutions.length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                                <span>{ticket.solutions.length} solution{ticket.solutions.length !== 1 ? 's' : ''} added</span>
-                            </div>
-                        </div>
-                    )}
-                </Card>
+                </div>
             ))}
         </div>
     )

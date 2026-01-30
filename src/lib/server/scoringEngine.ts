@@ -2,7 +2,7 @@
 // SERVER-SIDE ONLY - Scoring calculation and storage engine
 
 import { adminDb } from '../firebase-admin';
-import { Task, PerformanceScore } from '@/types';
+import { Task } from '@/types';
 import { startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { calculateTaskScore } from './scoringService';
 
