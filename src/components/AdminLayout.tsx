@@ -6,15 +6,15 @@ import {
     LayoutDashboard,
     LogOut,
     BarChart3,
-    FileText,
     Loader2,
     Shield,
     Activity,
-    Settings,
     Ticket,
     Target,
     BookOpen,
-    Users
+    Users,
+    ClipboardCheck,
+    History
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -36,18 +36,18 @@ const menuItems = [
     },
     {
         href: '/admin/operations',
-        label: 'Workplace',
-        icon: FileText,
-    },
-    {
-        href: '/admin/okr',
-        label: 'Goals',
-        icon: Target,
+        label: 'KRA',
+        icon: ClipboardCheck,
     },
     {
         href: '/admin/performance',
-        label: 'Results',
-        icon: BarChart3,
+        label: 'KPI',
+        icon: Activity,
+    },
+    {
+        href: '/admin/okr',
+        label: 'OKR',
+        icon: Target,
     },
     {
         href: '/admin/learning-hub',
@@ -61,13 +61,8 @@ const menuItems = [
     },
     {
         href: '/admin/activity-log',
-        label: 'History',
-        icon: Activity,
-    },
-    {
-        href: '/admin/system',
-        label: 'Setup',
-        icon: Settings,
+        label: 'Log',
+        icon: History,
     },
 ];
 
@@ -116,7 +111,7 @@ export default function AdminLayout({
         <div className="min-h-screen flex flex-col bg-background">
             {/* Top Brand Bar */}
             <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
-                <div className="max-w-[1700px] mx-auto">
+                <div className="max-w-[1800px] mx-auto">
                     <div className="glass-panel px-6 py-3 flex items-center justify-between border-border shadow-xl shadow-primary/5">
                         {/* Brand */}
                         <div className="flex items-center gap-10">
@@ -134,8 +129,8 @@ export default function AdminLayout({
                                 </div>
                             </Link>
 
-                            {/* Desktop Menu (2xl and above) */}
-                            <div className="hidden 2xl:flex items-center gap-2 bg-muted/50 p-1.5 rounded-2xl border border-border">
+                            {/* Unified Header Menu (lg and above) */}
+                            <div className="hidden lg:flex items-center gap-1.5 bg-muted/30 p-1 rounded-xl border border-border/50">
                                 {menuItems.map((item) => {
                                     const isActive = item.href === '/admin'
                                         ? pathname === '/admin'
@@ -145,13 +140,13 @@ export default function AdminLayout({
                                             key={item.href}
                                             href={item.href}
                                             className={cn(
-                                                "flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300",
+                                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300",
                                                 isActive
                                                     ? "bg-background text-primary shadow-sm border border-border"
-                                                    : "text-muted-foreground hover:text-primary hover:bg-background/50"
+                                                    : "text-muted-foreground hover:text-primary hover:bg-background/40"
                                             )}
                                         >
-                                            <item.icon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground/60")} />
+                                            <item.icon className={cn("h-3 w-3", isActive ? "text-primary" : "text-muted-foreground/50")} />
                                             <span>{item.label}</span>
                                         </Link>
                                     );
@@ -175,10 +170,11 @@ export default function AdminLayout({
                 </div>
             </nav>
 
-            {/* Mobile/Tablet Secondary Menu Bar (Visible below 2xl) */}
-            <div className="2xl:hidden fixed top-[90px] left-0 right-0 z-40 px-6">
-                <div className="glass-panel overflow-x-auto p-2 scrollbar-none border-slate-200/60 shadow-lg shadow-slate-100/30">
-                    <div className="flex items-center gap-2 whitespace-nowrap min-w-max px-2">
+
+            {/* Mobile Navigation Bar */}
+            <div className="lg:hidden fixed top-[100px] left-0 right-0 z-40 px-6">
+                <div className="glass-panel overflow-x-auto p-1.5 scrollbar-none border-border shadow-lg shadow-primary/5">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap min-w-max">
                         {menuItems.map((item) => {
                             const isActive = item.href === '/admin'
                                 ? pathname === '/admin'
@@ -188,13 +184,13 @@ export default function AdminLayout({
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
+                                        "flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                                         isActive
-                                            ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                                            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     )}
                                 >
-                                    <item.icon className={cn("h-3.5 w-3.5", isActive ? "text-white" : "text-slate-400")} />
+                                    <item.icon className={cn("h-3 w-3", isActive ? "text-white" : "text-muted-foreground/60")} />
                                     {item.label}
                                 </Link>
                             );
@@ -204,7 +200,7 @@ export default function AdminLayout({
             </div>
 
             {/* Main Content Area */}
-            <main className="flex-1 pt-36 2xl:pt-28 pb-16">
+            <main className="flex-1 pt-40 lg:pt-28 pb-16">
                 <div className="admin-container">
                     {children}
                 </div>

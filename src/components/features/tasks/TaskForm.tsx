@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createTask, updateTask } from '@/lib/taskService'
 import { fetchKRAs } from '@/lib/kraService'
-import { Task, Priority, TaskStatus, TaskFrequency } from '@/types'
+import { okrService } from '@/lib/okrService'
+import { Task, Priority, TaskStatus, TaskFrequency, Objective, KeyResult } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2, ClipboardCheck } from 'lucide-react'
 import {
@@ -42,6 +43,8 @@ interface TaskFormData {
     category: string
     frequency: TaskFrequency
     finalTargetDate?: string
+    objectiveId?: string
+    keyResultId?: string
 }
 
 export default function TaskForm({ initialData, onClose, onSaved }: Props) {
@@ -49,6 +52,8 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
     const isEdit = !!initialData
     const [loading, setLoading] = useState(false)
     const [kras, setKras] = useState<any[]>([])
+    const [objectives, setObjectives] = useState<Objective[]>([])
+    const [keyResults, setKeyResults] = useState<KeyResult[]>([])
     const [users, setUsers] = useState<any[]>([])
 
     const [form, setForm] = useState<TaskFormData>({
@@ -61,7 +66,9 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         dueDate: '',
         category: 'General',
         frequency: 'one-time',
-        finalTargetDate: ''
+        finalTargetDate: '',
+        objectiveId: '',
+        keyResultId: ''
     })
 
     useEffect(() => {
@@ -74,8 +81,12 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
 
                 // Load KRAs
                 if (user) {
-                    const kraData = await fetchKRAs(user.uid)
+                    const [kraData, objectiveData] = await Promise.all([
+                        fetchKRAs(user.uid),
+                        okrService.getObjectives({ status: 'active' })
+                    ])
                     setKras(kraData)
+                    setObjectives(objectiveData)
                 }
             } catch (error) {
                 console.error('Failed to load initial data', error)
@@ -83,6 +94,23 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         }
         loadInitialData()
     }, [user])
+
+    // Load Key Results when objective changes
+    useEffect(() => {
+        const loadKeyResults = async () => {
+            if (form.objectiveId && form.objectiveId !== 'no_objective') {
+                try {
+                    const krData = await okrService.getKeyResultsByObjective(form.objectiveId)
+                    setKeyResults(krData)
+                } catch (error) {
+                    console.error('Failed to load key results', error)
+                }
+            } else {
+                setKeyResults([])
+            }
+        }
+        loadKeyResults()
+    }, [form.objectiveId])
 
     useEffect(() => {
         if (initialData) {
@@ -106,7 +134,9 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 dueDate: formatDate(initialData.dueDate),
                 category: initialData.category || 'General',
                 frequency: initialData.frequency || 'one-time',
-                finalTargetDate: formatDate(initialData.finalTargetDate)
+                finalTargetDate: formatDate(initialData.finalTargetDate),
+                objectiveId: initialData.objectiveId || '',
+                keyResultId: initialData.keyResultId || ''
             })
         }
     }, [initialData])
@@ -140,6 +170,8 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                 dueDate: new Date(form.dueDate),
                 category: form.category,
                 frequency: form.frequency,
+                objectiveId: (form.objectiveId && form.objectiveId !== 'no_objective') ? form.objectiveId : null,
+                keyResultId: (form.keyResultId && form.keyResultId !== 'no_key_result') ? form.keyResultId : null,
                 progress: isEdit ? initialData?.progress : 0,
                 updatedAt: new Date()
             }
@@ -344,25 +376,71 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             </div>
                         </div>
 
-                        <div className="grid gap-2.5">
-                            <Label htmlFor="kraId" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Does this belong to a Big Goal?</Label>
-                            <Select
-                                value={form.kraId}
-                                onValueChange={(v) => handleSelectChange('kraId', v)}
-                                disabled={loading}
-                            >
-                                <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100 text-left">
-                                    <SelectValue placeholder="No Big Goal" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="no_kra_selection_value">General Duty (No KRA)</SelectItem>
-                                    {kras.map((kra) => (
-                                        <SelectItem key={kra.id} value={kra.id}>
-                                            {kra.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <div className="grid gap-6">
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="kraId" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Business Responsibility (KRA)</Label>
+                                <Select
+                                    value={form.kraId}
+                                    onValueChange={(v) => handleSelectChange('kraId', v)}
+                                    disabled={loading}
+                                >
+                                    <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100 text-left">
+                                        <SelectValue placeholder="No KRA Selection" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="no_kra_selection_value">General Duty (No KRA)</SelectItem>
+                                        {kras.map((kra) => (
+                                            <SelectItem key={kra.id} value={kra.id}>
+                                                {kra.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="grid gap-2.5">
+                                    <Label htmlFor="objectiveId" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Strategic Goal (Objective)</Label>
+                                    <Select
+                                        value={form.objectiveId}
+                                        onValueChange={(v) => handleSelectChange('objectiveId', v)}
+                                        disabled={loading}
+                                    >
+                                        <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100 text-left">
+                                            <SelectValue placeholder="No Objective Link" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="no_objective">None</SelectItem>
+                                            {objectives.map((obj) => (
+                                                <SelectItem key={obj.id} value={obj.id}>
+                                                    {obj.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-2.5">
+                                    <Label htmlFor="keyResultId" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Target Result (Key Result)</Label>
+                                    <Select
+                                        value={form.keyResultId}
+                                        onValueChange={(v) => handleSelectChange('keyResultId', v)}
+                                        disabled={loading || !form.objectiveId || form.objectiveId === 'no_objective'}
+                                    >
+                                        <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100 text-left">
+                                            <SelectValue placeholder="No Key Result" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="no_key_result">None</SelectItem>
+                                            {keyResults.map((kr) => (
+                                                <SelectItem key={kr.id} value={kr.id}>
+                                                    {kr.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>

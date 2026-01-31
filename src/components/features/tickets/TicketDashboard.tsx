@@ -91,7 +91,10 @@ export function TicketDashboard() {
         <div className="space-y-12 animate-in">
             {/* Header */}
             <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-10">
-                <div />
+                <div>
+                    <h1 className="section-title">Support Desk</h1>
+                    <p className="section-subtitle">Technical assistance, facility requests, and grievance management</p>
+                </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleRefresh}

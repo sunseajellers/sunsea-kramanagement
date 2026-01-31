@@ -475,6 +475,8 @@ export interface Task {
     title: string
     description: string
     kraId?: string // Optional link to KRA
+    objectiveId?: string // Optional link to OKR Objective
+    keyResultId?: string // Optional link to OKR Key Result
     priority: Priority
     status: TaskStatus
     assignedTo: string[] // User IDs who can work on this task
@@ -719,6 +721,7 @@ export interface ScoreBreakdown {
     timelinessScore: number
     qualityScore: number
     kraAlignmentScore: number
+    kpiAchievementScore: number
     totalScore: number
 }
 
@@ -766,6 +769,7 @@ export interface ScoringConfig {
     timelinessWeight: number // 0-100
     qualityWeight: number // 0-100
     kraAlignmentWeight: number // 0-100
+    kpiAchievementWeight: number // 0-100
     updatedAt: Date
     updatedBy: string
 }

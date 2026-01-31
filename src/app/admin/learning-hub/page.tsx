@@ -69,8 +69,8 @@ export default function LearningHubPage() {
             {/* Header Section */}
             <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="section-title">Knowledge Nexus</h1>
-                    <p className="section-subtitle">Centralized intelligence, documentation, and operational protocols</p>
+                    <h1 className="section-title">Operations Manuals</h1>
+                    <p className="section-subtitle">Company-wide SOPs, training modules, and strategic guides</p>
                 </div>
                 <Button className="btn-primary">
                     <Plus className="w-5 h-5 mr-2" />

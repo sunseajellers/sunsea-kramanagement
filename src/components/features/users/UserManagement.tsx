@@ -16,7 +16,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import toast from 'react-hot-toast'
-import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { UserCheck, Search, Download, MoreHorizontal, UserPlus, Eye, EyeOff, Shield, Activity, Loader2, Users, ChevronLeft, ChevronRight, Trash2, Edit2 } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -44,14 +44,18 @@ export default function UserManagement() {
 
     // Create user dialog state
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
+    const [editDialogOpen, setEditDialogOpen] = useState(false)
+    const [selectedUser, setSelectedUser] = useState<User | null>(null)
     const [createLoading, setCreateLoading] = useState(false)
-    const [newUserEmail, setNewUserEmail] = useState('')
-    const [newUserPassword, setNewUserPassword] = useState('')
-    const [newUserName, setNewUserName] = useState('')
-    const [newEmployeeId, setNewEmployeeId] = useState('')
-    const [newDepartment, setNewDepartment] = useState('')
-    const [newPosition, setNewPosition] = useState('')
-    const [newEmployeeType, setNewEmployeeType] = useState<EmployeeTypeEnum>('full-time')
+
+    // Form state (Shared for Create/Edit)
+    const [formEmail, setFormEmail] = useState('')
+    const [formPassword, setFormPassword] = useState('')
+    const [formName, setFormName] = useState('')
+    const [formEmployeeId, setFormEmployeeId] = useState('')
+    const [formDepartment, setFormDepartment] = useState('')
+    const [formPosition, setFormPosition] = useState('')
+    const [formEmployeeType, setFormEmployeeType] = useState<EmployeeTypeEnum>('full-time')
     const [showPassword, setShowPassword] = useState(false)
 
     // Filtering and search state
@@ -63,6 +67,36 @@ export default function UserManagement() {
     useEffect(() => {
         loadData()
     }, [])
+
+    const generateNextEmployeeId = () => {
+        const lastId = users.reduce((max, u) => {
+            const num = parseInt(u.employeeId?.replace('EMP-', '') || '0')
+            return num > max ? num : max
+        }, 0)
+        setFormEmployeeId(`EMP-${String(lastId + 1).padStart(3, '0')}`)
+    }
+
+    const openEdit = (u: User) => {
+        setSelectedUser(u)
+        setFormName(u.fullName)
+        setFormEmail(u.email)
+        setFormEmployeeId(u.employeeId || '')
+        setFormDepartment(u.department || '')
+        setFormPosition(u.position || '')
+        setFormEmployeeType(u.employeeType || 'full-time')
+        setEditDialogOpen(true)
+    }
+
+    const resetForm = () => {
+        setFormName('')
+        setFormEmail('')
+        setFormPassword('')
+        setFormEmployeeId('')
+        setFormDepartment('')
+        setFormPosition('')
+        setFormEmployeeType('full-time')
+        setShowPassword(false)
+    }
 
     const loadData = async () => {
         try {
@@ -228,12 +262,12 @@ export default function UserManagement() {
             return
         }
 
-        if (!newUserEmail || !newUserPassword || !newUserName || !newEmployeeId) {
+        if (!formEmail || !formPassword || !formName || !formEmployeeId) {
             toast.error('Please fill in all required fields (Name, Email, Password, Employee ID)')
             return
         }
 
-        if (newUserPassword.length < 6) {
+        if (formPassword.length < 6) {
             toast.error('Password must be at least 6 characters')
             return
         }
@@ -243,30 +277,47 @@ export default function UserManagement() {
         try {
             const idToken = await user.getIdToken()
             await createUser(
-                newUserEmail,
-                newUserPassword,
-                newUserName,
+                formEmail,
+                formPassword,
+                formName,
                 {
-                    employeeId: newEmployeeId,
-                    department: newDepartment,
-                    position: newPosition,
-                    employeeType: newEmployeeType
+                    employeeId: formEmployeeId,
+                    department: formDepartment,
+                    position: formPosition,
+                    employeeType: formEmployeeType
                 },
                 [],
                 idToken
             )
 
-            toast.success(`User ${newUserName} created successfully!`)
+            toast.success(`User ${formName} created successfully!`)
             setCreateDialogOpen(false)
-            setNewUserEmail('')
-            setNewUserPassword('')
-            setNewUserName('')
-            setNewEmployeeId('')
-            setNewDepartment('')
-            setNewPosition('')
+            resetForm()
             loadUsers()
         } catch (error: any) {
             toast.error(error.message || 'Failed to create user')
+        } finally {
+            setCreateLoading(false)
+        }
+    }
+
+    const handleUpdateUser = async () => {
+        if (!selectedUser) return
+        setCreateLoading(true)
+        try {
+            await updateUser(selectedUser.id, {
+                fullName: formName,
+                employeeId: formEmployeeId,
+                department: formDepartment,
+                position: formPosition,
+                employeeType: formEmployeeType
+            })
+            toast.success('User updated successfully')
+            setEditDialogOpen(false)
+            resetForm()
+            loadUsers()
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to update user')
         } finally {
             setCreateLoading(false)
         }
@@ -300,7 +351,11 @@ export default function UserManagement() {
                         <Download className="h-4 w-4" />
                     </button>
                     <button
-                        onClick={() => setCreateDialogOpen(true)}
+                        onClick={() => {
+                            resetForm();
+                            generateNextEmployeeId();
+                            setCreateDialogOpen(true);
+                        }}
                         className="btn-primary h-10 px-6"
                     >
                         <UserPlus className="h-4 w-4 mr-2" />
@@ -455,6 +510,14 @@ export default function UserManagement() {
                                                     <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 px-5 py-4">Options</DropdownMenuLabel>
                                                     <DropdownMenuSeparator className="bg-muted mx-3" />
                                                     <DropdownMenuItem
+                                                        onClick={() => openEdit(u)}
+                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
+                                                    >
+                                                        <Edit2 className="h-5 w-5 opacity-40" />
+                                                        Edit Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-muted mx-3" />
+                                                    <DropdownMenuItem
                                                         onClick={() => updateUser(u.id, { isAdmin: !u.isAdmin })}
                                                         className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
                                                     >
@@ -574,22 +637,34 @@ export default function UserManagement() {
                 ]}
             />
 
-            {/* Add Person Dialog */}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            {/* Account Dialog (Unified Create/Edit) */}
+            <Dialog
+                open={createDialogOpen || editDialogOpen}
+                onOpenChange={(val) => {
+                    if (!val) {
+                        setCreateDialogOpen(false);
+                        setEditDialogOpen(false);
+                    }
+                }}
+            >
                 <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <div className="flex items-center gap-4 mb-2">
                             <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm border border-primary/10">
-                                <UserPlus className="w-8 h-8" />
+                                {createDialogOpen ? <UserPlus className="w-8 h-8" /> : <Edit2 className="w-8 h-8" />}
                             </div>
                             <div>
-                                <DialogTitle className="text-2xl font-black uppercase tracking-tight">Add New Person</DialogTitle>
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Add someone new to the team</p>
+                                <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+                                    {createDialogOpen ? 'Add New Person' : 'Edit Person'}
+                                </DialogTitle>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                                    {createDialogOpen ? 'Add someone new to the team' : `Updating details for ${formName}`}
+                                </p>
                             </div>
                         </div>
                     </DialogHeader>
 
-                    <form onSubmit={(e) => { e.preventDefault(); handleCreateUser(); }} className="space-y-10 py-6">
+                    <form onSubmit={(e) => { e.preventDefault(); createDialogOpen ? handleCreateUser() : handleUpdateUser(); }} className="space-y-10 py-6">
                         {/* Primary Identity Section */}
                         <div className="space-y-6">
                             <div className="flex items-center gap-3 mb-2">
@@ -603,8 +678,8 @@ export default function UserManagement() {
                                     <Input
                                         id="fullName"
                                         placeholder="Ex: John Smith"
-                                        value={newUserName}
-                                        onChange={(e) => setNewUserName(e.target.value)}
+                                        value={formName}
+                                        onChange={(e) => setFormName(e.target.value)}
                                         disabled={createLoading}
                                         className="h-12 bg-slate-50/50 border-slate-100"
                                         required
@@ -612,15 +687,27 @@ export default function UserManagement() {
                                 </div>
                                 <div className="grid gap-2.5">
                                     <Label htmlFor="employeeId" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Employee ID *</Label>
-                                    <Input
-                                        id="employeeId"
-                                        placeholder="Ex: EMP101"
-                                        value={newEmployeeId}
-                                        onChange={(e) => setNewEmployeeId(e.target.value)}
-                                        disabled={createLoading}
-                                        className="h-12 bg-slate-50/50 border-slate-100"
-                                        required
-                                    />
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="employeeId"
+                                            placeholder="Ex: EMP101"
+                                            value={formEmployeeId}
+                                            onChange={(e) => setFormEmployeeId(e.target.value)}
+                                            disabled={createLoading}
+                                            className="h-12 bg-slate-50/50 border-slate-100"
+                                            required
+                                        />
+                                        {createDialogOpen && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={generateNextEmployeeId}
+                                                className="h-12 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-slate-100"
+                                            >
+                                                Auto
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -630,9 +717,9 @@ export default function UserManagement() {
                                     id="email"
                                     type="email"
                                     placeholder="name@company.com"
-                                    value={newUserEmail}
-                                    onChange={(e) => setNewUserEmail(e.target.value)}
-                                    disabled={createLoading}
+                                    value={formEmail}
+                                    onChange={(e) => setFormEmail(e.target.value)}
+                                    disabled={createLoading || editDialogOpen}
                                     className="h-12 bg-slate-50/50 border-slate-100"
                                     required
                                 />
@@ -650,8 +737,8 @@ export default function UserManagement() {
                                 <div className="grid gap-2.5">
                                     <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Department</Label>
                                     <Select
-                                        value={newDepartment}
-                                        onValueChange={(v) => setNewDepartment(v)}
+                                        value={formDepartment}
+                                        onValueChange={(v) => setFormDepartment(v)}
                                         disabled={createLoading}
                                     >
                                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
@@ -675,8 +762,8 @@ export default function UserManagement() {
                                     <Input
                                         id="position"
                                         placeholder="Ex: Senior Designer"
-                                        value={newPosition}
-                                        onChange={(e) => setNewPosition(e.target.value)}
+                                        value={formPosition}
+                                        onChange={(e) => setFormPosition(e.target.value)}
                                         disabled={createLoading}
                                         className="h-12 bg-slate-50/50 border-slate-100"
                                     />
@@ -685,8 +772,8 @@ export default function UserManagement() {
                                 <div className="grid gap-2.5">
                                     <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Employment Basis</Label>
                                     <Select
-                                        value={newEmployeeType}
-                                        onValueChange={(v: any) => setNewEmployeeType(v)}
+                                        value={formEmployeeType}
+                                        onValueChange={(v: any) => setFormEmployeeType(v)}
                                         disabled={createLoading}
                                     >
                                         <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
@@ -700,28 +787,30 @@ export default function UserManagement() {
                                     </Select>
                                 </div>
 
-                                <div className="grid gap-2.5">
-                                    <Label htmlFor="password" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Security Credentials *</Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder="Min 6 characters"
-                                            value={newUserPassword}
-                                            onChange={(e) => setNewUserPassword(e.target.value)}
-                                            disabled={createLoading}
-                                            className="h-12 pr-12 bg-slate-50/50 border-slate-100"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute inset-y-0 right-0 px-4 flex items-center text-muted-foreground/30 hover:text-primary transition-colors"
-                                        >
-                                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                        </button>
+                                {createDialogOpen && (
+                                    <div className="grid gap-2.5">
+                                        <Label htmlFor="password" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Security Credentials *</Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="password"
+                                                type={showPassword ? 'text' : 'password'}
+                                                placeholder="Min 6 characters"
+                                                value={formPassword}
+                                                onChange={(e) => setFormPassword(e.target.value)}
+                                                disabled={createLoading}
+                                                className="h-12 pr-12 bg-slate-50/50 border-slate-100"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 px-4 flex items-center text-muted-foreground/30 hover:text-primary transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
@@ -729,7 +818,10 @@ export default function UserManagement() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => setCreateDialogOpen(false)}
+                                onClick={() => {
+                                    setCreateDialogOpen(false);
+                                    setEditDialogOpen(false);
+                                }}
                                 disabled={createLoading}
                                 className="h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]"
                             >
@@ -740,8 +832,8 @@ export default function UserManagement() {
                                 disabled={createLoading}
                                 className="h-12 px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20"
                             >
-                                {createLoading ? <Loader2 className="animate-spin h-5 w-5 mr-3" /> : <UserPlus className="w-5 h-5 mr-3" />}
-                                Create Account
+                                {createLoading ? <Loader2 className="animate-spin h-5 w-5 mr-3" /> : (createDialogOpen ? <UserPlus className="w-5 h-5 mr-3" /> : <Shield className="w-5 h-5 mr-3" />)}
+                                {createDialogOpen ? 'Create Account' : 'Save Changes'}
                             </Button>
                         </DialogFooter>
                     </form>

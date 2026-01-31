@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase'
 import { collection, doc, addDoc, updateDoc, deleteDoc, getDocs, query, where, getDoc, Timestamp, orderBy } from 'firebase/firestore'
 import { KPI } from '@/types'
+import { okrService } from './okrService'
 
 const COLLECTION = 'kpis'
 
@@ -17,7 +18,10 @@ export async function createKPI(kpiData: Omit<KPI, 'id' | 'createdAt' | 'updated
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
     })
-    return docRef.id
+    const id = docRef.id
+    // Sync with OKRs
+    await okrService.syncKPIProgress(id)
+    return id
 }
 
 /**
@@ -79,6 +83,8 @@ export async function updateKPI(kpiId: string, updates: Partial<Omit<KPI, 'id' |
         updateData.weekStartDate = Timestamp.fromDate(updates.weekStartDate)
     }
     await updateDoc(docRef, updateData)
+    // Sync with OKRs
+    await okrService.syncKPIProgress(kpiId)
 }
 
 /**
@@ -114,6 +120,8 @@ export async function rolloverKPIsForUser(userId: string): Promise<void> {
                 weekStartDate: monday,
                 previousWeekCommitment: `Carried over from week of ${kpi.weekStartDate.toLocaleDateString()}`,
             })
+            // Sync with OKRs
+            await okrService.syncKPIProgress(kpi.id)
         }
     }
 }

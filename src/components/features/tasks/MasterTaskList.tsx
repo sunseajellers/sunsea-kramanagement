@@ -12,13 +12,15 @@ import {
     Trash2,
     Loader2,
     Users,
-    UserPlus
+    UserPlus,
+    Upload
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
 import TaskForm from '@/components/features/tasks/TaskForm'
+import BulkTaskUpload from '@/components/features/tasks/BulkTaskUpload'
 import { deleteTask } from '@/lib/taskService'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -53,6 +55,7 @@ function MasterTaskListContent() {
 
     // Form states
     const [isFormOpen, setIsFormOpen] = useState(!!initialAssignTo)
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false)
     const [editingTask, setEditingTask] = useState<Task | null>(null)
     const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
@@ -159,16 +162,25 @@ function MasterTaskListContent() {
                     <h2 className="section-title">All Tasks</h2>
                     <p className="section-subtitle">A complete list of all work assigned to your team</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setEditingTask(null)
-                        setIsFormOpen(true)
-                    }}
-                    className="btn-primary"
-                >
-                    <Plus className="w-5 h-5" />
-                    Add New Task
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="btn-secondary flex items-center gap-2"
+                    >
+                        <Upload className="w-5 h-5" />
+                        <span>Import CSV</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setEditingTask(null)
+                            setIsFormOpen(true)
+                        }}
+                        className="btn-primary"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Add New Task
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -408,6 +420,16 @@ function MasterTaskListContent() {
                     onSaved={() => {
                         setIsFormOpen(false)
                         setEditingTask(null)
+                        loadData()
+                    }}
+                />
+            )}
+
+            {/* CSV Import Modal */}
+            {isImportModalOpen && (
+                <BulkTaskUpload
+                    onClose={() => setIsImportModalOpen(false)}
+                    onSuccess={() => {
                         loadData()
                     }}
                 />

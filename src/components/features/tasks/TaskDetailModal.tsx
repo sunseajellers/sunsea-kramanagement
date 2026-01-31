@@ -22,7 +22,8 @@ import {
     CheckCircle,
     Clock,
     CheckCircle2,
-    ExternalLink
+    ExternalLink,
+    Target
 } from 'lucide-react'
 
 interface Props {
@@ -61,6 +62,9 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
     const [checklist, setChecklist] = useState<any[]>([])
     const [activity, setActivity] = useState<any[]>([])
     const [loadingChecklist, setLoadingChecklist] = useState(false)
+    const [linkedObjective, setLinkedObjective] = useState<any>(null)
+    const [linkedKR, setLinkedKR] = useState<any>(null)
+    const [loadingLinks, setLoadingLinks] = useState(false)
 
     useEffect(() => {
         setLocalTask(task)
@@ -68,7 +72,28 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
         loadChecklist()
         loadActivity()
         checkPermissions()
+        loadLinks()
     }, [task])
+
+    const loadLinks = async () => {
+        if (!task.objectiveId && !task.keyResultId) return
+        setLoadingLinks(true)
+        try {
+            const { okrService } = await import('@/lib/okrService')
+            if (task.objectiveId) {
+                const obj = await okrService.getObjective(task.objectiveId)
+                setLinkedObjective(obj)
+            }
+            if (task.keyResultId) {
+                const kr = await okrService.getKeyResult(task.keyResultId)
+                setLinkedKR(kr)
+            }
+        } catch (error) {
+            console.error('Failed to load goal links:', error)
+        } finally {
+            setLoadingLinks(false)
+        }
+    }
 
     const loadChecklist = async () => {
         setLoadingChecklist(true)
@@ -340,6 +365,36 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Strategic Links */}
+                        {(localTask.kraId || linkedObjective || linkedKR) && (
+                            <div className="p-5 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 rounded-2xl border border-indigo-100/50 space-y-4">
+                                <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] mb-2">
+                                    <Target className="w-4 h-4" />
+                                    Strategic Alignment
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {localTask.kraId && (
+                                        <div className="bg-white/60 p-3 rounded-xl border border-white shadow-sm">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Business KRA</p>
+                                            <p className="text-xs font-bold text-slate-700">{localTask.kraId}</p>
+                                        </div>
+                                    )}
+                                    {linkedObjective && (
+                                        <div className="bg-white/60 p-3 rounded-xl border border-white shadow-sm">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Strategic Goal (OKR)</p>
+                                            <p className="text-xs font-bold text-slate-700">{linkedObjective.title}</p>
+                                        </div>
+                                    )}
+                                    {linkedKR && (
+                                        <div className="md:col-span-2 bg-white/60 p-3 rounded-xl border border-white shadow-sm">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Key Result Target</p>
+                                            <p className="text-xs font-bold text-slate-700">{linkedKR.title}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Proof of Work Section */}
                         {(localTask.proofOfWork || localTask.proofLink) && (

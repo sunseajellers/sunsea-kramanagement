@@ -84,7 +84,7 @@ export function OKRDashboard() {
             {/* Header */}
             <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="section-title">Strategic OKRs</h1>
+                    <h1 className="section-title">OKR Strategy</h1>
                     <p className="section-subtitle">
                         Measuring mission-critical objectives and quantifiable key results
                     </p>

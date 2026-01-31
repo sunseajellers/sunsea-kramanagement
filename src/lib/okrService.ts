@@ -307,16 +307,34 @@ export class OKRService {
         const keyResults = await this.getKeyResultsByObjective(objectiveId)
 
         // Get actual completed tasks count from Firestore
-        let tasksCompleted = 0
-        const tasksTotal = objective.linkedTaskIds?.length || 0
+        // We query for tasks that have this objectiveId OR are explicitly in the linkedTaskIds list
+        let tasks: any[] = []
 
+        // 1. Query by objectiveId (The new way)
+        const tasksQuery = query(
+            collection(db, 'tasks'),
+            where('objectiveId', '==', objectiveId)
+        )
+        const tasksSnapshot = await getDocs(tasksQuery)
+        tasks = tasksSnapshot.docs.map(doc => doc.data())
+
+        // 2. Also check linkedTaskIds (The old way/manual links)
         if (objective.linkedTaskIds && objective.linkedTaskIds.length > 0) {
-            const tasksSnapshot = await getDocs(query(
-                collection(db, 'tasks'),
-                where('__name__', 'in', objective.linkedTaskIds)
-            ))
-            tasksCompleted = tasksSnapshot.docs.filter(doc => doc.data().status === 'completed').length
+            // Find IDs that aren't already in our 'tasks' list to avoid duplicates
+            const existingIds = tasksSnapshot.docs.map(doc => doc.id)
+            const otherIds = objective.linkedTaskIds.filter(id => !existingIds.includes(id))
+
+            if (otherIds.length > 0) {
+                const otherTasksSnapshot = await getDocs(query(
+                    collection(db, 'tasks'),
+                    where('__name__', 'in', otherIds)
+                ))
+                tasks = [...tasks, ...otherTasksSnapshot.docs.map(doc => doc.data())]
+            }
         }
+
+        const tasksCompleted = tasks.filter(t => t.status === 'completed').length
+        const tasksTotal = tasks.length
 
         return {
             objectiveId: objective.id,
@@ -370,6 +388,66 @@ export class OKRService {
         })
 
         return stats
+    }
+
+    /**
+     * Get all Key Results for a specific KPI
+     */
+    async getKeyResultsByKPI(kpiId: string): Promise<KeyResult[]> {
+        const q = query(
+            this.keyResultsCollection,
+            where('linkedKPIIds', 'array-contains', kpiId)
+        )
+
+        const snapshot = await getDocs(q)
+        return snapshot.docs.map(doc => {
+            const data = doc.data()
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate(),
+                updatedAt: data.updatedAt?.toDate(),
+                completedAt: data.completedAt?.toDate(),
+            }
+        }) as KeyResult[]
+    }
+
+    /**
+     * Sync KPI progress to Key Results
+     */
+    async syncKPIProgress(kpiId: string): Promise<void> {
+        // Fetch the KPI
+        const kpiDoc = await getDoc(doc(db, 'kpis', kpiId))
+        if (!kpiDoc.exists()) return
+
+        const kpiData = kpiDoc.data()
+
+        // Find all Key Results linking to this KPI
+        const keyResults = await this.getKeyResultsByKPI(kpiId)
+
+        for (const kr of keyResults) {
+            if (!kr.linkedKPIIds || kr.linkedKPIIds.length === 0) continue
+
+            // Fetch all linked KPIs to calculate aggregate value
+            // Note: In a production environment, we might use a more efficient way to aggregate
+            let totalActual = 0
+
+            // We need to fetch all linked KPIs because the KR might depend on multiple
+            const kpisSnapshot = await getDocs(query(
+                collection(db, 'kpis'),
+                where('__name__', 'in', kr.linkedKPIIds)
+            ))
+
+            kpisSnapshot.docs.forEach(doc => {
+                const data = doc.data()
+                totalActual += (data.currentWeekActual || 0)
+            })
+
+            // Update the Key Result with the aggregated value
+            await this.updateKeyResult(kr.id, {
+                currentValue: totalActual
+            })
+        }
     }
 }
 

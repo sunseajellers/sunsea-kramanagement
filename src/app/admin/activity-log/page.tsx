@@ -39,8 +39,8 @@ export default function ActivityLogPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System Activity</h1>
-                    <p className="text-slate-500">Real-time log of application events</p>
+                    <h1 className="section-title">System Audit Log</h1>
+                    <p className="section-subtitle">Real-time trace of all tactical and strategic application events</p>
                 </div>
             </div>
 

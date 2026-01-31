@@ -9,13 +9,20 @@ import {
     ShieldCheck,
     Trash2,
     Edit2,
-    Loader2
+    Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,15 +36,16 @@ import {
     DialogContent,
     DialogTitle,
     DialogHeader,
-
     DialogFooter,
 } from '@/components/ui/dialog'
 import { getAllDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/lib/departmentService'
-import { Department } from '@/types'
+import { getAllUsers } from '@/lib/userService'
+import { Department, User } from '@/types'
 import { toast } from 'sonner'
 
 export default function DepartmentManagement() {
     const [departments, setDepartments] = useState<Department[]>([])
+    const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -46,25 +54,25 @@ export default function DepartmentManagement() {
     const [saving, setSaving] = useState(false)
 
     const [formData, setFormData] = useState({
-        name: '',
-        code: '',
-        description: '',
-        headName: '',
-        headEmail: ''
+        name: ''
     })
 
     useEffect(() => {
-        loadDepartments()
+        loadData()
     }, [])
 
-    const loadDepartments = async () => {
+    const loadData = async () => {
         try {
             setLoading(true)
-            const data = await getAllDepartments()
-            setDepartments(data)
+            const [deptData, userData] = await Promise.all([
+                getAllDepartments(),
+                getAllUsers()
+            ])
+            setDepartments(deptData)
+            setUsers(userData)
         } catch (error) {
-            console.error('Error loading departments:', error)
-            toast.error('Failed to load departments')
+            console.error('Error loading data:', error)
+            toast.error('Failed to load data')
         } finally {
             setLoading(false)
         }
@@ -77,8 +85,8 @@ export default function DepartmentManagement() {
             await createDepartment(formData)
             toast.success('Department created successfully')
             setIsCreateModalOpen(false)
-            setFormData({ name: '', code: '', description: '', headName: '', headEmail: '' })
-            loadDepartments()
+            setFormData({ name: '' })
+            loadData()
         } catch (error) {
             toast.error('Failed to create department')
         } finally {
@@ -94,7 +102,8 @@ export default function DepartmentManagement() {
             await updateDepartment(selectedDept.id, formData)
             toast.success('Department updated successfully')
             setIsEditModalOpen(false)
-            loadDepartments()
+            setFormData({ name: '' })
+            loadData()
         } catch (error) {
             toast.error('Failed to update department')
         } finally {
@@ -107,7 +116,7 @@ export default function DepartmentManagement() {
         try {
             await deleteDepartment(id)
             toast.success('Department deleted')
-            loadDepartments()
+            loadData()
         } catch (error) {
             toast.error('Failed to delete department')
         }
@@ -116,18 +125,13 @@ export default function DepartmentManagement() {
     const openEdit = (dept: Department) => {
         setSelectedDept(dept)
         setFormData({
-            name: dept.name,
-            code: dept.code || '',
-            description: dept.description || '',
-            headName: (dept as any).headName || '',
-            headEmail: (dept as any).headEmail || ''
+            name: dept.name
         })
         setIsEditModalOpen(true)
     }
 
     const filtered = departments.filter(d =>
-        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.code?.toLowerCase().includes(searchTerm.toLowerCase())
+        d.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     if (loading) {
@@ -149,7 +153,7 @@ export default function DepartmentManagement() {
                 </div>
                 <button
                     onClick={() => {
-                        setFormData({ name: '', code: '', description: '', headName: '', headEmail: '' })
+                        setFormData({ name: '' })
                         setIsCreateModalOpen(true)
                     }}
                     className="btn-primary h-10 sm:h-12 px-6 sm:px-8"
@@ -178,7 +182,7 @@ export default function DepartmentManagement() {
                 <div className="relative">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/40" />
                     <Input
-                        placeholder="Search groups by name or code..."
+                        placeholder="Search groups by name..."
                         className="pl-14 h-12"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -192,9 +196,6 @@ export default function DepartmentManagement() {
                     <div key={dept.id} className="glass-panel p-0 flex flex-col group hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-500 overflow-hidden border-border/40">
                         <div className="p-10 space-y-8">
                             <div className="flex items-start justify-between">
-                                <span className="inline-flex h-7 px-4 items-center rounded-xl bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-sm">
-                                    {dept.code || 'NO-CODE'}
-                                </span>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <button className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors border border-transparent hover:border-border/50">
@@ -217,19 +218,6 @@ export default function DepartmentManagement() {
 
                             <div className="space-y-2">
                                 <h3 className="text-xl font-black text-primary group-hover:text-secondary transition-colors uppercase tracking-tight">{dept.name}</h3>
-                                <p className="text-xs text-muted-foreground/70 font-medium leading-relaxed italic line-clamp-3 min-h-[3.5rem]">
-                                    {dept.description || 'No description provided for this group.'}
-                                </p>
-                            </div>
-
-                            <div className="bg-muted/30 p-4 rounded-2xl border border-border/40 flex items-center gap-4 group/head">
-                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-border shadow-sm group-hover/head:border-secondary/50 transition-colors">
-                                    <ShieldCheck className="w-5 h-5 text-secondary" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-[0.15em] leading-none mb-1">Group Leader</p>
-                                    <p className="text-[11px] font-black text-primary uppercase tracking-tight line-clamp-1">{(dept as any).headName || 'Not Assigned'}</p>
-                                </div>
                             </div>
                         </div>
 
@@ -280,8 +268,8 @@ export default function DepartmentManagement() {
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Group Details</h3>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                                <div className="sm:col-span-2 grid gap-2">
+                            <div className="grid grid-cols-1 gap-5">
+                                <div className="grid gap-2">
                                     <Label htmlFor="deptName" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Group Name *</Label>
                                     <Input
                                         id="deptName"
@@ -292,61 +280,8 @@ export default function DepartmentManagement() {
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="deptCode" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Group Code *</Label>
-                                    <Input
-                                        id="deptCode"
-                                        required
-                                        className="h-10 uppercase font-mono tracking-widest text-center bg-slate-50/50 border-slate-100"
-                                        placeholder="CODE"
-                                        value={formData.code}
-                                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                    />
-                                </div>
                             </div>
 
-                            <div className="grid gap-2.5">
-                                <Label htmlFor="deptDescription" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">What this group does</Label>
-                                <Textarea
-                                    id="deptDescription"
-                                    className="min-h-[120px] py-4 resize-none bg-slate-50/50 border-slate-100"
-                                    placeholder="Briefly describe what this organizational group focuses on..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Leadership Section */}
-                        <div className="space-y-4 sm:space-y-6">
-                            <div className="flex items-center gap-3 mb-1 sm:mb-2">
-                                <div className="h-8 w-1 bg-secondary rounded-full transition-all" />
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Group Leader</h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="headName" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Leader's Name</Label>
-                                    <Input
-                                        id="headName"
-                                        className="h-10 bg-slate-50/50 border-slate-100"
-                                        placeholder="Ex: Marcus Aurelius"
-                                        value={formData.headName}
-                                        onChange={(e) => setFormData({ ...formData, headName: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="headEmail" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Leader's Email</Label>
-                                    <Input
-                                        id="headEmail"
-                                        type="email"
-                                        className="h-10 bg-slate-50/50 border-slate-100"
-                                        placeholder="leader@company.com"
-                                        value={formData.headEmail}
-                                        onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
-                                    />
-                                </div>
-                            </div>
                         </div>
 
                         <DialogFooter className="pt-6 border-t border-slate-100">
@@ -364,6 +299,6 @@ export default function DepartmentManagement() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     )
 }

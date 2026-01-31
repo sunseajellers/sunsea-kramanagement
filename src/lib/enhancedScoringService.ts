@@ -15,6 +15,7 @@ export interface ScoreResult {
     timelinessScore: number;
     qualityScore: number;
     kraAlignmentScore: number;
+    kpiAchievementScore: number;
     taskCount: number;
     completedCount: number;
     onTimeCount: number;
@@ -46,7 +47,7 @@ export class EnhancedScoringService {
     static calculateCompletionScore(tasks: Task[], userId: string): number {
         // Filter to only this employee's tasks
         const userTasks = tasks.filter(t => t.assignedTo?.includes(userId));
-        
+
         if (userTasks.length === 0) return 0;
 
         const completedTasks = userTasks.filter(t => t.status === 'completed').length;
@@ -72,7 +73,7 @@ export class EnhancedScoringService {
 
             // Use finalTargetDate if extension was approved
             const effectiveDueDate = task.finalTargetDate || task.dueDate;
-            
+
             return new Date(completionDate) <= new Date(effectiveDueDate);
         });
 
@@ -86,7 +87,7 @@ export class EnhancedScoringService {
     static calculateQualityScore(tasks: Task[], userId: string): number {
         const userTasks = tasks.filter(t => t.assignedTo?.includes(userId));
         const completedTasks = userTasks.filter(t => t.status === 'completed');
-        
+
         if (completedTasks.length === 0) return 0; // FIXED: was returning 80
 
         let totalQuality = 0;
@@ -108,11 +109,52 @@ export class EnhancedScoringService {
      */
     static calculateKraAlignmentScore(tasks: Task[], userId: string): number {
         const userTasks = tasks.filter(t => t.assignedTo?.includes(userId));
-        
+
         if (userTasks.length === 0) return 0;
 
         const alignedTasks = userTasks.filter(t => t.kraId).length;
         return Math.round((alignedTasks / userTasks.length) * 100);
+    }
+
+    /**
+     * Calculate KPI achievement score (0-100)
+     */
+    static async calculateKPIAchievementScore(userId: string, startDate: Date, endDate: Date): Promise<number> {
+        try {
+            const kpiSnapshot = await adminDb.collection('kpis')
+                .where('userId', '==', userId)
+                .get();
+
+            const userKPIs = kpiSnapshot.docs
+                .map(doc => doc.data() as any)
+                .filter(k => {
+                    // Handle Firestore timestamps
+                    const relevantDate = k.weekStartDate?.toDate?.() ||
+                        k.weekStartDate ||
+                        k.updatedAt?.toDate?.() ||
+                        k.updatedAt;
+
+                    if (!relevantDate) return false;
+                    const date = new Date(relevantDate);
+                    return date >= startDate && date <= endDate;
+                });
+
+            if (userKPIs.length === 0) return 0;
+
+            let totalAchievement = 0;
+            userKPIs.forEach(kpi => {
+                const planned = kpi.currentWeekPlanned || kpi.benchmark || 1; // Avoid div by zero
+                const actual = kpi.currentWeekActual || 0;
+
+                const achievement = Math.min(100, Math.max(0, (actual / planned) * 100));
+                totalAchievement += achievement;
+            });
+
+            return Math.round(totalAchievement / userKPIs.length);
+        } catch (error) {
+            console.error('Error calculating KPI achievement score:', error);
+            return 0;
+        }
     }
 
     /**
@@ -135,10 +177,11 @@ export class EnhancedScoringService {
                     // Default config
                     config = {
                         id: 'default',
-                        completionWeight: 40,
-                        timelinessWeight: 30,
+                        completionWeight: 30,
+                        timelinessWeight: 20,
                         qualityWeight: 20,
                         kraAlignmentWeight: 10,
+                        kpiAchievementWeight: 20,
                         updatedAt: new Date(),
                         updatedBy: 'system'
                     };
@@ -162,7 +205,7 @@ export class EnhancedScoringService {
             const tasks = allTasks.filter(task => {
                 const relevantDate = task.completedAt || task.updatedAt || task.createdAt;
                 if (!relevantDate) return false;
-                
+
                 const date = new Date(relevantDate);
                 return date >= startDate && date <= endDate;
             });
@@ -172,13 +215,15 @@ export class EnhancedScoringService {
             const timelinessScore = this.calculateTimelinessScore(tasks, userId);
             const qualityScore = this.calculateQualityScore(tasks, userId);
             const kraAlignmentScore = this.calculateKraAlignmentScore(tasks, userId);
+            const kpiAchievementScore = await this.calculateKPIAchievementScore(userId, startDate, endDate);
 
             // Calculate weighted overall score
             const overallScore = Math.round(
                 (completionScore * config.completionWeight / 100) +
                 (timelinessScore * config.timelinessWeight / 100) +
                 (qualityScore * config.qualityWeight / 100) +
-                (kraAlignmentScore * config.kraAlignmentWeight / 100)
+                (kraAlignmentScore * config.kraAlignmentWeight / 100) +
+                (kpiAchievementScore * (config.kpiAchievementWeight || 0) / 100)
             );
 
             // Calculate metadata
@@ -199,6 +244,7 @@ export class EnhancedScoringService {
                 timelinessScore,
                 qualityScore,
                 kraAlignmentScore,
+                kpiAchievementScore,
                 taskCount: userTasks.length,
                 completedCount: completedTasks.length,
                 onTimeCount: onTimeTasks.length,
@@ -226,7 +272,7 @@ export class EnhancedScoringService {
 
             // Check if snapshot already exists (prevent double-counting)
             const existingDoc = await adminDb.collection('scoreSnapshots').doc(snapshotId).get();
-            
+
             if (existingDoc.exists) {
                 // Update existing snapshot
                 await adminDb.collection('scoreSnapshots').doc(snapshotId).update({
@@ -305,7 +351,7 @@ export class EnhancedScoringService {
                     const weekStart = new Date(now);
                     weekStart.setDate(now.getDate() - now.getDay()); // Start of week
                     weekStart.setHours(0, 0, 0, 0);
-                    
+
                     const weekEnd = new Date(weekStart);
                     weekEnd.setDate(weekStart.getDate() + 6); // End of week
                     weekEnd.setHours(23, 59, 59, 999);

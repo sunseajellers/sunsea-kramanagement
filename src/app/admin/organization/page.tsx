@@ -1,13 +1,11 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Users2, Building2, Download, Loader2 } from "lucide-react"
+import { Users, Building2, Download, Loader2 } from "lucide-react"
 import UserManagement from "@/components/features/users/UserManagement"
-import TeamManagement from "@/components/features/teams/TeamManagement"
 import DepartmentManagement from "@/components/features/users/DepartmentManagement"
 import { exportToCSV } from "@/lib/exportUtils"
 import { getAllUsers } from "@/lib/userService"
-import { getAllTeams } from "@/lib/teamService"
 import { useState } from "react"
 import { toast } from "react-hot-toast"
 
@@ -18,7 +16,7 @@ export default function OrganizationHubPage() {
             <div className="page-header flex flex-col md:flex-row md:items-end justify-between gap-10">
                 <div>
                     <h1 className="section-title">Team Hub</h1>
-                    <p className="text-base font-semibold text-muted-foreground/70 mt-3">Manage everyone, your groups, and staff teams</p>
+                    <p className="text-base font-semibold text-muted-foreground/70 mt-3">Manage staff members and organizational departments</p>
                 </div>
                 <ExportButtons />
             </div>
@@ -29,8 +27,7 @@ export default function OrganizationHubPage() {
                     <TabsList className="bg-muted/50 p-2 rounded-[1.75rem] border border-border h-auto flex gap-2">
                         {[
                             { value: 'members', label: 'People', icon: Users },
-                            { value: 'departments', label: 'Groups', icon: Building2 },
-                            { value: 'teams', label: 'Teams', icon: Users2 },
+                            { value: 'departments', label: 'Departments', icon: Building2 },
                         ].map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
@@ -52,10 +49,6 @@ export default function OrganizationHubPage() {
                     <TabsContent value="departments" className="animate-in outline-none">
                         <DepartmentManagement />
                     </TabsContent>
-
-                    <TabsContent value="teams" className="animate-in outline-none">
-                        <TeamManagement />
-                    </TabsContent>
                 </div>
             </Tabs>
         </div>
@@ -64,7 +57,6 @@ export default function OrganizationHubPage() {
 
 function ExportButtons() {
     const [exportingUsers, setExportingUsers] = useState(false);
-    const [exportingTeams, setExportingTeams] = useState(false);
 
     const handleExportUsers = async () => {
         try {
@@ -80,20 +72,6 @@ function ExportButtons() {
         }
     };
 
-    const handleExportTeams = async () => {
-        try {
-            setExportingTeams(true);
-            const teams = await getAllTeams();
-            exportToCSV(teams, `team_list_${new Date().toISOString().split('T')[0]}.csv`);
-            toast.success('Team list downloaded');
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to download team list');
-        } finally {
-            setExportingTeams(false);
-        }
-    };
-
     return (
         <div className="flex items-center gap-4">
             <button
@@ -102,15 +80,7 @@ function ExportButtons() {
                 className="btn-secondary h-14"
             >
                 {exportingUsers ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                Download People List
-            </button>
-            <button
-                onClick={handleExportTeams}
-                disabled={exportingTeams}
-                className="btn-secondary h-14"
-            >
-                {exportingTeams ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                Download Team List
+                Download Staff List
             </button>
         </div>
     );

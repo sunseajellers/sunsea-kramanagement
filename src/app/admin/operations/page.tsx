@@ -22,8 +22,8 @@ export default function OperationsHubPage() {
             {/* Header / Actions */}
             <div className="page-header flex flex-col xl:flex-row xl:items-end justify-between gap-10">
                 <div>
-                    <h1 className="section-title">Workplace</h1>
-                    <p className="text-base font-semibold text-muted-foreground/70 mt-3">Manage daily tasks, verify work, and view performance results</p>
+                    <h1 className="section-title">KRA & Operations</h1>
+                    <p className="text-base font-semibold text-muted-foreground/70 mt-3">Daily mission control: tasks, verifications, and tactical targets</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
                     <AdminOperationalActions />
@@ -39,8 +39,7 @@ export default function OperationsHubPage() {
                             { value: 'tasks', label: 'All Tasks' },
                             { value: 'verification', label: 'Approvals' },
                             { value: 'requests', label: 'Deadlines' },
-                            { value: 'kpis', label: 'Goals' },
-                            { value: 'scores', label: 'Reports' },
+                            { value: 'auto-tasks', label: 'Auto-Tasks' },
                         ].map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
@@ -70,20 +69,8 @@ export default function OperationsHubPage() {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="kpis" className="animate-in outline-none">
+                    <TabsContent value="auto-tasks" className="animate-in outline-none">
                         <KRAScheduler />
-                    </TabsContent>
-
-                    <TabsContent value="scores" className="animate-in outline-none">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                            <div className="lg:col-span-2 space-y-12">
-                                <PerformanceAnalytics />
-                                <PerformanceTrends />
-                            </div>
-                            <div className="space-y-12">
-                                <ReportGenerator />
-                            </div>
-                        </div>
                     </TabsContent>
                 </div>
             </Tabs>
