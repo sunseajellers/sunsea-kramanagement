@@ -5,14 +5,13 @@ import { createTask, updateTask } from '@/lib/taskService'
 import { fetchKRAs } from '@/lib/kraService'
 import { Task, Priority, TaskStatus, TaskFrequency } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ClipboardCheck } from 'lucide-react'
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogFooter,
-    DialogDescription
+    DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -168,165 +167,195 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{isEdit ? 'Edit Task' : 'Assign New Task'}</DialogTitle>
-                    <DialogDescription>
-                        {isEdit ? 'Update the task details below.' : 'Create a new task and assign it to a team member.'}
-                    </DialogDescription>
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm border border-primary/10">
+                            <ClipboardCheck className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+                                {isEdit ? 'Edit Task' : 'Assign New Task'}
+                            </DialogTitle>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Fill in the task details below</p>
+                        </div>
+                    </div>
                 </DialogHeader>
 
-                <form id="task-form" onSubmit={handleSubmit} className="grid gap-6 py-4">
-                    {/* Title */}
-                    <div className="grid gap-2">
-                        <Label htmlFor="title">Task Title</Label>
-                        <Input
-                            id="title"
-                            name="title"
-                            required
-                            placeholder="e.g., Complete Q4 sales report"
-                            value={form.title}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
-                    </div>
-
-                    {/* Description */}
-                    <div className="grid gap-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            name="description"
-                            required
-                            placeholder="Describe the task details..."
-                            className="min-h-[100px]"
-                            value={form.description}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Assigned To */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="assignedTo">Assigned To</Label>
-                            <Select
-                                value={form.assignedTo}
-                                onValueChange={(v) => handleSelectChange('assignedTo', v)}
-                                disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select User" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {users.map((u) => (
-                                        <SelectItem key={u.id} value={u.id}>
-                                            {u.fullName || u.email}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                <form id="task-form" onSubmit={handleSubmit} className="space-y-10 py-6">
+                    {/* Primary Info */}
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                            <div className="h-8 w-1 bg-primary rounded-full transition-all" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Task Details</h3>
                         </div>
 
-                        {/* Category */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="category">Category</Label>
-                            <Select
-                                value={form.category}
-                                onValueChange={(v) => handleSelectChange('category', v)}
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="title" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Task Title *</Label>
+                            <Input
+                                id="title"
+                                name="title"
+                                required
+                                placeholder="e.g., Send reports to Team"
+                                value={form.title}
+                                onChange={handleChange}
                                 disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="General">General</SelectItem>
-                                    <SelectItem value="Operational">Operational</SelectItem>
-                                    <SelectItem value="Administrative">Administrative</SelectItem>
-                                    <SelectItem value="Technical">Technical</SelectItem>
-                                    <SelectItem value="Project">Project</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                className="h-10 sm:h-12 bg-slate-50/50 border-slate-100"
+                            />
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="description" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Mission Description / Instructions *</Label>
+                            <Textarea
+                                id="description"
+                                name="description"
+                                required
+                                placeholder="Describe what needs to be done..."
+                                className="min-h-[120px] sm:min-h-[140px] py-4 resize-none bg-slate-50/50 border-slate-100"
+                                value={form.description}
+                                onChange={handleChange}
+                                disabled={loading}
+                            />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Frequency */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="frequency">Frequency</Label>
-                            <Select
-                                value={form.frequency}
-                                onValueChange={(v) => handleSelectChange('frequency', v as any)}
-                                disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Frequency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="one-time">One-time</SelectItem>
-                                    <SelectItem value="daily">Daily</SelectItem>
-                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                    <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                                    <SelectItem value="yearly">Yearly</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    {/* Metadata */}
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                            <div className="h-8 w-1 bg-secondary rounded-full transition-all" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Who and how important?</h3>
                         </div>
 
-                        {/* Priority */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="priority">Priority</Label>
-                            <Select
-                                value={form.priority}
-                                onValueChange={(v) => handleSelectChange('priority', v as any)}
-                                disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="low">Low</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="critical">Critical</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="assignedTo" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Assign to</Label>
+                                <Select
+                                    value={form.assignedTo}
+                                    onValueChange={(v) => handleSelectChange('assignedTo', v)}
+                                    disabled={loading}
+                                >
+                                    <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100">
+                                        <SelectValue placeholder="Select Person" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users.map((u) => (
+                                            <SelectItem key={u.id} value={u.id}>
+                                                {u.fullName || u.email}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="category" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Category</Label>
+                                <Select
+                                    value={form.category}
+                                    onValueChange={(v) => handleSelectChange('category', v)}
+                                    disabled={loading}
+                                >
+                                    <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100">
+                                        <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="General">General</SelectItem>
+                                        <SelectItem value="Operational">Operational</SelectItem>
+                                        <SelectItem value="Administrative">Administrative</SelectItem>
+                                        <SelectItem value="Technical">Technical</SelectItem>
+                                        <SelectItem value="Project">Project</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="frequency" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">How often?</Label>
+                                <Select
+                                    value={form.frequency}
+                                    onValueChange={(v) => handleSelectChange('frequency', v as any)}
+                                    disabled={loading}
+                                >
+                                    <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100">
+                                        <SelectValue placeholder="How often?" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="one-time">Just once</SelectItem>
+                                        <SelectItem value="daily">Every Day</SelectItem>
+                                        <SelectItem value="weekly">Every Week</SelectItem>
+                                        <SelectItem value="fortnightly">Every 2 Weeks</SelectItem>
+                                        <SelectItem value="monthly">Every Month</SelectItem>
+                                        <SelectItem value="quarterly">Every 3 Months</SelectItem>
+                                        <SelectItem value="yearly">Every Year</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="priority" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Priority</Label>
+                                <Select
+                                    value={form.priority}
+                                    onValueChange={(v) => handleSelectChange('priority', v as any)}
+                                    disabled={loading}
+                                >
+                                    <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100">
+                                        <SelectValue placeholder="Select Priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="medium">Normal</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                        <SelectItem value="critical">Very Urgent</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Status */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="status">Status</Label>
-                            <Select
-                                value={form.status}
-                                onValueChange={(v) => handleSelectChange('status', v as any)}
-                                disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="not_started">Not Started</SelectItem>
-                                    <SelectItem value="assigned">Assigned</SelectItem>
-                                    <SelectItem value="in_progress">In Progress</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    {/* Timeline */}
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                            <div className="h-8 w-1 bg-emerald-500 rounded-full transition-all" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">When is it due?</h3>
                         </div>
 
-                        {/* KRA Link */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="kraId">Link to KRA (Optional)</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="dueDate" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Due Date</Label>
+                                <Input
+                                    id="dueDate"
+                                    name="dueDate"
+                                    type="date"
+                                    required
+                                    value={form.dueDate}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="h-10 sm:h-12 bg-slate-50/50 border-slate-100"
+                                />
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="finalTargetDate" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Last Date</Label>
+                                <Input
+                                    id="finalTargetDate"
+                                    name="finalTargetDate"
+                                    type="date"
+                                    value={form.finalTargetDate}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="h-10 sm:h-12 bg-slate-50/50 border-slate-100"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="kraId" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Does this belong to a Big Goal?</Label>
                             <Select
                                 value={form.kraId}
                                 onValueChange={(v) => handleSelectChange('kraId', v)}
                                 disabled={loading}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="No KRA" />
+                                <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100 text-left">
+                                    <SelectValue placeholder="No Big Goal" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="no_kra_selection_value">No KRA</SelectItem>
+                                    <SelectItem value="no_kra_selection_value">General Duty (No KRA)</SelectItem>
                                     {kras.map((kra) => (
                                         <SelectItem key={kra.id} value={kra.id}>
                                             {kra.title}
@@ -336,43 +365,15 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                             </Select>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Due Date */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="dueDate">Due Date</Label>
-                            <Input
-                                id="dueDate"
-                                name="dueDate"
-                                type="date"
-                                required
-                                value={form.dueDate}
-                                onChange={handleChange}
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Target Date */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="finalTargetDate">Target Date</Label>
-                            <Input
-                                id="finalTargetDate"
-                                name="finalTargetDate"
-                                type="date"
-                                value={form.finalTargetDate}
-                                onChange={handleChange}
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
                 </form>
 
-                <DialogFooter>
+                <DialogFooter className="pt-8 border-t border-slate-100">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onClose}
                         disabled={loading}
+                        className="h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]"
                     >
                         Cancel
                     </Button>
@@ -380,8 +381,9 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
                         type="submit"
                         form="task-form"
                         disabled={loading}
+                        className="h-10 sm:h-12 px-8 sm:px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20"
                     >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <ClipboardCheck className="w-5 h-5 mr-3" />}
                         {isEdit ? 'Save Changes' : 'Assign Task'}
                     </Button>
                 </DialogFooter>

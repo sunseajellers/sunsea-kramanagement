@@ -196,7 +196,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 animate-fade-in">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                     {/* Header */}
                     <div className="sticky top-0 bg-gradient-to-r from-primary-600 to-secondary-600 p-6 flex justify-between items-start text-white z-10">
@@ -501,7 +501,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
 
             {/* Reassign Modal */}
             {showReassignModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1100] p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Reassign Task</h3>
                         <p className="text-sm text-gray-600 mb-4">

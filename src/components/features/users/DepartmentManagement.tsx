@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,6 +28,9 @@ import {
     Dialog,
     DialogContent,
     DialogTitle,
+    DialogHeader,
+
+    DialogFooter,
 } from '@/components/ui/dialog'
 import { getAllDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/lib/departmentService'
 import { Department } from '@/types'
@@ -130,7 +134,7 @@ export default function DepartmentManagement() {
         return (
             <div className="flex flex-col items-center justify-center py-32 gap-6">
                 <Loader2 className="w-14 h-14 animate-spin text-primary/40" />
-                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Loading groups...</p>
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Checking groups...</p>
             </div>
         )
     }
@@ -140,18 +144,18 @@ export default function DepartmentManagement() {
             {/* Header */}
             <div className="page-header flex items-center justify-between">
                 <div>
-                    <h2 className="section-title">Groups Management</h2>
-                    <p className="section-subtitle">Manage your departments, group leaders, and internal categories</p>
+                    <h2 className="section-title">Team Groups</h2>
+                    <p className="section-subtitle">Manage your departments and group leaders</p>
                 </div>
                 <button
                     onClick={() => {
                         setFormData({ name: '', code: '', description: '', headName: '', headEmail: '' })
                         setIsCreateModalOpen(true)
                     }}
-                    className="btn-primary h-12 px-8"
+                    className="btn-primary h-10 sm:h-12 px-6 sm:px-8"
                 >
                     <Plus className="w-5 h-5 mr-3" />
-                    Add New Group
+                    New Group
                 </button>
             </div>
 
@@ -159,7 +163,7 @@ export default function DepartmentManagement() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="dashboard-card group">
                     <div className="flex flex-col gap-2">
-                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] leading-none mb-1">Active Groups</p>
+                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] leading-none mb-1">Total Groups</p>
                         <h3 className="text-4xl font-black tracking-tight text-primary transition-colors group-hover:text-secondary">{departments.length}</h3>
                         <div className="flex items-center gap-2 mt-4">
                             <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
@@ -197,49 +201,49 @@ export default function DepartmentManagement() {
                                             <MoreHorizontal className="h-5 w-5 text-muted-foreground/40" />
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-60 p-3 rounded-[2.5rem] border-none shadow-2xl animate-in fade-in slide-in-from-top-2">
-                                        <DropdownMenuLabel className="text-[10px] font-black text-muted-foreground/50 px-5 py-4 uppercase tracking-[0.3em]">Group Options</DropdownMenuLabel>
-                                        <DropdownMenuSeparator className="bg-muted mx-3" />
-                                        <DropdownMenuItem onClick={() => openEdit(dept)} className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors">
-                                            <Edit2 className="w-5 h-5 opacity-40" /> Edit Details
+                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2">
+                                        <DropdownMenuLabel className="text-[9px] font-black text-muted-foreground/50 px-4 py-3 uppercase tracking-[0.2em]">Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator className="bg-muted mx-2" />
+                                        <DropdownMenuItem onClick={() => openEdit(dept)} className="rounded-xl text-[10px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors">
+                                            <Edit2 className="w-4 h-4 opacity-40" /> Edit
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator className="bg-muted mx-3" />
-                                        <DropdownMenuItem onClick={() => handleDelete(dept.id)} className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer transition-colors">
-                                            <Trash2 className="w-5 h-5" /> Delete Group
+                                        <DropdownMenuSeparator className="bg-muted mx-2" />
+                                        <DropdownMenuItem onClick={() => handleDelete(dept.id)} className="rounded-xl text-[10px] font-black uppercase tracking-widest py-3 px-4 flex items-center gap-3 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer transition-colors">
+                                            <Trash2 className="w-4 h-4" /> Delete Group
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
 
-                            <div className="space-y-3">
-                                <h3 className="text-2xl font-black text-primary group-hover:text-secondary transition-colors uppercase tracking-tight">{dept.name}</h3>
-                                <p className="text-sm text-muted-foreground/70 font-medium leading-relaxed italic line-clamp-3 min-h-[4.5rem]">
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-primary group-hover:text-secondary transition-colors uppercase tracking-tight">{dept.name}</h3>
+                                <p className="text-xs text-muted-foreground/70 font-medium leading-relaxed italic line-clamp-3 min-h-[3.5rem]">
                                     {dept.description || 'No description provided for this group.'}
                                 </p>
                             </div>
 
-                            <div className="bg-muted/30 p-5 rounded-[1.75rem] border border-border/40 flex items-center gap-5 group/head">
-                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center border border-border shadow-sm group-hover/head:border-secondary/50 transition-colors">
-                                    <ShieldCheck className="w-6 h-6 text-secondary" />
+                            <div className="bg-muted/30 p-4 rounded-2xl border border-border/40 flex items-center gap-4 group/head">
+                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-border shadow-sm group-hover/head:border-secondary/50 transition-colors">
+                                    <ShieldCheck className="w-5 h-5 text-secondary" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] leading-none mb-1.5">Group Leader</p>
-                                    <p className="text-xs font-black text-primary uppercase tracking-tight line-clamp-1">{(dept as any).headName || 'Not Assigned'}</p>
+                                    <p className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-[0.15em] leading-none mb-1">Group Leader</p>
+                                    <p className="text-[11px] font-black text-primary uppercase tracking-tight line-clamp-1">{(dept as any).headName || 'Not Assigned'}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-auto px-10 py-6 bg-muted/40 border-t border-border/20 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                        <div className="mt-auto px-8 py-4 bg-muted/40 border-t border-border/20 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
                                 <span className={cn(
-                                    "flex w-2.5 h-2.5 rounded-full ring-4 ring-white shadow-sm",
+                                    "flex w-2 h-2 rounded-full ring-2 ring-white shadow-sm",
                                     dept.isActive !== false ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
                                 )} />
-                                <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">
+                                <span className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.15em]">
                                     {dept.isActive !== false ? 'ACTIVE' : 'SUSPENDED'}
                                 </span>
                             </div>
-                            <button className="h-10 text-[9px] font-black uppercase tracking-[0.3em] text-primary hover:text-secondary transition-colors">
+                            <button className="h-8 text-[8px] font-black uppercase tracking-[0.2em] text-primary hover:text-secondary transition-colors">
                                 VIEW PEOPLE
                             </button>
                         </div>
@@ -247,96 +251,116 @@ export default function DepartmentManagement() {
                 ))}
             </div>
 
-            {/* Group Overlay */}
             <Dialog open={isCreateModalOpen || isEditModalOpen} onOpenChange={(val) => {
                 if (!val) {
                     setIsCreateModalOpen(false)
                     setIsEditModalOpen(false)
                 }
             }}>
-                <DialogContent>
-                    <form onSubmit={isCreateModalOpen ? handleCreate : handleUpdate}>
-                        <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
-                                <Building2 className="w-48 h-48" />
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-sm border border-primary/10">
+                                <Building2 className="w-6 h-6" />
                             </div>
-                            <DialogTitle className="text-4xl font-black tracking-tight uppercase mb-2">
-                                {isCreateModalOpen ? 'New Group' : 'Edit Group'}
-                            </DialogTitle>
-                            <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Group Settings & Details</p>
+                            <div>
+                                <DialogTitle className="text-xl font-black uppercase tracking-tight">
+                                    {isCreateModalOpen ? 'New Group' : 'Edit Group'}
+                                </DialogTitle>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Groups and Leaders</p>
+                            </div>
                         </div>
+                    </DialogHeader>
 
-                        <div className="p-12 space-y-10 bg-white max-h-[75vh] overflow-y-auto scroll-panel">
-                            <div className="grid grid-cols-3 gap-8">
-                                <div className="col-span-2 space-y-4">
-                                    <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Group Name *</label>
+                    <form onSubmit={isCreateModalOpen ? handleCreate : handleUpdate} className="space-y-10 py-6">
+                        {/* Primary Identity Section */}
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                                <div className="h-8 w-1 bg-primary rounded-full transition-all" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Group Details</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                <div className="sm:col-span-2 grid gap-2">
+                                    <Label htmlFor="deptName" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Group Name *</Label>
                                     <Input
+                                        id="deptName"
                                         required
-                                        className="h-12"
-                                        placeholder="Ex: Sales Team"
+                                        className="h-10 bg-slate-50/50 border-slate-100"
+                                        placeholder="Ex: Strategic Sales Group"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Group Code *</label>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="deptCode" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Group Code *</Label>
                                     <Input
+                                        id="deptCode"
                                         required
-                                        className="h-12 uppercase font-mono tracking-widest text-center"
-                                        placeholder="SALES"
+                                        className="h-10 uppercase font-mono tracking-widest text-center bg-slate-50/50 border-slate-100"
+                                        placeholder="CODE"
                                         value={formData.code}
                                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description / Purpose</label>
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="deptDescription" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">What this group does</Label>
                                 <Textarea
-                                    className="min-h-[140px] py-5 resize-none"
-                                    placeholder="Briefly describe what this group does..."
+                                    id="deptDescription"
+                                    className="min-h-[120px] py-4 resize-none bg-slate-50/50 border-slate-100"
+                                    placeholder="Briefly describe what this organizational group focuses on..."
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </div>
+                        </div>
 
-                            <div className="space-y-8 pt-4">
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="space-y-4">
-                                        <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Group Leader Name</label>
-                                        <Input
-                                            className="h-12"
-                                            placeholder="Ex: Marcus Aurelius"
-                                            value={formData.headName}
-                                            onChange={(e) => setFormData({ ...formData, headName: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-4">
-                                        <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Leader's Email</label>
-                                        <Input
-                                            type="email"
-                                            className="h-12"
-                                            placeholder="leader@company.com"
-                                            value={formData.headEmail}
-                                            onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
-                                        />
-                                    </div>
+                        {/* Leadership Section */}
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                                <div className="h-8 w-1 bg-secondary rounded-full transition-all" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Group Leader</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="headName" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Leader's Name</Label>
+                                    <Input
+                                        id="headName"
+                                        className="h-10 bg-slate-50/50 border-slate-100"
+                                        placeholder="Ex: Marcus Aurelius"
+                                        value={formData.headName}
+                                        onChange={(e) => setFormData({ ...formData, headName: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="headEmail" className="ml-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Leader's Email</Label>
+                                    <Input
+                                        id="headEmail"
+                                        type="email"
+                                        className="h-10 bg-slate-50/50 border-slate-100"
+                                        placeholder="leader@company.com"
+                                        value={formData.headEmail}
+                                        onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
+                                    />
                                 </div>
                             </div>
-
-                            <div className="flex gap-6 pt-6">
-                                <Button type="button" variant="ghost" onClick={() => {
-                                    setIsCreateModalOpen(false)
-                                    setIsEditModalOpen(false)
-                                }} className="flex-1 h-12">
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={saving} className="flex-1 h-12 font-bold">
-                                    {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                                    {isCreateModalOpen ? 'Create Group' : 'Save Changes'}
-                                </Button>
-                            </div>
                         </div>
+
+                        <DialogFooter className="pt-6 border-t border-slate-100">
+                            <Button type="button" variant="outline" onClick={() => {
+                                setIsCreateModalOpen(false)
+                                setIsEditModalOpen(false)
+                            }} className="h-10 px-6 rounded-xl font-bold uppercase tracking-widest text-[9px]">
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={saving} className="h-10 px-8 rounded-xl font-bold uppercase tracking-widest text-[9px] shadow-lg shadow-primary/10">
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (isCreateModalOpen ? <Plus className="w-4 h-4 mr-2" /> : <Building2 className="w-4 h-4 mr-2" />)}
+                                {isCreateModalOpen ? 'Create Group' : 'Save Group'}
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

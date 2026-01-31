@@ -8,8 +8,24 @@ import { Plus, Search, Users, Trash2, Edit, Copy, ChevronLeft, ChevronRight, Shi
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+
+    DialogFooter,
+} from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import toast from 'react-hot-toast';
 
 interface TeamFormData {
@@ -428,130 +444,194 @@ export default function TeamManagement() {
 
             {/* Create Team Dialog */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogContent>
-                    <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
-                            <Users className="w-48 h-48" />
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm border border-primary/10">
+                                <Users className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-2xl font-black uppercase tracking-tight">New Collaboration Team</DialogTitle>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Establish a Group for Project Execution</p>
+                            </div>
                         </div>
-                        <h2 className="text-4xl font-black tracking-tight uppercase mb-2">New Team</h2>
-                        <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Create a new staff group</p>
-                    </div>
+                    </DialogHeader>
 
-                    <div className="p-12 space-y-10 bg-white">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Name *</label>
-                            <Input
-                                value={teamForm.name}
-                                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                                placeholder="e.g. Creative Design"
-                                className="form-input h-14"
-                            />
-                        </div>
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description</label>
-                            <Textarea
-                                value={teamForm.description}
-                                onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
-                                placeholder="What does this team focus on?"
-                                className="form-input min-h-[120px] py-5 resize-none"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Manager</label>
-                                <select
-                                    value={teamForm.managerId}
-                                    onChange={(e) => setTeamForm({ ...teamForm, managerId: e.target.value })}
-                                    className="form-input h-14"
-                                >
-                                    <option value="">Select Manager</option>
-                                    {users.map(manager => (
-                                        <option key={manager.id} value={manager.id}>
-                                            {manager.fullName}
-                                        </option>
-                                    ))}
-                                </select>
+                    <form onSubmit={(e) => { e.preventDefault(); handleCreateTeam(); }} className="space-y-10 py-6">
+                        {/* Team Identity Section */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-1 bg-primary rounded-full transition-all" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Team Branding</h3>
                             </div>
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Parent Team</label>
-                                <select
-                                    value={teamForm.parentId}
-                                    onChange={(e) => setTeamForm({ ...teamForm, parentId: e.target.value })}
-                                    className="form-input h-14"
-                                >
-                                    <option value="">Independent Team</option>
-                                    {teams.map(team => (
-                                        <option key={team.id} value={team.id}>
-                                            {team.name}
-                                        </option>
-                                    ))}
-                                </select>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="teamName" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Team Name *</Label>
+                                <Input
+                                    id="teamName"
+                                    value={teamForm.name}
+                                    onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                                    placeholder="e.g. Creative Design Lab"
+                                    className="h-12 bg-slate-50/50 border-slate-100"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="description" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Mission Statement / Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={teamForm.description}
+                                    onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+                                    placeholder="Briefly define what this team aims to achieve..."
+                                    className="min-h-[120px] py-4 resize-none bg-slate-50/50 border-slate-100"
+                                />
                             </div>
                         </div>
-                        <div className="flex gap-6 pt-6">
-                            <button onClick={() => setCreateDialogOpen(false)} className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all">
+
+                        {/* Hierarchy Section */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-1 bg-secondary rounded-full transition-all" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Command & Hierarchy</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Team Commander / Manager</Label>
+                                    <Select
+                                        value={teamForm.managerId}
+                                        onValueChange={(v) => setTeamForm({ ...teamForm, managerId: v })}
+                                    >
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                            <SelectValue placeholder="Select Manager" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {users.map(manager => (
+                                                <SelectItem key={manager.id} value={manager.id}>
+                                                    {manager.fullName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Upstream / Parent Team</Label>
+                                    <Select
+                                        value={teamForm.parentId}
+                                        onValueChange={(v) => setTeamForm({ ...teamForm, parentId: v })}
+                                    >
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                            <SelectValue placeholder="Independent Entity" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Independent / Global</SelectItem>
+                                            {teams.map(team => (
+                                                <SelectItem key={team.id} value={team.id}>
+                                                    {team.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="pt-8 border-t border-slate-100">
+                            <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)} className="h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]">
                                 Cancel
-                            </button>
-                            <button onClick={handleCreateTeam} className="btn-primary flex-1 h-16">
-                                Create Team
-                            </button>
-                        </div>
-                    </div>
+                            </Button>
+                            <Button type="submit" className="h-12 px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20">
+                                <Plus className="w-5 h-5 mr-3" />
+                                Establish Team
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
             {/* Edit Team Dialog */}
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent>
-                    <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
-                            <Edit className="w-48 h-48" />
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm border border-primary/10">
+                                <Edit className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-2xl font-black uppercase tracking-tight">Modify Team</DialogTitle>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Update Settings & Leadership</p>
+                            </div>
                         </div>
-                        <h2 className="text-4xl font-black tracking-tight uppercase mb-2">Edit Team</h2>
-                        <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Update team settings</p>
-                    </div>
+                    </DialogHeader>
 
-                    <div className="p-12 space-y-10 bg-white">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Name</label>
-                            <Input
-                                value={teamForm.name}
-                                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                                className="form-input h-14"
-                            />
+                    <form onSubmit={(e) => { e.preventDefault(); handleUpdateTeam(); }} className="space-y-10 py-6">
+                        {/* Team Identity Section */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-1 bg-primary rounded-full transition-all" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Core Identity</h3>
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="editTeamName" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Team Name *</Label>
+                                <Input
+                                    id="editTeamName"
+                                    value={teamForm.name}
+                                    onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                                    className="h-12 bg-slate-50/50 border-slate-100"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="editDescription" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Description</Label>
+                                <Textarea
+                                    id="editDescription"
+                                    value={teamForm.description}
+                                    onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+                                    className="min-h-[120px] py-4 resize-none bg-slate-50/50 border-slate-100"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description</label>
-                            <Textarea
-                                value={teamForm.description}
-                                onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
-                                className="form-input min-h-[120px] py-5 resize-none"
-                            />
+
+                        {/* Management Section */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-1 bg-secondary rounded-full transition-all" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Leadership Role</h3>
+                            </div>
+
+                            <div className="grid gap-2.5">
+                                <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Designated Manager</Label>
+                                <Select
+                                    value={teamForm.managerId}
+                                    onValueChange={(v) => setTeamForm({ ...teamForm, managerId: v })}
+                                >
+                                    <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                        <SelectValue placeholder="Select Manager" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users.map(manager => (
+                                            <SelectItem key={manager.id} value={manager.id}>
+                                                {manager.fullName}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Team Manager</label>
-                            <select
-                                value={teamForm.managerId}
-                                onChange={(e) => setTeamForm({ ...teamForm, managerId: e.target.value })}
-                                className="form-input h-14"
-                            >
-                                <option value="">Select Manager</option>
-                                {users.map(manager => (
-                                    <option key={manager.id} value={manager.id}>
-                                        {manager.fullName}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="flex gap-6 pt-6">
-                            <button onClick={() => setEditDialogOpen(false)} className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all">
+
+                        <DialogFooter className="pt-8 border-t border-slate-100">
+                            <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]">
                                 Cancel
-                            </button>
-                            <button onClick={handleUpdateTeam} className="btn-primary flex-1 h-16">
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
+                            </Button>
+                            <Button type="submit" className="h-12 px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20">
+                                <Shield className="w-5 h-5 mr-3" />
+                                Sync Changes
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 

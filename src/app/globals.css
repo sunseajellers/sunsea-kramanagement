@@ -14,6 +14,10 @@
   --card: 0 0% 100%;
   --card-foreground: 224 40% 10%;
 
+  /* Popover & Overlays */
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 40% 10%;
+
   /* Deep Royal Blue (Primary) */
   --primary: 222 60% 15%;
   --primary-foreground: 210 20% 98%;
@@ -42,8 +46,8 @@
   --input: 220 13% 91%;
   --ring: 222 60% 15%;
 
-  --radius: 1.5rem;
-  /* Larger, softer radius */
+  --radius: 1rem;
+  /* Balanced radius for enterprise look */
 }
 
 @layer base {
@@ -52,13 +56,14 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    @apply bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary;
     /* Clean backdrop */
     background-image:
-      radial-gradient(at 100% 0%, hsla(222, 60%, 15%, 0.02) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, hsla(41, 60%, 55%, 0.02) 0px, transparent 50%);
+      radial-gradient(at 100% 0%, hsla(222, 60%, 15%, 0.01) 0px, transparent 40%),
+      radial-gradient(at 0% 100%, hsla(41, 60%, 55%, 0.01) 0px, transparent 40%);
     background-attachment: fixed;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   h1,
@@ -67,8 +72,24 @@
   h4,
   h5,
   h6 {
-    @apply font-bold tracking-tight text-primary;
+    @apply font-black tracking-tight text-primary leading-[1.1];
     font-family: 'Outfit', system-ui, sans-serif;
+  }
+
+  h1 {
+    @apply text-3xl sm:text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl sm:text-2xl;
+  }
+
+  h4 {
+    @apply text-lg sm:text-xl;
   }
 }
 
@@ -76,7 +97,7 @@
 
   /* Premium Glass Shell */
   .glass-panel {
-    @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-glass rounded-[2rem] transition-all duration-500;
+    @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-glass rounded-[1.5rem] transition-all duration-500;
   }
 
   .glass-panel-hover {
@@ -85,11 +106,11 @@
 
   /* Unified Executive Buttons */
   .btn-primary {
-    @apply bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-primary/10 hover:bg-primary/95 hover:shadow-2xl hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2;
+    @apply bg-primary text-primary-foreground px-5 py-2 rounded-lg font-bold text-[11px] shadow-lg shadow-primary/10 hover:bg-primary/95 hover:shadow-xl hover:scale-[1.01] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2;
   }
 
   .btn-secondary {
-    @apply bg-white text-primary border border-primary/10 px-8 py-3 rounded-2xl font-bold text-sm hover:bg-muted hover:border-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2;
+    @apply bg-white text-primary border border-primary/10 px-5 py-2 rounded-lg font-bold text-[11px] hover:bg-muted hover:border-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2;
   }
 
   .btn-outline {
@@ -102,53 +123,58 @@
 
   /* Modern Inputs */
   .form-input {
-    @apply flex h-12 w-full px-4 py-2 rounded-2xl bg-white border border-border/50 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none placeholder:text-muted-foreground/50 shadow-sm shadow-black/5;
+    @apply flex h-10 w-full px-4 py-2 rounded-lg bg-white border border-border/60 text-xs font-medium focus:ring-2 focus:ring-primary/10 focus:border-primary/30 transition-all outline-none placeholder:text-muted-foreground/40 shadow-sm shadow-black/5;
   }
 
   /* Status Tokens */
   .status-badge {
-    @apply inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border-2 transition-all;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border-2 transition-all;
   }
 
   .status-badge-success {
-    @apply bg-success/5 text-success border-success/20;
+    @apply bg-emerald-50 text-emerald-600 border-emerald-100;
   }
 
   .status-badge-danger {
-    @apply bg-destructive/5 text-destructive border-destructive/20;
+    @apply bg-rose-50 text-rose-600 border-rose-100;
   }
 
   .status-badge-warning {
-    @apply bg-warning/5 text-warning border-warning/20;
+    @apply bg-amber-50 text-amber-600 border-amber-100;
   }
 
   .status-badge-info {
-    @apply bg-primary/5 text-primary border-primary/20;
+    @apply bg-indigo-50 text-indigo-600 border-indigo-100;
   }
 
   .status-badge-neutral {
-    @apply bg-muted text-muted-foreground border-border;
+    @apply bg-slate-100 text-slate-500 border-slate-200;
   }
 
   /* Section Title Utility */
   .page-header {
-    @apply mb-12 space-y-3;
+    @apply mb-12 space-y-2;
   }
 
   .section-title {
-    @apply text-4xl font-extrabold text-primary tracking-tight leading-none;
+    @apply text-2xl sm:text-3xl lg:text-4xl font-black text-primary tracking-tight leading-none;
   }
 
   .section-subtitle {
-    @apply text-base font-semibold text-muted-foreground/70 uppercase tracking-widest;
+    @apply text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em];
   }
 
   .admin-container {
-    @apply max-w-[1700px] mx-auto px-6 lg:px-12;
+    @apply max-w-[1500px] mx-auto px-4 lg:px-8;
   }
 
   .dashboard-card {
-    @apply glass-panel p-10 space-y-6 border-white/40;
+    @apply glass-panel p-5 sm:p-6 space-y-4 border-white/50;
+  }
+
+  /* Table Refinement */
+  .table-row {
+    @apply hover:bg-primary/[0.02] transition-colors border-b border-border/40;
   }
 }
 
@@ -167,9 +193,4 @@
 
 .animate-in {
   animation: fadeIn 0.7s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-}
-
-/* Table Refinement */
-.table-row {
-  @apply hover:bg-primary/[0.02] transition-colors border-b border-border/40;
 }

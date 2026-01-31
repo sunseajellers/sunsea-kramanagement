@@ -25,8 +25,7 @@ export default function OKRList({ okrs = [] }: OKRListProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900">Active Goals</h2>
+            <div className="flex items-center justify-end">
                 <Badge variant="secondary" className="bg-indigo-50 text-indigo-700">Q1 2026</Badge>
             </div>
 

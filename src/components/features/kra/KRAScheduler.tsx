@@ -3,11 +3,29 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { KRATemplate, getAllKRATemplates, createKRATemplate, toggleKRATemplateStatus, deleteKRATemplate, generateScheduledKRAs } from '@/lib/kraAutomation'
-import { Trash2, Play, Loader2 } from 'lucide-react'
+import { Trash2, Play, Plus, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Label } from '@/components/ui/label'
+
 import toast from 'react-hot-toast'
 import { useBulkSelection, executeBulkKRAAction } from '@/lib/bulkUtils'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 // Simple OKR Manager
 export default function KRAScheduler() {
@@ -58,7 +76,7 @@ export default function KRAScheduler() {
             {/* Page Header */}
             <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-8">
                 <div>
-                    <h2 className="section-title">Repeating Goals</h2>
+                    <h2 className="section-title">Auto Tasks</h2>
                     <p className="section-subtitle">Manage tasks that repeat automatically on a schedule</p>
                 </div>
                 <div className="flex gap-4">
@@ -69,7 +87,7 @@ export default function KRAScheduler() {
                         title="Creates the latest tasks for these goals right now"
                     >
                         {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
-                        Run Automation
+                        Create Now
                     </button>
                     <button
                         onClick={() => setShowCreate(!showCreate)}
@@ -80,23 +98,25 @@ export default function KRAScheduler() {
                                 : "btn-primary"
                         )}
                     >
-                        {showCreate ? 'Cancel' : 'Add Repeating Goal'}
+                        {showCreate ? 'Cancel' : 'Add Auto Task'}
                     </button>
                 </div>
             </div>
 
-            {/* Create Overlay */}
-            {showCreate && (
-                <div className="dashboard-card p-12 animate-in slide-in-from-top-4 duration-700 relative overflow-hidden group/form">
-                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] -rotate-12 pointer-events-none group-hover/form:scale-110 transition-transform duration-1000">
-                        <Play className="w-64 h-64" />
-                    </div>
-                    <div className="relative">
-                        <h3 className="text-2xl font-black text-primary uppercase tracking-tight mb-10">New Repeating Goal</h3>
-                        <CreateTemplateForm onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); loadTemplates() }} />
-                    </div>
-                </div>
-            )}
+            {/* Create Dialog */}
+            <Dialog open={showCreate} onOpenChange={setShowCreate}>
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tight">
+                            <Play className="w-8 h-8 text-primary shadow-sm" />
+                            New Auto Task
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground/60 font-medium">Define a task that repeats automatically on a set schedule</DialogDescription>
+                    </DialogHeader>
+
+                    <CreateTemplateForm onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); loadTemplates() }} />
+                </DialogContent>
+            </Dialog>
 
             {/* Goal List */}
             <div className="glass-panel p-0 flex flex-col overflow-hidden shadow-2xl shadow-black/[0.02]">
@@ -104,7 +124,7 @@ export default function KRAScheduler() {
                     <div className="flex items-center gap-4">
                         <div className="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse" />
                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">
-                            Active Repeating Goals
+                            Auto Tasks Running
                         </span>
                     </div>
                 </div>
@@ -123,7 +143,7 @@ export default function KRAScheduler() {
                                         />
                                     </div>
                                 </th>
-                                <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Goal Details</th>
+                                <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Task Name</th>
                                 <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Repeats</th>
                                 <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Priority</th>
                                 <th className="px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Team Size</th>
@@ -145,7 +165,7 @@ export default function KRAScheduler() {
                                         <div className="w-24 h-24 rounded-[3rem] bg-muted/30 flex items-center justify-center mx-auto mb-8">
                                             <Play className="w-10 h-10 text-muted-foreground/20" />
                                         </div>
-                                        <p className="text-xl font-black text-primary/40 uppercase tracking-tight">No repeating goals yet</p>
+                                        <p className="text-xl font-black text-primary/40 uppercase tracking-tight">No auto tasks yet</p>
                                         <p className="text-sm text-muted-foreground/50 font-medium">Create your first goal to start automating tasks.</p>
                                     </td>
                                 </tr>
@@ -266,84 +286,109 @@ function CreateTemplateForm({ onClose, onSuccess }: { onClose: () => void; onSuc
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12 max-w-5xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Goal Title</Label>
-                    <input
-                        placeholder="Ex: Weekly Stock Audit"
-                        className="form-input"
-                        value={formData.title}
-                        onChange={e => setFormData({ ...formData, title: e.target.value })}
-                        required
+        <form onSubmit={handleSubmit} className="space-y-10 py-6">
+            {/* Primary Details */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="h-8 w-1 bg-primary rounded-full transition-all" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Primary Details</h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid gap-2.5">
+                        <label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Goal Title *</label>
+                        <Input
+                            placeholder="Ex: Weekly Stock Audit"
+                            value={formData.title}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                            className="h-10 sm:h-12 bg-slate-50/50 border-slate-100"
+                            required
+                        />
+                    </div>
+                    <div className="grid gap-2.5">
+                        <label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Repeats *</label>
+                        <Select
+                            value={formData.type}
+                            onValueChange={(v) => setFormData({ ...formData, type: v })}
+                        >
+                            <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100">
+                                <SelectValue placeholder="Select Frequency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="daily">Every Day</SelectItem>
+                                <SelectItem value="weekly">Every Week</SelectItem>
+                                <SelectItem value="monthly">Every Month</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="grid gap-2.5">
+                    <label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Description & Instructions</label>
+                    <Textarea
+                        placeholder="Tell your team exactly what needs to be done..."
+                        className="min-h-[120px] py-4 resize-none bg-slate-50/50 border-slate-100"
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
                 </div>
-                <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Repeats</Label>
-                    <div className="relative">
-                        <select
-                            className="form-input appearance-none"
-                            value={formData.type}
-                            onChange={e => setFormData({ ...formData, type: e.target.value })}
+            </div>
+
+            {/* Assignment & Priority */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="h-8 w-1 bg-secondary rounded-full transition-all" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Assignment & Priority</h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid gap-2.5">
+                        <label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Priority Level</label>
+                        <Select
+                            value={formData.priority}
+                            onValueChange={(v) => setFormData({ ...formData, priority: v })}
                         >
-                            <option value="daily">Every Day</option>
-                            <option value="weekly">Every Week</option>
-                            <option value="monthly">Every Month</option>
-                        </select>
+                            <SelectTrigger className="h-10 sm:h-12 bg-slate-50/50 border-slate-100">
+                                <SelectValue placeholder="Select Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="medium">Normal Priority</SelectItem>
+                                <SelectItem value="high">High Priority</SelectItem>
+                                <SelectItem value="critical">Urgent / Critical</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-2.5">
+                        <label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Assign to (User IDs) *</label>
+                        <Input
+                            placeholder="IDs separated by commas..."
+                            value={formData.assignedTo}
+                            onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
+                            className="h-10 sm:h-12 font-mono text-xs bg-slate-50/50 border-slate-100"
+                            required
+                        />
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Description & Instructions</Label>
-                <textarea
-                    placeholder="Tell your team exactly what needs to be done..."
-                    className="form-input min-h-[160px] py-6 resize-none"
-                    value={formData.description}
-                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Priority Level</Label>
-                    <select
-                        className="form-input appearance-none"
-                        value={formData.priority}
-                        onChange={e => setFormData({ ...formData, priority: e.target.value })}
-                    >
-                        <option value="medium">Normal Priority</option>
-                        <option value="high">High Priority</option>
-                        <option value="critical">Urgent / Critical</option>
-                    </select>
-                </div>
-                <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Assign to Team Members (IDs)</Label>
-                    <input
-                        placeholder="Paste user IDs separated by commas..."
-                        className="form-input font-mono text-xs"
-                        value={formData.assignedTo}
-                        onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
-                    />
-                </div>
-            </div>
-
-            <div className="flex gap-6 pt-6">
-                <button
+            <DialogFooter className="pt-8 border-t border-slate-100">
+                <Button
                     type="button"
+                    variant="outline"
                     onClick={onClose}
-                    className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all border-2 border-transparent"
+                    className="h-10 sm:h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]"
                 >
                     Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 h-16 btn-primary"
+                    className="h-10 sm:h-12 px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20"
                 >
-                    {saving ? <Loader2 className="animate-spin h-6 w-6" /> : 'Create Repeating Goal'}
-                </button>
-            </div>
+                    {saving ? <Loader2 className="animate-spin h-5 w-5 mr-3" /> : <Plus className="w-5 h-5 mr-3" />}
+                    Create Task
+                </Button>
+            </DialogFooter>
         </form>
     )
 }

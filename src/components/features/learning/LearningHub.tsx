@@ -52,9 +52,7 @@ export default function LearningHub() {
     return (
         <div className="space-y-8">
             {/* Simple Search Header */}
-            <div className="glass-card p-10 text-center space-y-4">
-                <h1 className="text-3xl font-bold text-slate-900">Company Academy</h1>
-                <p className="text-slate-500 max-w-xl mx-auto">Find guides, videos, and answers to your daily questions.</p>
+            <div className="glass-card mb-4 p-4 md:p-6 text-center">
                 <div className="max-w-md mx-auto relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input
@@ -66,12 +64,11 @@ export default function LearningHub() {
                 </div>
             </div>
 
-            {/* Simple Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Articles */}
-                <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-bold text-slate-900">Latest Guides</h2>
-                    <div className="space-y-4">
+            {/* Main Content Column */}
+            <div className="lg:col-span-3 space-y-12">
+                <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-slate-900 border-l-4 border-primary pl-4">Latest Guides</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {loading ? (
                             <div className="text-center py-10 text-slate-400">Loading resources...</div>
                         ) : filteredArticles.length === 0 ? (
@@ -81,49 +78,50 @@ export default function LearningHub() {
                                 <div
                                     key={article.id}
                                     onClick={() => handleArticleClick(article)}
-                                    className="glass-card p-6 flex flex-col sm:flex-row gap-6 items-start hover:border-indigo-200 cursor-pointer transition-colors"
+                                    className="glass-card p-5 md:p-6 flex gap-6 items-start hover:border-indigo-200 cursor-pointer transition-colors"
                                 >
                                     <div className={cn(
-                                        "h-16 w-16 rounded-xl flex items-center justify-center shrink-0",
+                                        "h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center shrink-0",
                                         article.type === 'video' ? 'bg-rose-50 text-rose-500' : 'bg-indigo-50 text-indigo-500'
                                     )}>
-                                        {article.type === 'video' ? <Video className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
+                                        {article.type === 'video' ? <Video className="h-6 w-6 md:h-7 md:w-7" /> : <FileText className="h-6 h-6 md:h-7 md:w-7" />}
                                     </div>
-                                    <div className="space-y-2 flex-1">
-                                        <div className="flex gap-2">
-                                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-bold">
+                                    <div className="space-y-1.5 flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-bold text-[9px] px-1.5 py-0">
                                                 {article.category}
                                             </Badge>
-                                            <span className="text-xs text-slate-400 font-bold pt-1">
+                                            <span className="text-[10px] text-slate-400 font-bold">
                                                 {article.updatedAt ? formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true }) : ''}
                                             </span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-slate-900">{article.title}</h3>
-                                        <p className="text-slate-500 text-sm">{article.excerpt}</p>
+                                        <h3 className="text-md font-bold text-slate-900 truncate">{article.title}</h3>
+                                        <p className="text-slate-500 text-xs line-clamp-2">{article.excerpt}</p>
                                     </div>
-                                    <ChevronRight className="h-5 w-5 text-slate-300 self-center" />
+                                    <ChevronRight className="h-4 w-4 text-slate-300 self-center" />
                                 </div>
                             ))
                         )}
                     </div>
                 </div>
 
-                {/* Simple Sidebar */}
-                <div className="space-y-6">
-                    <div className="glass-card p-6 bg-indigo-600 text-white">
-                        <h2 className="text-xl font-bold mb-4">Common Questions</h2>
-                        <div className="space-y-3">
-                            {loading ? (
-                                <div className="text-white/60 text-sm">Loading FAQs...</div>
-                            ) : faqs.map((q) => (
-                                <div key={q.id} className="flex items-center justify-between p-3 bg-white/10 rounded-lg hover:bg-white/20 cursor-pointer transition-colors">
-                                    <span className="text-sm font-medium">{q.question}</span>
-                                    <ExternalLink className="h-4 w-4 opacity-70" />
+                {/* Integrated FAQ Section */}
+                {faqs.length > 0 && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold text-slate-900 border-l-4 border-indigo-400 pl-4">Common Questions</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {faqs.map((q) => (
+                                <div
+                                    key={q.id}
+                                    className="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-xl hover:bg-white hover:shadow-md cursor-pointer transition-all group"
+                                >
+                                    <span className="text-sm font-bold text-slate-700">{q.question}</span>
+                                    <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
                                 </div>
                             ))}
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     )

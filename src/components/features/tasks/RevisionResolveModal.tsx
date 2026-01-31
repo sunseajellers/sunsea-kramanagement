@@ -52,7 +52,7 @@ export default function RevisionResolveModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-xl w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 px-8 py-10 text-white shrink-0">

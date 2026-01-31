@@ -209,71 +209,125 @@ export default function EmployeeDashboard() {
 
     return (
         <div className="min-h-screen pb-20">
-            {/* Premium Header */}
-            <header className="sticky top-6 z-40 mx-6 mb-8 rounded-[2rem] glass-panel px-8 py-5 flex items-center justify-between shadow-xl shadow-primary/5 border-white/40">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">
-                        <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain brightness-0 invert" />
+            {/* Desktop Header - Hidden on Mobile */}
+            <header className="hidden sm:flex sticky top-4 z-50 mx-4 mb-8 rounded-2xl glass-panel px-4 sm:px-5 py-2.5 items-center justify-between gap-4 shadow-xl shadow-primary/5 border-white/40 bg-white/90 backdrop-blur-xl transition-all">
+                <div className="flex items-center gap-3 shrink-0">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95">
+                        <img src="/logo.png" alt="Logo" className="w-5 h-5 sm:w-6 sm:h-6 object-contain brightness-0 invert" />
                     </div>
-                    <div>
-                        <h1 className="font-extrabold text-2xl text-primary tracking-tight">Dashboard</h1>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Employee Portal</p>
+                    <div className="hidden sm:block">
+                        <h1 className="font-black text-lg text-primary tracking-tighter leading-none uppercase">Dashboard</h1>
                     </div>
                 </div>
-                <div className="flex items-center gap-6">
-                    <div className="hidden md:block text-right">
-                        <p className="text-sm font-bold text-primary">{userProfile?.fullName || 'User'}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{userProfile?.department || 'Team Member'}</p>
-                    </div>
-                    <button
-                        onClick={() => signOut()}
-                        className="w-10 h-10 rounded-xl bg-destructive/5 text-destructive hover:bg-destructive/10 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
-                        title="Logout"
-                    >
-                        <LogOut className="w-5 h-5" />
-                    </button>
-                </div>
-            </header>
 
-            {/* Premium Tab Navigation */}
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
-                <div className="flex overflow-x-auto pb-2 sm:pb-0 gap-2 mb-10 sm:justify-center p-2 rounded-[2rem] glass-panel w-full sm:w-fit mx-auto shadow-2xl shadow-primary/5 border-white/40 bg-white/50 backdrop-blur-2xl sticky top-28 z-30 scrollbar-hide">
+                <nav className="flex items-center gap-1">
                     {[
-                        { id: 'tasks', label: 'Workboard', icon: ClipboardList },
-                        { id: 'delegated', label: 'Delegated', icon: Plus },
-                        { id: 'history', label: 'History', icon: History },
-                        { id: 'performance', label: 'Performance', icon: Trophy },
-                        { id: 'okr', label: 'OKRs', icon: Target },
-                        { id: 'helpdesk', label: 'Helpdesk', icon: Ticket },
-                        { id: 'academy', label: 'Academy', icon: BookOpen },
-                        { id: 'profile', label: 'Profile', icon: User },
+                        { id: 'tasks', label: 'My Tasks', icon: ClipboardList },
+                        { id: 'delegated', label: 'Tasks I Gave', icon: Plus },
+                        { id: 'history', label: 'Old Tasks', icon: History },
+                        { id: 'performance', label: 'Results', icon: Trophy },
+                        { id: 'okr', label: 'My Goals', icon: Target },
+                        { id: 'helpdesk', label: 'Support', icon: Ticket },
+                        { id: 'academy', label: 'Learning', icon: BookOpen },
+                        { id: 'profile', label: 'Accounts', icon: User },
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={cn(
-                                "flex items-center gap-2.5 px-6 py-3 rounded-[1.5rem] text-sm font-bold transition-all duration-300 relative overflow-hidden group whitespace-nowrap flex-shrink-0",
+                                "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden group whitespace-nowrap shrink-0",
                                 activeTab === tab.id
-                                    ? "bg-primary text-white shadow-lg shadow-primary/25 scale-105"
-                                    : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                                    ? "bg-primary text-white shadow-md shadow-primary/30"
+                                    : "text-primary/60 hover:text-primary hover:bg-primary/5"
                             )}
                         >
-                            <tab.icon className={cn("w-4 h-4 transition-transform duration-300", activeTab === tab.id ? "scale-110" : "group-hover:scale-110")} />
+                            <tab.icon className={cn("w-3 h-3 transition-transform duration-500", activeTab === tab.id ? "scale-110" : "group-hover:scale-110 group-hover:rotate-12")} />
                             <span>{tab.label}</span>
                         </button>
                     ))}
-                </div>
+                </nav>
 
-                {/* Content Area */}
+                <div className="flex items-center gap-3 shrink-0">
+                    <div className="hidden lg:flex flex-col items-end mr-1">
+                        <p className="text-[10px] font-black text-primary leading-none mb-1">{userProfile?.fullName || 'User'}</p>
+                        <p className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none">{userProfile?.department || 'Operations'}</p>
+                    </div>
+                    <button
+                        onClick={() => signOut()}
+                        className="group w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all flex items-center justify-center border border-rose-100/50 active:scale-95"
+                        title="Logout"
+                    >
+                        <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                </div>
+            </header>
+
+            {/* Mobile Bottom Navigation - Sticky & Compact */}
+            <div className="fixed bottom-6 left-2 right-2 z-[100] sm:hidden">
+                <div className="flex items-center justify-between p-1 rounded-full glass-panel bg-white/95 backdrop-blur-2xl border-white/40 shadow-2xl shadow-primary/20">
+                    {[
+                        { id: 'tasks', label: 'Works', icon: ClipboardList },
+                        { id: 'delegated', label: 'Group', icon: Plus },
+                        { id: 'history', label: 'History', icon: History },
+                        { id: 'performance', label: 'Score', icon: Trophy },
+                        { id: 'okr', label: 'Goals', icon: Target },
+                        { id: 'helpdesk', label: 'Support', icon: Ticket },
+                        { id: 'academy', label: 'Learn', icon: BookOpen },
+                        { id: 'profile', label: 'Me', icon: User },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={cn(
+                                "flex items-center justify-center p-2 rounded-full transition-all duration-300 flex-1",
+                                activeTab === tab.id
+                                    ? "bg-primary text-white shadow-lg shadow-primary/25 scale-110"
+                                    : "text-primary/40 hover:text-primary"
+                            )}
+                            title={tab.label}
+                        >
+                            <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "scale-110" : "")} />
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-12 sm:pt-6 pb-32">
+                {/* Centered Tab Identity - Optimized for Mobile */}
+                {(() => {
+                    const activeTabData = [
+                        { id: 'tasks', label: 'My Tasks', subtitle: 'Things I need to do today', icon: ClipboardList },
+                        { id: 'delegated', label: 'Tasks I Gave', subtitle: 'Things I asked others to do', icon: Plus },
+                        { id: 'history', label: 'Old Tasks', subtitle: 'Tasks I finished before', icon: History },
+                        { id: 'performance', label: 'Results', subtitle: 'How well I am doing', icon: Trophy },
+                        { id: 'okr', label: 'My Goals', subtitle: 'Big goals I want to reach', icon: Target },
+                        { id: 'helpdesk', label: 'Support', subtitle: 'Get help with problems', icon: Ticket },
+                        { id: 'academy', label: 'Learning', subtitle: 'Tutorials and guides', icon: BookOpen },
+                        { id: 'profile', label: 'My Account', subtitle: 'Change my details', icon: User },
+                    ].find(t => t.id === activeTab);
+
+                    if (!activeTabData) return null;
+
+                    return (
+                        <div className="px-1 md:px-6 mb-10 animate-in fade-in slide-in-from-top-4 duration-1000 flex flex-col items-center text-center">
+                            <div className="p-4 md:p-5 rounded-[2.25rem] bg-gradient-to-br from-primary/10 to-primary/5 text-primary shadow-sm border border-primary/10 mb-4 scale-90 md:scale-110">
+                                <activeTabData.icon className="w-7 h-7 md:w-8 md:h-8" />
+                            </div>
+                            <div className="space-y-1.5 md:space-y-2 max-w-2xl px-4">
+                                <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase leading-none">{activeTabData.label}</h2>
+                                <p className="text-[10px] md:text-xs font-black text-muted-foreground/30 uppercase tracking-[0.2em] md:tracking-[0.4em] line-clamp-1">{activeTabData.subtitle}</p>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 <div className="space-y-6">
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
                         <div className="dashboard-card animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-primary">My Profile</h2>
-                                    <p className="text-sm text-muted-foreground">Manage your personal information and security</p>
-                                </div>
+                                <div />
                                 {!editingProfile ? (
                                     <button
                                         onClick={() => setEditingProfile(true)}
@@ -453,10 +507,7 @@ export default function EmployeeDashboard() {
                     {activeTab === 'delegated' && (
                         <div className="dashboard-card animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-primary">Delegations</h2>
-                                    <p className="text-sm text-muted-foreground">Tasks you've assigned to others</p>
-                                </div>
+                                <div />
                                 <button
                                     onClick={() => setShowCreateTask(true)}
                                     className="btn-primary"
@@ -471,43 +522,59 @@ export default function EmployeeDashboard() {
                                     <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center mb-6">
                                         <Plus className="w-10 h-10 text-primary/30" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-primary mb-2">No delegated tasks</h3>
+                                    <h3 className="text-lg font-bold text-primary mb-2">No tasks given</h3>
                                     <p className="text-muted-foreground max-w-sm">
-                                        You haven't assigned any roles or tasks to teammates yet. Tap the button above to get started.
+                                        You haven't given any tasks to others yet. Press the button above to start.
                                     </p>
                                 </div>
                             ) : (
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                     {delegatedTasks.map(task => (
                                         <div
                                             key={task.id}
-                                            className="group p-6 rounded-[2rem] bg-white border border-white/60 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-default"
+                                            className="group flex flex-col bg-white border border-slate-100 rounded-[2.25rem] shadow-xl shadow-slate-200/30 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
                                         >
-                                            <div className="flex justify-between items-start mb-4">
-                                                <span className={`status-badge ${task.status === 'completed' ? 'status-badge-success' :
-                                                    task.status === 'in_progress' ? 'status-badge-info' :
-                                                        'status-badge-neutral'
-                                                    }`}>
-                                                    {statusLabels[task.status]}
-                                                </span>
-                                                <span className="text-xs font-bold text-muted-foreground/50">
-                                                    {task.priority.toUpperCase()}
-                                                </span>
-                                            </div>
-
-                                            <h3 className="font-bold text-primary text-lg mb-2 line-clamp-2">{task.title}</h3>
-
-                                            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dashed border-primary/5">
-                                                <div className="flex -space-x-2">
-                                                    {task.assignedTo?.slice(0, 3).map((assigneeId, i) => (
-                                                        <div key={i} className="w-8 h-8 rounded-full bg-primary/10 border-2 border-white flex items-center justify-center text-[10px] font-bold text-primary">
-                                                            {assigneeId.substring(0, 1)}
-                                                        </div>
-                                                    ))}
+                                            <div className="p-7 space-y-5 flex-1 flex flex-col">
+                                                <div className="flex justify-between items-center">
+                                                    <span className={cn(
+                                                        "status-badge",
+                                                        task.status === 'completed' ? 'status-badge-success' :
+                                                            task.status === 'in_progress' ? 'status-badge-info' : 'status-badge-neutral'
+                                                    )}>
+                                                        {statusLabels[task.status]}
+                                                    </span>
+                                                    <span className={cn(
+                                                        "text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border",
+                                                        task.priority === 'critical' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+                                                    )}>
+                                                        {task.priority}
+                                                    </span>
                                                 </div>
-                                                <span className="text-xs font-bold text-muted-foreground">
-                                                    {task.assignedTo?.length || 0} assignee(s)
-                                                </span>
+
+                                                <h3 className="text-lg font-black text-primary leading-tight uppercase tracking-tight line-clamp-2">{task.title}</h3>
+
+                                                <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex -space-x-2">
+                                                            {task.assignedTo?.slice(0, 3).map((assigneeId, i) => (
+                                                                <div key={i} className="w-8 h-8 rounded-xl bg-primary text-white border-2 border-white flex items-center justify-center text-[10px] font-black shadow-sm">
+                                                                    {assigneeId.substring(0, 1).toUpperCase()}
+                                                                </div>
+                                                            ))}
+                                                            {(task.assignedTo?.length || 0) > 3 && (
+                                                                <div className="w-8 h-8 rounded-xl bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-black text-slate-400">
+                                                                    +{(task.assignedTo?.length || 0) - 3}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                                            {task.assignedTo?.length || 0} People
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-xl bg-primary/5 flex items-center justify-center border border-primary/5">
+                                                        <Plus className="w-3.5 h-3.5 text-primary opacity-40" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -520,10 +587,7 @@ export default function EmployeeDashboard() {
                     {activeTab === 'history' && (
                         <div className="dashboard-card animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-primary">Task History</h2>
-                                    <p className="text-sm text-muted-foreground mr-2">Track all your task activities</p>
-                                </div>
+                                <div />
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <div className="relative">
                                         <Filter className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -553,7 +617,7 @@ export default function EmployeeDashboard() {
                                     <p className="text-muted-foreground font-medium">No tasks found matching your filters.</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scroll-panel">
+                                <div className="grid gap-4 max-h-[700px] overflow-y-auto pr-2 scrollbar-none">
                                     {filteredAllTasks.map(task => {
                                         const dueDate = new Date(task.finalTargetDate || task.dueDate);
                                         const isOverdue = isPast(dueDate) && !isToday(dueDate) && !['completed', 'cancelled'].includes(task.status);
@@ -561,44 +625,53 @@ export default function EmployeeDashboard() {
                                         return (
                                             <div
                                                 key={task.id}
-                                                className="group p-5 rounded-[2rem] bg-white border border-white/60 shadow-sm hover:shadow-md transition-all"
+                                                className="group relative bg-white border border-slate-100 p-6 rounded-3xl shadow-lg shadow-slate-200/20 transition-all hover:shadow-xl hover:-translate-y-0.5"
                                             >
-                                                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                                                    <div className="flex-1 min-w-0 space-y-2">
-                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                <div className="flex flex-col gap-4">
+                                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                        <div className="flex items-center gap-2">
                                                             {task.taskNumber && (
-                                                                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">#{task.taskNumber}</span>
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">#{task.taskNumber}</span>
                                                             )}
-                                                            <span className={`status-badge ${task.status === 'completed' ? 'status-badge-success' :
-                                                                task.status === 'overdue' || isOverdue ? 'status-badge-danger' :
-                                                                    'status-badge-info'
-                                                                }`}>
+                                                            <span className={cn(
+                                                                "status-badge scale-90 origin-left !px-3 !py-1",
+                                                                task.status === 'completed' ? 'status-badge-success' :
+                                                                    isOverdue ? 'status-badge-danger' : 'status-badge-info'
+                                                            )}>
                                                                 {statusLabels[task.status]}
                                                             </span>
-                                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${task.priority === 'critical' ? 'text-destructive' : 'text-muted-foreground'
-                                                                }`}>
-                                                                {task.priority} Priority
-                                                            </span>
                                                         </div>
+                                                        <span className={cn(
+                                                            "text-[9px] font-black uppercase tracking-widest",
+                                                            task.priority === 'critical' ? 'text-rose-500' : 'text-slate-400'
+                                                        )}>
+                                                            {task.priority} Prio
+                                                        </span>
+                                                    </div>
 
-                                                        <h3 className="text-lg font-bold text-primary leading-tight hover:text-blue-600 transition-colors cursor-pointer">{task.title}</h3>
-
+                                                    <div>
+                                                        <h3 className="text-md font-black text-primary leading-tight uppercase tracking-tight line-clamp-1">{task.title}</h3>
                                                         {task.description && (
-                                                            <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                                                            <p className="text-[11px] text-slate-500 font-medium line-clamp-1 mt-1 italic">{task.description}</p>
                                                         )}
+                                                    </div>
 
-                                                        <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground pt-2">
-                                                            <span className={`flex items-center gap-1.5 ${isOverdue ? 'text-destructive' : 'text-primary'}`}>
-                                                                <Calendar className="w-4 h-4" />
-                                                                {getDueDateLabel(task)}
-                                                            </span>
-                                                            {task.assignedByName && (
-                                                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/50 border border-slate-200/50">
-                                                                    <User className="w-3 h-3" />
-                                                                    By {task.assignedByName}
-                                                                </span>
-                                                            )}
+                                                    <div className="flex pt-4 border-t border-slate-50 items-center justify-between">
+                                                        <div className={cn(
+                                                            "flex items-center gap-2 text-[10px] font-black uppercase tracking-tight",
+                                                            isOverdue ? 'text-rose-500' : 'text-primary/60'
+                                                        )}>
+                                                            <Calendar className="w-3.5 h-3.5" />
+                                                            {getDueDateLabel(task)}
                                                         </div>
+                                                        {task.assignedByName && (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
+                                                                    <User className="w-3 h-3 text-slate-400" />
+                                                                </div>
+                                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{task.assignedByName}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

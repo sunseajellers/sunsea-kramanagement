@@ -10,11 +10,12 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
+
 import type { Notification } from '@/lib/notificationService'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
+import { cn } from '@/lib/utils'
 
 export function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([])
@@ -141,49 +142,46 @@ export function NotificationBell() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl hover:bg-slate-100 transition-all">
+                    <Bell className="h-4.5 w-4.5 text-slate-600" />
                     {unreadCount > 0 && (
-                        <Badge
-                            variant="destructive"
-                            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                        >
-                            {unreadCount > 9 ? '9+' : unreadCount}
-                        </Badge>
+                        <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
                     )}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-                <div className="flex items-center justify-between px-4 py-2">
-                    <h3 className="font-semibold">Notifications</h3>
+            <DropdownMenuContent align="end" className="w-80 rounded-2xl p-1.5 border-slate-100 shadow-xl overflow-hidden bg-card backdrop-blur-xl">
+                <div className="flex items-center justify-between px-5 py-3.5">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-primary">Notifications</h3>
                     {unreadCount > 0 && (
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleMarkAllAsRead}
-                            className="text-xs"
+                            className="text-[9px] font-black uppercase tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 h-auto py-1 px-2.5 rounded-full"
                         >
-                            Mark all read
+                            Mark All Read
                         </Button>
                     )}
                 </div>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-slate-50" />
 
                 {loading ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                        Loading...
+                    <div className="p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Looking...
                     </div>
                 ) : notifications.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                        No notifications
+                    <div className="p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Nothing new!
                     </div>
                 ) : (
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-[500px] overflow-y-auto space-y-1 p-2">
                         {notifications.map((notification) => (
                             <DropdownMenuItem
                                 key={notification.id}
-                                className={`flex flex-col items-start p-4 cursor-pointer ${!notification.read ? 'bg-muted/50' : ''
-                                    }`}
+                                className={cn(
+                                    "flex flex-col items-start p-3.5 cursor-pointer rounded-xl transition-all duration-300",
+                                    !notification.read ? "bg-slate-50 border-l-4 border-primary" : "opacity-60 grayscale-[0.5]"
+                                )}
                                 onClick={() => {
                                     if (!notification.read) {
                                         handleMarkAsRead(notification.id)
@@ -193,19 +191,21 @@ export function NotificationBell() {
                                     }
                                 }}
                             >
-                                <div className="flex items-start gap-2 w-full">
-                                    <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                                <div className="flex items-start gap-3 w-full">
+                                    <div className="w-9 h-9 rounded-lg bg-white shadow-sm flex items-center justify-center text-lg shrink-0 border border-slate-50">
+                                        {getNotificationIcon(notification.type)}
+                                    </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium text-sm">{notification.title}</p>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="font-black text-xs text-primary tracking-tight">{notification.title}</p>
                                             {!notification.read && (
-                                                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                                <div className="w-1 h-1 bg-primary rounded-full shrink-0" />
                                             )}
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
+                                        <p className="text-[11px] font-medium text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
                                             {notification.message}
                                         </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5">
                                             {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : ''}
                                         </p>
                                     </div>

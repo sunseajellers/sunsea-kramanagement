@@ -104,7 +104,7 @@ export default function AdminLayout({
                         <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-primary to-secondary animate-pulse shadow-2xl shadow-primary/20" />
                         <Loader2 className="absolute inset-0 m-auto h-8 w-8 animate-spin text-white" />
                     </div>
-                    <p className="text-muted-foreground text-xs font-bold tracking-[0.2em] uppercase">Initializing</p>
+                    <p className="text-muted-foreground text-xs font-bold tracking-[0.2em] uppercase">Loading...</p>
                 </div>
             </div>
         );
@@ -115,7 +115,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen flex flex-col bg-background">
             {/* Top Brand Bar */}
-            <nav className="fixed top-0 left-0 right-0 z-[100] px-6 py-4">
+            <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
                 <div className="max-w-[1700px] mx-auto">
                     <div className="glass-panel px-6 py-3 flex items-center justify-between border-border shadow-xl shadow-primary/5">
                         {/* Brand */}
@@ -125,11 +125,11 @@ export default function AdminLayout({
                                     <Shield className="w-5 h-5 text-primary-foreground" />
                                 </div>
                                 <div className="ml-4 flex flex-col">
-                                    <span className="text-lg font-bold tracking-tight text-foreground leading-none">
+                                    <span className="text-base font-bold tracking-tight text-foreground leading-none">
                                         JewelMatrix
                                     </span>
-                                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">
-                                        Executive Command
+                                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest mt-1">
+                                        Admin Panel
                                     </span>
                                 </div>
                             </Link>
@@ -145,13 +145,13 @@ export default function AdminLayout({
                                             key={item.href}
                                             href={item.href}
                                             className={cn(
-                                                "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300",
+                                                "flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300",
                                                 isActive
                                                     ? "bg-background text-primary shadow-sm border border-border"
                                                     : "text-muted-foreground hover:text-primary hover:bg-background/50"
                                             )}
                                         >
-                                            <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground/60")} />
+                                            <item.icon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground/60")} />
                                             <span>{item.label}</span>
                                         </Link>
                                     );
@@ -176,7 +176,7 @@ export default function AdminLayout({
             </nav>
 
             {/* Mobile/Tablet Secondary Menu Bar (Visible below 2xl) */}
-            <div className="2xl:hidden fixed top-[100px] left-0 right-0 z-[90] px-6">
+            <div className="2xl:hidden fixed top-[90px] left-0 right-0 z-40 px-6">
                 <div className="glass-panel overflow-x-auto p-2 scrollbar-none border-slate-200/60 shadow-lg shadow-slate-100/30">
                     <div className="flex items-center gap-2 whitespace-nowrap min-w-max px-2">
                         {menuItems.map((item) => {
@@ -204,7 +204,7 @@ export default function AdminLayout({
             </div>
 
             {/* Main Content Area */}
-            <main className="flex-1 pt-44 2xl:pt-36 pb-20">
+            <main className="flex-1 pt-36 2xl:pt-28 pb-16">
                 <div className="admin-container">
                     {children}
                 </div>

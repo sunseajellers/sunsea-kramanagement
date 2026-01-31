@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Plus, Trash2, Target } from 'lucide-react'
+import { Plus, Trash2, Target, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { authenticatedJsonFetch } from '@/lib/apiClient'
@@ -150,177 +150,204 @@ export function CreateObjectiveModal({ isOpen, onClose, onSuccess }: CreateObjec
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Target className="w-5 h-5 text-blue-600" />
-                        Create New Objective
-                    </DialogTitle>
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm border border-primary/10">
+                            <Target className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-2xl font-black uppercase tracking-tight">New Strategic Objective</DialogTitle>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Achieve Departmental & Company Growth</p>
+                        </div>
+                    </div>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-6 py-4">
-                    {/* Basic Info */}
-                    <div className="space-y-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="title">Objective Title</Label>
-                            <Input
-                                id="title"
-                                placeholder="e.g., Achieve Departmental Growth"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                            />
+                <form onSubmit={handleSubmit} className="space-y-10 py-6">
+                    {/* Basic Info Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="h-8 w-1 bg-primary rounded-full" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Objective Definition</h3>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="description">Description (Optional)</Label>
-                            <Textarea
-                                id="description"
-                                placeholder="Describe the goal of this objective..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Timeframe</Label>
-                                <Select
-                                    value={timeframe}
-                                    onValueChange={(v: OKRTimeframe) => setTimeframe(v)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="quarterly">Quarterly</SelectItem>
-                                        <SelectItem value="yearly">Yearly</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        <div className="grid gap-6">
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="title" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Objective Title *</Label>
+                                <Input
+                                    id="title"
+                                    placeholder="e.g., Achieve Departmental Growth"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="h-12 bg-slate-50/50 border-slate-100"
+                                    required
+                                />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label>Year</Label>
-                                <Select
-                                    value={year.toString()}
-                                    onValueChange={(v) => setYear(parseInt(v))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {[2024, 2025, 2026, 2027].map(y => (
-                                            <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="description" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Description (Optional)</Label>
+                                <Textarea
+                                    id="description"
+                                    placeholder="Describe the goal of this objective..."
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="min-h-[100px] py-4 resize-none bg-slate-50/50 border-slate-100"
+                                />
                             </div>
 
-                            {timeframe === 'quarterly' && (
-                                <div className="grid gap-2">
-                                    <Label>Quarter</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Timeframe</Label>
                                     <Select
-                                        value={quarter.toString()}
-                                        onValueChange={(v) => setQuarter(parseInt(v))}
+                                        value={timeframe}
+                                        onValueChange={(v: OKRTimeframe) => setTimeframe(v)}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
-                                            <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
-                                            <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
-                                            <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                                            <SelectItem value="yearly">Yearly</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            )}
+
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Year</Label>
+                                    <Select
+                                        value={year.toString()}
+                                        onValueChange={(v) => setYear(parseInt(v))}
+                                    >
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[2024, 2025, 2026, 2027].map(y => (
+                                                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {timeframe === 'quarterly' && (
+                                    <div className="grid gap-2.5">
+                                        <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Quarter</Label>
+                                        <Select
+                                            value={quarter.toString()}
+                                            onValueChange={(v) => setQuarter(parseInt(v))}
+                                        >
+                                            <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
+                                                <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
+                                                <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
+                                                <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Key Results */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-base font-semibold">Key Results</Label>
+                    {/* Key Results Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-1 bg-secondary rounded-full" />
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Key Results (Metrics)</h3>
+                            </div>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
                                 onClick={handleAddKeyResult}
+                                className="h-8 rounded-xl text-[9px] font-black uppercase tracking-widest bg-secondary/5 border-secondary/20 text-secondary hover:bg-secondary/10"
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add KR
+                                <Plus className="w-3 h-3 mr-2" />
+                                Add Metric
                             </Button>
                         </div>
 
-                        {keyResults.map((kr, index) => (
-                            <div key={index} className="p-4 border rounded-lg space-y-4 bg-gray-50/50">
-                                <div className="flex items-start gap-2">
-                                    <div className="flex-1 grid gap-2">
-                                        <Input
-                                            placeholder={`Key Result ${index + 1}`}
-                                            value={kr.title}
-                                            onChange={(e) => updateKeyResult(index, 'title', e.target.value)}
-                                        />
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => handleRemoveKeyResult(index)}
-                                        disabled={keyResults.length === 1}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label className="text-xs">Type</Label>
-                                        <Select
-                                            value={kr.type}
-                                            onValueChange={(v: KeyResultType) => updateKeyResult(index, 'type', v)}
+                        <div className="space-y-4">
+                            {keyResults.map((kr, index) => (
+                                <div key={index} className="p-6 rounded-3xl border border-slate-100 space-y-6 bg-slate-50/30 relative group">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-1 grid gap-2.5">
+                                            <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Metric Title *</Label>
+                                            <Input
+                                                placeholder={`Ex: Increase weekly traffic by 20%`}
+                                                value={kr.title}
+                                                onChange={(e) => updateKeyResult(index, 'title', e.target.value)}
+                                                className="h-12 bg-white border-slate-100"
+                                                required
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="mt-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                            onClick={() => handleRemoveKeyResult(index)}
+                                            disabled={keyResults.length === 1}
                                         >
-                                            <SelectTrigger className="h-8">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="percentage">Percentage</SelectItem>
-                                                <SelectItem value="number">Number</SelectItem>
-                                                <SelectItem value="currency">Currency</SelectItem>
-                                                <SelectItem value="boolean">Boolean</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                            <Trash2 className="w-5 h-5" />
+                                        </Button>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label className="text-xs">Target</Label>
-                                        <Input
-                                            type="number"
-                                            className="h-8"
-                                            value={kr.targetValue}
-                                            onChange={(e) => updateKeyResult(index, 'targetValue', parseFloat(e.target.value))}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label className="text-xs">Unit</Label>
-                                        <Input
-                                            placeholder="%, USD, etc."
-                                            className="h-8"
-                                            value={kr.unit}
-                                            onChange={(e) => updateKeyResult(index, 'unit', e.target.value)}
-                                        />
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                        <div className="grid gap-2.5">
+                                            <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Type</Label>
+                                            <Select
+                                                value={kr.type}
+                                                onValueChange={(v: KeyResultType) => updateKeyResult(index, 'type', v)}
+                                            >
+                                                <SelectTrigger className="h-12 bg-white border-slate-100">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="percentage">Percentage</SelectItem>
+                                                    <SelectItem value="number">Number</SelectItem>
+                                                    <SelectItem value="currency">Currency</SelectItem>
+                                                    <SelectItem value="boolean">Boolean</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid gap-2.5">
+                                            <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Target</Label>
+                                            <Input
+                                                type="number"
+                                                className="h-12 bg-white border-slate-100"
+                                                value={kr.targetValue}
+                                                onChange={(e) => updateKeyResult(index, 'targetValue', parseFloat(e.target.value))}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="grid gap-2.5">
+                                            <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Unit</Label>
+                                            <Input
+                                                placeholder="%, USD, etc."
+                                                className="h-12 bg-white border-slate-100"
+                                                value={kr.unit}
+                                                onChange={(e) => updateKeyResult(index, 'unit', e.target.value)}
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
 
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                    <DialogFooter className="pt-8 border-t border-slate-100">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]">
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? 'Creating...' : 'Create Objective'}
+                        <Button type="submit" disabled={loading} className="h-12 px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20">
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : <Target className="w-5 h-5 mr-3" />}
+                            Create Objective
                         </Button>
                     </DialogFooter>
                 </form>

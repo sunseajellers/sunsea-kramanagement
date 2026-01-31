@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { TicketRequestType, Priority } from '@/types'
 import { toast } from 'sonner'
@@ -71,125 +72,145 @@ export function CreateTicketModal({ open, onClose, onSuccess }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent>
-                <form onSubmit={handleSubmit}>
-                    <div className="bg-primary px-12 py-16 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
-                            <LifeBuoy className="w-48 h-48" />
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="p-3 rounded-2xl bg-secondary/10 text-secondary shadow-sm border border-secondary/10">
+                            <LifeBuoy className="w-8 h-8" />
                         </div>
-                        <DialogTitle className="text-4xl font-black tracking-tight uppercase mb-2">
-                            New Request
-                        </DialogTitle>
-                        <p className="text-secondary text-[10px] font-black uppercase tracking-[0.4em]">Help & Support Ticket</p>
+                        <div>
+                            <DialogTitle className="text-2xl font-black uppercase tracking-tight">New Support Request</DialogTitle>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Resolution & Troubleshooting Ticket</p>
+                        </div>
+                    </div>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit} className="space-y-10 py-6">
+                    {/* Core Issue Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="h-8 w-1 bg-primary rounded-full" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">The Problem Definition</h3>
+                        </div>
+
+                        <div className="grid gap-6">
+                            <div className="grid gap-2.5">
+                                <Label htmlFor="subject" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Summary / Subject *</Label>
+                                <Input
+                                    id="subject"
+                                    placeholder="E.g. I need help with my login"
+                                    className="h-12 bg-slate-50/50 border-slate-100"
+                                    value={formData.subject}
+                                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                    required
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Category</Label>
+                                    <Select
+                                        value={formData.requestType}
+                                        onValueChange={(value) => setFormData({ ...formData, requestType: value as TicketRequestType })}
+                                        disabled={loading}
+                                    >
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="general_query">❓ Question</SelectItem>
+                                            <SelectItem value="office_cleaning">🧹 Cleaning</SelectItem>
+                                            <SelectItem value="stationery">📦 Supplies</SelectItem>
+                                            <SelectItem value="purchase_request">💰 Purchase</SelectItem>
+                                            <SelectItem value="repair_maintenance">🛠️ Repair</SelectItem>
+                                            <SelectItem value="hr_helpdesk">👥 HR Help</SelectItem>
+                                            <SelectItem value="it_support">💻 IT Support</SelectItem>
+                                            <SelectItem value="accounts_admin">📄 Paperwork</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Urgency Level</Label>
+                                    <Select
+                                        value={formData.priority}
+                                        onValueChange={(value) => setFormData({ ...formData, priority: value as Priority })}
+                                        disabled={loading}
+                                    >
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low">🟢 Low Priority</SelectItem>
+                                            <SelectItem value="medium">🟡 Normal</SelectItem>
+                                            <SelectItem value="high">🔴 High Priority</SelectItem>
+                                            <SelectItem value="critical">🚨 Critical / Immediate</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="p-12 space-y-10 bg-white max-h-[75vh] overflow-y-auto scroll-panel">
-                        {/* Subject */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">What's the issue? *</label>
-                            <Input
-                                placeholder="E.g. I need help with my login"
-                                className="h-12"
-                                value={formData.subject}
-                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                required
-                                disabled={loading}
-                            />
+                    {/* Timeline Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="h-8 w-1 bg-secondary rounded-full" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Timeline Expectations</h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-8">
-                            {/* Request Type */}
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Category *</label>
-                                <Select
-                                    value={formData.requestType}
-                                    onValueChange={(value) => setFormData({ ...formData, requestType: value as TicketRequestType })}
-                                    disabled={loading}
-                                >
-                                    <SelectTrigger className="h-12 border-none bg-muted/30">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-3xl border-none shadow-2xl p-2">
-                                        <SelectItem value="general_query" className="rounded-xl py-3">❓ Question</SelectItem>
-                                        <SelectItem value="office_cleaning" className="rounded-xl py-3">🧹 Cleaning</SelectItem>
-                                        <SelectItem value="stationery" className="rounded-xl py-3">📦 Supplies</SelectItem>
-                                        <SelectItem value="purchase_request" className="rounded-xl py-3">💰 Purchase</SelectItem>
-                                        <SelectItem value="repair_maintenance" className="rounded-xl py-3">🛠️ Repair</SelectItem>
-                                        <SelectItem value="hr_helpdesk" className="rounded-xl py-3">👥 HR Help</SelectItem>
-                                        <SelectItem value="it_support" className="rounded-xl py-3">💻 IT Support</SelectItem>
-                                        <SelectItem value="accounts_admin" className="rounded-xl py-3">📄 Paperwork</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Priority */}
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Urgency *</label>
-                                <Select
-                                    value={formData.priority}
-                                    onValueChange={(value) => setFormData({ ...formData, priority: value as Priority })}
-                                    disabled={loading}
-                                >
-                                    <SelectTrigger className="h-12 border-none bg-muted/30">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-3xl border-none shadow-2xl p-2">
-                                        <SelectItem value="low" className="rounded-xl py-3">🟢 Low</SelectItem>
-                                        <SelectItem value="medium" className="rounded-xl py-3">🟡 Normal</SelectItem>
-                                        <SelectItem value="high" className="rounded-xl py-3">🔴 High</SelectItem>
-                                        <SelectItem value="critical" className="rounded-xl py-3">🚨 Immediate</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        {/* Due Date */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">When do you need it by? *</label>
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="dueDate" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Desired Resolution Date *</Label>
                             <Input
+                                id="dueDate"
                                 type="date"
                                 min={getMinDate()}
-                                className="h-12"
+                                className="h-12 bg-slate-50/50 border-slate-100"
                                 value={formData.dueDate}
                                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                                 required
                                 disabled={loading}
                             />
                         </div>
+                    </div>
 
-                        {/* Description */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.3em] ml-2">Details *</label>
+                    {/* Detailed Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="h-8 w-1 bg-slate-200 rounded-full" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">The Context (Required)</h3>
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="description" className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Full Description</Label>
                             <Textarea
-                                placeholder="Explain your request in detail..."
-                                className="min-h-[160px] py-6 resize-none"
+                                id="description"
+                                placeholder="Explain your request in detail so we can help faster..."
+                                className="min-h-[140px] py-4 resize-none bg-slate-50/50 border-slate-100"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 required
                                 disabled={loading}
                             />
                         </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-6 pt-6">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={onClose}
-                                disabled={loading}
-                                className="flex-1 h-12"
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={loading} className="flex-1 h-12 font-bold">
-                                {loading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    'Submit Request'
-                                )}
-                            </Button>
-                        </div>
                     </div>
+
+                    <DialogFooter className="pt-8 border-t border-slate-100">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="h-12 px-8 rounded-2xl font-bold uppercase tracking-widest text-[10px]"
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={loading} className="h-12 px-10 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20">
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : <LifeBuoy className="w-5 h-5 mr-3" />}
+                            Submit Ticket
+                        </Button>
+                    </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
