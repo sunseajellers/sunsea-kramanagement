@@ -14,7 +14,8 @@ import {
     BookOpen,
     Users,
     ClipboardCheck,
-    History
+    History,
+    Award
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,11 @@ const menuItems = [
         href: '/admin/okr',
         label: 'OKR',
         icon: Target,
+    },
+    {
+        href: '/admin/governance',
+        label: 'Govern',
+        icon: Award,
     },
     {
         href: '/admin/learning-hub',

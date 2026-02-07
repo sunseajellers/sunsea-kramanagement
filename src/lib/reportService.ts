@@ -11,10 +11,11 @@ import { ScoringService } from './server/scoringService';
 export function getDefaultScoringConfig(): ScoringConfig {
     return {
         id: 'default',
-        completionWeight: 40,
-        timelinessWeight: 30,
+        completionWeight: 35,
+        timelinessWeight: 25,
         qualityWeight: 20,
         kraAlignmentWeight: 10,
+        kpiAchievementWeight: 10,
         updatedAt: new Date(),
         updatedBy: 'system'
     };

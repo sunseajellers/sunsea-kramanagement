@@ -115,6 +115,7 @@ export class ScoringService {
                 timelinessScore: 0,
                 qualityScore: 0,
                 kraAlignmentScore: 0,
+                kpiAchievementScore: 0,
                 totalScore: score
             },
             generatedAt: new Date()
@@ -137,6 +138,7 @@ export async function calculateWeeklyPerformance(userId: string, weekStart: Date
             timelinessWeight: 0,
             qualityWeight: 0,
             kraAlignmentWeight: 0,
+            kpiAchievementWeight: 0,
             updatedAt: new Date(),
             updatedBy: 'system'
         }

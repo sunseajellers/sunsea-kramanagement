@@ -143,6 +143,7 @@ export class ScoringService {
                 timelinessScore,
                 qualityScore,
                 kraAlignmentScore,
+                kpiAchievementScore: 0, // TODO: Implement KPI-based scoring
                 totalScore: overallScore
             },
             generatedAt: new Date()
