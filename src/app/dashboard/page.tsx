@@ -29,6 +29,7 @@ import PerformanceScoreboard from '@/components/features/performance/Performance
 import OKRList from '@/components/features/okr/OKRList';
 import LearningHub from '@/components/features/learning/LearningHub';
 import PersonalTaskWorkboard from '@/components/features/tasks/PersonalTaskWorkboard';
+import SmartInsights from '@/components/features/intelligence/SmartInsights';
 
 
 
@@ -222,29 +223,34 @@ export default function EmployeeDashboard() {
 
                 <nav className="flex items-center gap-1">
                     {[
-                        { id: 'tasks', label: 'My Tasks', icon: ClipboardList },
-                        { id: 'delegated', label: 'Tasks I Gave', icon: Plus },
-                        { id: 'history', label: 'Old Tasks', icon: History },
-                        { id: 'performance', label: 'Results', icon: Trophy },
-                        { id: 'okr', label: 'My Goals', icon: Target },
-                        { id: 'helpdesk', label: 'Support', icon: Ticket },
-                        { id: 'academy', label: 'Learning', icon: BookOpen },
-                        { id: 'profile', label: 'Accounts', icon: User },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={cn(
-                                "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden group whitespace-nowrap shrink-0",
-                                activeTab === tab.id
-                                    ? "bg-primary text-white shadow-md shadow-primary/30"
-                                    : "text-primary/60 hover:text-primary hover:bg-primary/5"
-                            )}
-                        >
-                            <tab.icon className={cn("w-3 h-3 transition-transform duration-500", activeTab === tab.id ? "scale-110" : "group-hover:scale-110 group-hover:rotate-12")} />
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
+                        { id: 'tasks', label: 'Works', icon: ClipboardList, module: 'tasks', action: 'view' },
+                        { id: 'delegated', label: 'Assign', icon: Plus, module: 'tasks', action: 'create' },
+                        { id: 'history', label: 'History', icon: History, module: 'activity_log', action: 'view' },
+                        { id: 'performance', label: 'Results', icon: Trophy, module: 'performance', action: 'view' },
+                        { id: 'okr', label: 'Strategy', icon: Target, module: 'okrs', action: 'view' },
+                        { id: 'helpdesk', label: 'Support', icon: Ticket, module: 'tickets', action: 'view' },
+                        { id: 'academy', label: 'Hub', icon: BookOpen, module: 'academy', action: 'view' },
+                        { id: 'profile', label: 'Me', icon: User, module: 'profile', action: 'view' },
+                    ].map((tab) => {
+                        const { hasPermission } = useAuth();
+                        if (tab.id !== 'profile' && !hasPermission(tab.module, tab.action)) return null;
+
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={cn(
+                                    "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden group whitespace-nowrap shrink-0",
+                                    activeTab === tab.id
+                                        ? "bg-primary text-white shadow-md shadow-primary/30"
+                                        : "text-primary/60 hover:text-primary hover:bg-primary/5"
+                                )}
+                            >
+                                <tab.icon className={cn("w-3 h-3 transition-transform duration-500", activeTab === tab.id ? "scale-110" : "group-hover:scale-110 group-hover:rotate-12")} />
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
                 </nav>
 
                 <div className="flex items-center gap-3 shrink-0">
@@ -266,29 +272,34 @@ export default function EmployeeDashboard() {
             <div className="fixed bottom-6 left-2 right-2 z-[100] sm:hidden">
                 <div className="flex items-center justify-between p-1 rounded-full glass-panel bg-white/95 backdrop-blur-2xl border-white/40 shadow-2xl shadow-primary/20">
                     {[
-                        { id: 'tasks', label: 'Works', icon: ClipboardList },
-                        { id: 'delegated', label: 'Group', icon: Plus },
-                        { id: 'history', label: 'History', icon: History },
-                        { id: 'performance', label: 'Score', icon: Trophy },
-                        { id: 'okr', label: 'Goals', icon: Target },
-                        { id: 'helpdesk', label: 'Support', icon: Ticket },
-                        { id: 'academy', label: 'Learn', icon: BookOpen },
-                        { id: 'profile', label: 'Me', icon: User },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={cn(
-                                "flex items-center justify-center p-2 rounded-full transition-all duration-300 flex-1",
-                                activeTab === tab.id
-                                    ? "bg-primary text-white shadow-lg shadow-primary/25 scale-110"
-                                    : "text-primary/40 hover:text-primary"
-                            )}
-                            title={tab.label}
-                        >
-                            <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "scale-110" : "")} />
-                        </button>
-                    ))}
+                        { id: 'tasks', label: 'Works', icon: ClipboardList, module: 'tasks', action: 'view' },
+                        { id: 'delegated', label: 'Assign', icon: Plus, module: 'tasks', action: 'create' },
+                        { id: 'history', label: 'History', icon: History, module: 'activity_log', action: 'view' },
+                        { id: 'performance', label: 'Results', icon: Trophy, module: 'performance', action: 'view' },
+                        { id: 'okr', label: 'Strategy', icon: Target, module: 'okrs', action: 'view' },
+                        { id: 'helpdesk', label: 'Support', icon: Ticket, module: 'tickets', action: 'view' },
+                        { id: 'academy', label: 'Hub', icon: BookOpen, module: 'academy', action: 'view' },
+                        { id: 'profile', label: 'Me', icon: User, module: 'profile', action: 'view' },
+                    ].map((tab) => {
+                        const { hasPermission } = useAuth();
+                        if (tab.id !== 'profile' && !hasPermission(tab.module, tab.action)) return null;
+
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={cn(
+                                    "flex items-center justify-center p-2 rounded-full transition-all duration-300 flex-1",
+                                    activeTab === tab.id
+                                        ? "bg-primary text-white shadow-lg shadow-primary/25 scale-110"
+                                        : "text-primary/40 hover:text-primary"
+                                )}
+                                title={tab.label}
+                            >
+                                <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "scale-110" : "")} />
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -297,14 +308,14 @@ export default function EmployeeDashboard() {
                 {/* Centered Tab Identity - Optimized for Mobile */}
                 {(() => {
                     const activeTabData = [
-                        { id: 'tasks', label: 'My Tasks', subtitle: 'Things I need to do today', icon: ClipboardList },
-                        { id: 'delegated', label: 'Tasks I Gave', subtitle: 'Things I asked others to do', icon: Plus },
-                        { id: 'history', label: 'Old Tasks', subtitle: 'Tasks I finished before', icon: History },
-                        { id: 'performance', label: 'Results', subtitle: 'How well I am doing', icon: Trophy },
-                        { id: 'okr', label: 'My Goals', subtitle: 'Big goals I want to reach', icon: Target },
-                        { id: 'helpdesk', label: 'Support', subtitle: 'Get help with problems', icon: Ticket },
-                        { id: 'academy', label: 'Learning', subtitle: 'Tutorials and guides', icon: BookOpen },
-                        { id: 'profile', label: 'My Account', subtitle: 'Change my details', icon: User },
+                        { id: 'tasks', label: 'Works', subtitle: 'Priority tasks and daily execution', icon: ClipboardList },
+                        { id: 'delegated', label: 'Assign', subtitle: 'Assign tasks to your team members', icon: Plus },
+                        { id: 'history', label: 'History', subtitle: 'Archive of past completed works', icon: History },
+                        { id: 'performance', label: 'Results', subtitle: 'KPI tracking and scoring metrics', icon: Trophy },
+                        { id: 'okr', label: 'Strategy', subtitle: 'Objectives and strategic goals', icon: Target },
+                        { id: 'helpdesk', label: 'Support', subtitle: 'Technical assistance and tickets', icon: Ticket },
+                        { id: 'academy', label: 'Hub', subtitle: 'Learning resources and guides', icon: BookOpen },
+                        { id: 'profile', label: 'Me', subtitle: 'Profile and security settings', icon: User },
                     ].find(t => t.id === activeTab);
 
                     if (!activeTabData) return null;
@@ -494,7 +505,8 @@ export default function EmployeeDashboard() {
                     )}
 
                     {activeTab === 'tasks' && (
-                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                            {user && <SmartInsights userId={user.uid} />}
                             <PersonalTaskWorkboard
                                 tasks={tasks}
                                 loading={loading}

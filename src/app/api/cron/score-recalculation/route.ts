@@ -3,7 +3,7 @@
 // Should be called every hour or when queue builds up
 
 import { NextRequest, NextResponse } from 'next/server';
-import { EnhancedScoringService } from '@/lib/enhancedScoringService';
+import { PerformanceServiceServer } from '@/lib/server/performanceService';
 
 /**
  * POST /api/cron/score-recalculation
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
         // Verify cron auth token
         const authHeader = request.headers.get('authorization');
         const cronToken = process.env.CRON_SECRET_TOKEN || 'default-cron-secret';
-        
+
         if (authHeader !== `Bearer ${cronToken}`) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
 
         // Process up to 100 requests per run
         const batchSize = 100;
-        const result = await EnhancedScoringService.processRecalculationQueue(batchSize);
+        const result = await PerformanceServiceServer.processRecalculationQueue(100);
 
         console.log(`[CRON] Score recalculation completed: ${result.processed} processed`);
-        
+
         if (result.errors.length > 0) {
             console.error('[CRON] Score recalculation errors:', result.errors);
         }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
         const { adminDb } = await import('@/lib/firebase-admin');
         const userDoc = await adminDb.collection('users').doc(userId).get();
-        
+
         if (!userDoc.exists || !userDoc.data()?.isAdmin) {
             return NextResponse.json(
                 { success: false, error: 'Admin access required' },
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         }
 
         console.log('[MANUAL] Admin triggered score recalculation');
-        const result = await EnhancedScoringService.processRecalculationQueue(100);
+        const result = await PerformanceServiceServer.processRecalculationQueue(100);
 
         return NextResponse.json({
             success: result.success,

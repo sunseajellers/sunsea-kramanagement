@@ -182,9 +182,17 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
 
             if (isEdit && initialData) {
                 await updateTask(initialData.id, taskData)
+                // Log activity
+                const { logTaskStatusUpdate } = await import('@/lib/activityLogger')
+                if (initialData.status !== taskData.status) {
+                    await logTaskStatusUpdate(initialData.id, taskData.title, initialData.status, taskData.status)
+                }
             } else {
                 taskData.createdAt = new Date()
-                await createTask(taskData)
+                const taskId = await createTask(taskData)
+                // Log activity
+                const { logTaskCreated } = await import('@/lib/activityLogger')
+                await logTaskCreated(taskId || 'new-task', taskData.title, taskData.assignedTo)
             }
             onSaved()
         } catch (err) {

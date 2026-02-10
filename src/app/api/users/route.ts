@@ -18,11 +18,10 @@ export async function POST(request: NextRequest) {
         const decodedToken = await adminAuth.verifyIdToken(idToken)
         const requestingUserId = decodedToken.uid
 
-        // Check if requesting user has admin role
-        const requestingUserDoc = await adminDb.collection('users').doc(requestingUserId).get()
-        const userData = requestingUserDoc.data()
-        if (!requestingUserDoc.exists || userData?.isAdmin !== true) {
-            return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 })
+        const { hasPermissionServer } = await import('@/lib/server/authService')
+        const hasPermission = await hasPermissionServer(requestingUserId, 'users', 'create')
+        if (!hasPermission) {
+            return NextResponse.json({ error: 'Unauthorized. Create user permission required.' }, { status: 403 })
         }
 
         // Parse request body
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
             email,
             password,
             fullName,
-            roleIds = [],
+            roleId = '',
             employeeId = '',
             department = '',
             position = '',
@@ -67,7 +66,7 @@ export async function POST(request: NextRequest) {
             id: userRecord.uid,
             email: userRecord.email,
             fullName: fullName,
-            roleIds: roleIds,
+            roleId: roleId,
             employeeId,
             department,
             position,
@@ -129,7 +128,13 @@ export async function GET(request: NextRequest) {
         const idToken = authHeader.split('Bearer ')[1]
 
         // Verify the requesting user is authenticated
-        await adminAuth.verifyIdToken(idToken)
+        const decodedToken = await adminAuth.verifyIdToken(idToken)
+
+        const { hasPermissionServer } = await import('@/lib/server/authService')
+        const hasPermission = await hasPermissionServer(decodedToken.uid, 'users', 'view')
+        if (!hasPermission) {
+            return NextResponse.json({ error: 'Unauthorized. View users permission required.' }, { status: 403 })
+        }
 
         // Fetch all users from Firestore
         const usersSnapshot = await adminDb.collection('users').get()

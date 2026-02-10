@@ -371,7 +371,8 @@ export interface User {
     id: string
     fullName: string
     email: string
-    roleIds: string[] // RBAC role IDs (legacy, can be removed)
+    roleId: string // RBAC role ID (singular)
+    roleIds?: string[] // Legacy support (can be removed later)
     avatar?: string
     teamId?: string
     isActive?: boolean // Whether user account is active

@@ -4,7 +4,7 @@
 
 import { Task } from '@/types';
 import { adminDb } from './firebase-admin';
-import { EnhancedScoringService } from './enhancedScoringService';
+import { PerformanceServiceServer } from './server/performanceService';
 
 /**
  * Chronic overdue pattern detected for an employee
@@ -249,7 +249,7 @@ export class IntelligenceService {
                 let currentScoreCount = 0;
 
                 for (const userId of userIds) {
-                    const scoreResult = await EnhancedScoringService.calculateUserScore(
+                    const scoreResult = await PerformanceServiceServer.calculateUserScore(
                         userId,
                         currentStart,
                         now
@@ -265,7 +265,7 @@ export class IntelligenceService {
                 let previousScoreCount = 0;
 
                 for (const userId of userIds) {
-                    const scoreResult = await EnhancedScoringService.calculateUserScore(
+                    const scoreResult = await PerformanceServiceServer.calculateUserScore(
                         userId,
                         previousStart,
                         previousEnd
@@ -486,7 +486,7 @@ export class IntelligenceService {
                 const userName = userData.fullName || userData.displayName || userData.email;
 
                 // Calculate current week score
-                const scoreResult = await EnhancedScoringService.calculateUserScore(
+                const scoreResult = await PerformanceServiceServer.calculateUserScore(
                     userId,
                     weekStart,
                     weekEnd
@@ -498,7 +498,7 @@ export class IntelligenceService {
                 const prevWeekEnd = new Date(weekStart);
                 prevWeekEnd.setDate(weekStart.getDate() - 1);
 
-                const prevScoreResult = await EnhancedScoringService.calculateUserScore(
+                const prevScoreResult = await PerformanceServiceServer.calculateUserScore(
                     userId,
                     prevWeekStart,
                     prevWeekEnd

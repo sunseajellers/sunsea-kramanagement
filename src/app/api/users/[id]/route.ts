@@ -20,11 +20,11 @@ export async function GET(
 
         const { id: userId } = await context.params
 
-        // Users can view their own profile, admins can view anyone
+        // Users can view their own profile, others need permission
         if (userId !== requestingUserId) {
-            const requestingUserDoc = await adminDb.collection('users').doc(requestingUserId).get()
-            const requestingUserData = requestingUserDoc.data()
-            if (!requestingUserData?.isAdmin) {
+            const { hasPermissionServer } = await import('@/lib/server/authService')
+            const hasPermission = await hasPermissionServer(requestingUserId, 'users', 'view')
+            if (!hasPermission) {
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
             }
         }
@@ -69,9 +69,13 @@ export async function PATCH(
 
         const { id: userId } = await context.params
 
-        // Users can only update their own profile
+        // Users can update their own profile, or those with 'edit' permission
         if (userId !== requestingUserId) {
-            return NextResponse.json({ error: 'Unauthorized - Cannot update another user\'s profile' }, { status: 403 })
+            const { hasPermissionServer } = await import('@/lib/server/authService')
+            const hasPermission = await hasPermissionServer(requestingUserId, 'users', 'edit')
+            if (!hasPermission) {
+                return NextResponse.json({ error: 'Unauthorized - Cannot update another user\'s profile' }, { status: 403 })
+            }
         }
 
         const body = await request.json()

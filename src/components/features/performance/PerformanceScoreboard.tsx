@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { PerformanceService } from '@/lib/performanceService'
 import { cn } from '@/lib/utils'
 
 interface PerformanceData {
     score: number
     taskCount: number
-    weekStart: string
-    weekEnd: string
+    completedCount: number
 }
 
 // Simple Personal Scoreboard
@@ -21,14 +21,8 @@ export default function PerformanceScoreboard() {
         const fetchPerformance = async () => {
             if (!user) return
             try {
-                const token = await user.getIdToken()
-                const res = await fetch(`/api/performance/${user.uid}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                if (res.ok) {
-                    const data = await res.json()
-                    setPerformance(data)
-                }
+                const data = await PerformanceService.getPerformanceData(user.uid);
+                setPerformance(data);
             } catch (error) {
                 console.error('Failed to fetch performance:', error)
             } finally {
@@ -68,11 +62,11 @@ export default function PerformanceScoreboard() {
 
                 {/* Task Stats */}
                 <div className="glass-card p-8 flex flex-col items-center justify-center text-center space-y-2">
-                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Completed Tasks</span>
+                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Efficiency</span>
                     <span className="text-6xl font-black text-slate-900 tracking-tighter">
-                        {performance?.taskCount || 0}
+                        {performance?.completedCount || 0}/{performance?.taskCount || 0}
                     </span>
-                    <span className="text-sm font-medium text-slate-500">This Week</span>
+                    <span className="text-sm font-medium text-slate-500">Completed Works</span>
                 </div>
 
                 {/* Simple Insight */}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authMiddleware';
 import { adminDb } from '@/lib/firebase-admin';
+import { hasPermissionServer } from '@/lib/server/authService';
 
 export interface ActivityLog {
     id: string;
@@ -101,15 +102,19 @@ export async function GET(request: NextRequest) {
             // Build query
             let query: any = adminDb.collection('activityLogs');
 
-            // Check if user is admin (only admins can see all activity logs)
-            const userDoc = await adminDb.collection('users').doc(userId).get();
-            const isAdmin = userDoc.data()?.isAdmin === true;
+            // Use hasPermissionServer for access control
+            const canViewAll = await hasPermissionServer(userId, 'activity_log', 'view_all');
+            const canViewOwn = await hasPermissionServer(userId, 'activity_log', 'view');
 
-            // Apply ownership filter for non-admins
-            if (!isAdmin) {
+            if (!canViewAll && !canViewOwn) {
+                return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+            }
+
+            // Apply ownership filter for users who can only see their own logs
+            if (!canViewAll) {
                 query = query.where('userId', '==', userId);
             } else if (userId_filter) {
-                // Admins can filter by userId if provided
+                // Users with view_all can filter by userId if provided
                 query = query.where('userId', '==', userId_filter);
             }
 

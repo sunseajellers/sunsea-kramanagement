@@ -62,8 +62,8 @@ export class BusinessRulesService {
      */
     static canAssignTask(assigner: User, assignee: User): boolean {
         // Manager can assign to employees in their team
-        return assigner.roleIds.includes('manager') &&
-               assignee.teamId === assigner.teamId;
+        return assigner.roleId === 'manager' &&
+            assignee.teamId === assigner.teamId;
     }
 
     /**
@@ -75,7 +75,7 @@ export class BusinessRulesService {
 
         return Boolean(
             user.teamId === resourceTeamId || // Team member
-            user.roleIds.includes('manager') // Manager
+            user.roleId === 'manager' // Manager
         );
     }
 }

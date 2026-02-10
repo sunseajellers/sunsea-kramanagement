@@ -55,14 +55,30 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
     return onAuthStateChanged(auth, callback)
 }
 
-// Get user data from Firestore
+// Get user data from Firestore with RBAC support
 export const getUserData = async (uid: string) => {
     try {
         const userDoc = await getDoc(doc(db, 'users', uid))
         if (userDoc.exists()) {
             const data = userDoc.data() as any;
+            let permissions: any[] = [];
+            let roleName = '';
+
+            // If user has a roleId, fetch the role and its permissions
+            if (data.roleId) {
+                const roleDoc = await getDoc(doc(db, 'roles', data.roleId));
+                if (roleDoc.exists()) {
+                    const roleData = roleDoc.data();
+                    permissions = roleData.permissions || [];
+                    roleName = roleData.name || '';
+                }
+            }
+
             const processedData = {
                 ...data,
+                uid: uid, // Ensure uid is present
+                roleName,
+                permissions,
                 createdAt: data.createdAt ? timestampToDate(data.createdAt) : undefined,
                 updatedAt: data.updatedAt ? timestampToDate(data.updatedAt) : undefined
             };

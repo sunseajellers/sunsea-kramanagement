@@ -1,394 +1,127 @@
 // src/lib/performanceService.ts
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { Task, ScoringConfig, WeeklyReport } from '@/types';
 import { db } from './firebase';
-import { PerformanceParameter, PerformanceScore, MISReport, Task } from '@/types';
-import { timestampToDate, handleError } from './utils';
-import { getUserTasks } from './taskService';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 /**
- * Get all active performance parameters
- * @returns Array of PerformanceParameter objects
+ * Performance Service
+ * Unified service for KPI achievement and task-based performance scoring.
  */
-export async function getActivePerformanceParameters(): Promise<PerformanceParameter[]> {
-    try {
-        const q = query(
-            collection(db, 'performanceParameters'),
-            where('isActive', '==', true),
-            orderBy('category', 'asc')
+export class PerformanceService {
+    /**
+     * Calculate completion score (0-100)
+     */
+    static calculateCompletionScore(tasks: Task[], userId: string): number {
+        const userTasks = tasks.filter(t => t.assignedTo?.includes(userId) || t.assignedBy === userId);
+        if (userTasks.length === 0) return 0;
+        const completedTasks = userTasks.filter(t => t.status === 'completed').length;
+        return Math.round((completedTasks / userTasks.length) * 100);
+    }
+
+    /**
+     * Calculate timeliness score (0-100)
+     */
+    static calculateTimelinessScore(tasks: Task[], userId: string): number {
+        const userTasks = tasks.filter(t => t.assignedTo?.includes(userId) || t.assignedBy === userId);
+        const completedTasks = userTasks.filter(t => t.status === 'completed');
+        if (completedTasks.length === 0) return 0;
+
+        const onTimeTasks = completedTasks.filter(task => {
+            if (!task.dueDate) return true;
+            const completionDate = task.completedAt || task.updatedAt;
+            const effectiveDueDate = task.finalTargetDate || task.dueDate;
+            return new Date(completionDate) <= new Date(effectiveDueDate);
+        });
+
+        return Math.round((onTimeTasks.length / completedTasks.length) * 100);
+    }
+
+    /**
+     * Calculate quality score (0-100)
+     */
+    static calculateQualityScore(tasks: Task[], userId: string): number {
+        const userTasks = tasks.filter(t => t.assignedTo?.includes(userId) || t.assignedBy === userId);
+        const completedTasks = userTasks.filter(t => t.status === 'completed');
+        if (completedTasks.length === 0) return 0;
+
+        let totalQuality = 0;
+        completedTasks.forEach(task => {
+            if (task.verificationStatus === 'verified') {
+                totalQuality += 100;
+            } else if (task.verificationStatus === 'rejected' || task.status === 'revision_requested') {
+                totalQuality += 40;
+            } else {
+                totalQuality += 80; // Pending verification
+            }
+        });
+
+        return Math.round(totalQuality / completedTasks.length);
+    }
+
+    /**
+     * Calculate overall score using weighted formula
+     */
+    static calculateOverallPerformance(
+        tasks: Task[],
+        userId: string,
+        config: ScoringConfig
+    ): number {
+        const completionScore = this.calculateCompletionScore(tasks, userId);
+        const timelinessScore = this.calculateTimelinessScore(tasks, userId);
+        const qualityScore = this.calculateQualityScore(tasks, userId);
+
+        // KRA Alignment (Strategy pillar connection)
+        const userTasks = tasks.filter(t => t.assignedTo?.includes(userId) || t.assignedBy === userId);
+        const alignedTasks = userTasks.filter(t => t.kraId || t.objectiveId).length;
+        const kraAlignmentScore = userTasks.length > 0 ? Math.round((alignedTasks / userTasks.length) * 100) : 0;
+
+        const weightedScore =
+            (completionScore * config.completionWeight / 100) +
+            (timelinessScore * config.timelinessWeight / 100) +
+            (qualityScore * config.qualityWeight / 100) +
+            (kraAlignmentScore * config.kraAlignmentWeight / 100);
+
+        return Math.round(Math.min(100, Math.max(0, weightedScore)));
+    }
+
+    /**
+     * Fetch all relevant data for a performance report
+     */
+    static async getPerformanceData(userId: string): Promise<{
+        score: number,
+        taskCount: number,
+        completedCount: number,
+        kpiAchievement: number
+    }> {
+        // This would call the API or direct Firestore in a real implementation
+        // For now, we'll keep the signature consistent with what the UI expects
+        const tasksQuery = query(
+            collection(db, 'tasks'),
+            where('assignedTo', 'array-contains', userId)
         );
+        const tasksSnapshot = await getDocs(tasksQuery);
+        const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
 
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: timestampToDate(doc.data().createdAt),
-            updatedAt: timestampToDate(doc.data().updatedAt)
-        })) as PerformanceParameter[];
-    } catch (error) {
-        handleError(error, 'Failed to fetch performance parameters');
-        throw error;
-    }
-}
-
-/**
- * Get all performance parameters (including inactive)
- * @returns Array of PerformanceParameter objects
- */
-export async function getAllPerformanceParameters(): Promise<PerformanceParameter[]> {
-    try {
-        const q = query(
-            collection(db, 'performanceParameters'),
-            orderBy('createdAt', 'desc')
-        );
-
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: timestampToDate(doc.data().createdAt),
-            updatedAt: timestampToDate(doc.data().updatedAt)
-        })) as PerformanceParameter[];
-    } catch (error) {
-        handleError(error, 'Failed to fetch all performance parameters');
-        throw error;
-    }
-}
-
-/**
- * Create a new performance parameter
- * @param parameterData - Parameter data
- * @returns The ID of the created parameter
- */
-export async function createPerformanceParameter(
-    parameterData: Omit<PerformanceParameter, 'id' | 'createdAt' | 'updatedAt'>
-): Promise<string> {
-    try {
-        const docRef = await addDoc(collection(db, 'performanceParameters'), {
-            ...parameterData,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
-        return docRef.id;
-    } catch (error) {
-        handleError(error, 'Failed to create performance parameter');
-        throw error;
-    }
-}
-
-/**
- * Update a performance parameter
- * @param parameterId - Parameter ID
- * @param updates - Updates to apply
- */
-export async function updatePerformanceParameter(
-    parameterId: string,
-    updates: Partial<PerformanceParameter>
-): Promise<void> {
-    try {
-        const docRef = doc(db, 'performanceParameters', parameterId);
-        await updateDoc(docRef, {
-            ...updates,
-            updatedAt: new Date()
-        });
-    } catch (error) {
-        handleError(error, 'Failed to update performance parameter');
-        throw error;
-    }
-}
-
-/**
- * Delete a performance parameter
- * @param parameterId - Parameter ID
- */
-export async function deletePerformanceParameter(parameterId: string): Promise<void> {
-    try {
-        const docRef = doc(db, 'performanceParameters', parameterId);
-        await deleteDoc(docRef);
-    } catch (error) {
-        handleError(error, 'Failed to delete performance parameter');
-        throw error;
-    }
-}
-
-/**
- * Add a performance score for a task or KRA
- * @param scoreData - Score data
- * @returns The ID of the created score
- */
-export async function addPerformanceScore(
-    scoreData: Omit<PerformanceScore, 'id' | 'percentage' | 'evaluatedAt'>
-): Promise<string> {
-    try {
-        // Calculate percentage
-        const percentage = (scoreData.score / scoreData.maxScore) * 100;
-
-        const docRef = await addDoc(collection(db, 'performanceScores'), {
-            ...scoreData,
-            percentage,
-            evaluatedAt: new Date()
-        });
-        return docRef.id;
-    } catch (error) {
-        handleError(error, 'Failed to add performance score');
-        throw error;
-    }
-}
-
-/**
- * Get performance scores for a task
- * @param taskId - Task ID
- * @returns Array of PerformanceScore objects
- */
-export async function getTaskPerformanceScores(taskId: string): Promise<PerformanceScore[]> {
-    try {
-        const q = query(
-            collection(db, 'performanceScores'),
-            where('taskId', '==', taskId),
-            orderBy('evaluatedAt', 'desc')
-        );
-
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            evaluatedAt: timestampToDate(doc.data().evaluatedAt)
-        })) as PerformanceScore[];
-    } catch (error) {
-        handleError(error, 'Failed to fetch task performance scores');
-        throw error;
-    }
-}
-
-/**
- * Get performance scores for a user in a period
- * @param userId - User ID
- * @param period - Period string (e.g., "2024-W01")
- * @returns Array of PerformanceScore objects
- */
-export async function getUserPerformanceScores(
-    userId: string,
-    period?: string
-): Promise<PerformanceScore[]> {
-    try {
-        let q = query(
-            collection(db, 'performanceScores'),
-            where('userId', '==', userId),
-            orderBy('evaluatedAt', 'desc')
-        );
-
-        if (period) {
-            q = query(
-                collection(db, 'performanceScores'),
-                where('userId', '==', userId),
-                where('period', '==', period),
-                orderBy('evaluatedAt', 'desc')
-            );
-        }
-
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            evaluatedAt: timestampToDate(doc.data().evaluatedAt)
-        })) as PerformanceScore[];
-    } catch (error) {
-        handleError(error, 'Failed to fetch user performance scores');
-        throw error;
-    }
-}
-
-/**
- * Generate MIS report for a user
- * @param userId - User ID
- * @param userName - User name
- * @param period - Period string
- * @param periodType - Period type
- * @returns MISReport object
- */
-export async function generateMISReport(
-    userId: string,
-    userName: string,
-    period: string,
-    periodType: 'daily' | 'weekly' | 'monthly'
-): Promise<MISReport> {
-    try {
-        // Get user's scores for the period
-        const scores = await getUserPerformanceScores(userId, period);
-
-        // Get active parameters
-        const parameters = await getActivePerformanceParameters();
-
-        // Calculate parameter averages
-        const parameterScores = parameters.map(param => {
-            const paramScores = scores.filter(s => s.parameterId === param.id);
-            const avgScore = paramScores.length > 0
-                ? paramScores.reduce((sum, s) => sum + s.percentage, 0) / paramScores.length
-                : 0;
-
-            return {
-                parameterId: param.id,
-                parameterName: param.name,
-                averageScore: avgScore,
-                weight: param.weight
-            };
-        });
-
-        // Calculate weighted score
-        const totalWeight = parameterScores.reduce((sum, p) => sum + p.weight, 0);
-        const weightedScore = totalWeight > 0
-            ? parameterScores.reduce((sum, p) => sum + (p.averageScore * p.weight / 100), 0)
-            : 0;
-
-        // Get actual task statistics
-        const tasks = await getUserTasks(userId);
-
-        // Find the date range of scores to filter tasks
-        const scoreDates = scores.map(s => s.evaluatedAt instanceof Date ? s.evaluatedAt : new Date(s.evaluatedAt));
-        const minDate = scoreDates.length > 0 ? new Date(Math.min(...scoreDates.map(d => d.getTime()))) : new Date();
-        const maxDate = scoreDates.length > 0 ? new Date(Math.max(...scoreDates.map(d => d.getTime()))) : new Date();
-
-        // Buffer the range slightly or just use it
-        const periodTasks = tasks.filter((t: Task) => {
-            const taskDate = t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt);
-            return taskDate >= minDate && taskDate <= maxDate;
-        });
-
-        const totalTasks = periodTasks.length;
-        const completedTasks = periodTasks.filter((t: Task) => t.status === 'completed').length;
-        const onTimeTasks = periodTasks.filter((t: Task) => {
-            const dueDate = t.dueDate instanceof Date ? t.dueDate : new Date(t.dueDate);
-            const updatedAt = t.updatedAt instanceof Date ? t.updatedAt : new Date(t.updatedAt);
-            return t.status === 'completed' && updatedAt <= dueDate;
-        }).length;
-        const delayedTasks = totalTasks - onTimeTasks;
-
-        const report: Omit<MISReport, 'id'> = {
-            userId,
-            userName,
-            period,
-            periodType,
-            totalTasks,
-            completedTasks,
-            onTimeTasks,
-            delayedTasks,
-            completionRate: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
-            onTimeRate: totalTasks > 0 ? (onTimeTasks / totalTasks) * 100 : 0,
-            averageScore: scores.length > 0
-                ? scores.reduce((sum, s) => sum + s.percentage, 0) / scores.length
-                : 0,
-            parameterScores,
-            weightedScore,
-            generatedAt: new Date()
+        // Get default config
+        const config: ScoringConfig = {
+            id: 'default',
+            completionWeight: 40,
+            timelinessWeight: 30,
+            qualityWeight: 20,
+            kraAlignmentWeight: 10,
+            kpiAchievementWeight: 0,
+            updatedAt: new Date(),
+            updatedBy: 'system'
         };
 
-        // Save report
-        const docRef = await addDoc(collection(db, 'misReports'), report);
+        const score = this.calculateOverallPerformance(tasks, userId, config);
+        const completedCount = tasks.filter(t => t.status === 'completed').length;
 
         return {
-            id: docRef.id,
-            ...report
+            score,
+            taskCount: tasks.length,
+            completedCount,
+            kpiAchievement: 0 // TODO: Add KPI linkage
         };
-    } catch (error) {
-        handleError(error, 'Failed to generate MIS report');
-        throw error;
-    }
-}
-
-/**
- * Get MIS reports for a user
- * @param userId - User ID
- * @param limit - Number of reports to return
- * @returns Array of MISReport objects
- */
-export async function getUserMISReports(userId: string, limit: number = 10): Promise<MISReport[]> {
-    try {
-        const q = query(
-            collection(db, 'misReports'),
-            where('userId', '==', userId),
-            orderBy('generatedAt', 'desc')
-        );
-
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.slice(0, limit).map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            generatedAt: timestampToDate(doc.data().generatedAt)
-        })) as MISReport[];
-    } catch (error) {
-        handleError(error, 'Failed to fetch MIS reports');
-        throw error;
-    }
-}
-
-/**
- * Initialize default performance parameters
- * @param createdBy - User ID creating the parameters
- */
-export async function initializeDefaultParameters(createdBy: string): Promise<void> {
-    try {
-        const defaultParameters: Omit<PerformanceParameter, 'id' | 'createdAt' | 'updatedAt'>[] = [
-            {
-                name: 'Quality',
-                description: 'Quality of work delivered',
-                weight: 30,
-                category: 'quality',
-                minScore: 0,
-                maxScore: 10,
-                isActive: true,
-                createdBy
-            },
-            {
-                name: 'Timeliness',
-                description: 'On-time completion of tasks',
-                weight: 25,
-                category: 'timeliness',
-                minScore: 0,
-                maxScore: 10,
-                isActive: true,
-                createdBy
-            },
-            {
-                name: 'Accuracy',
-                description: 'Accuracy and attention to detail',
-                weight: 20,
-                category: 'accuracy',
-                minScore: 0,
-                maxScore: 10,
-                isActive: true,
-                createdBy
-            },
-            {
-                name: 'Completeness',
-                description: 'Thoroughness of work',
-                weight: 15,
-                category: 'completeness',
-                minScore: 0,
-                maxScore: 10,
-                isActive: true,
-                createdBy
-            },
-            {
-                name: 'Efficiency',
-                description: 'Resource utilization and productivity',
-                weight: 10,
-                category: 'efficiency',
-                minScore: 0,
-                maxScore: 10,
-                isActive: true,
-                createdBy
-            }
-        ];
-
-        for (const param of defaultParameters) {
-            await createPerformanceParameter(param);
-        }
-    } catch (error) {
-        handleError(error, 'Failed to initialize default parameters');
-        throw error;
     }
 }

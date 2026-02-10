@@ -26,6 +26,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getAllUsers, createUser, updateUser, deleteUser } from '@/lib/userService'
+import { roleService } from '@/lib/roleService'
+import { Role } from '@/types/rbac'
+import { PermissionGuard } from '@/components/guards/PermissionGuard'
 import { useBulkSelection, executeBulkUserAction } from '@/lib/bulkUtils'
 import BulkActionBar from '@/components/features/bulk/BulkActionBar'
 import { cn } from '@/lib/utils'
@@ -38,6 +41,7 @@ export default function UserManagement() {
     const { user } = useAuth()
     const [users, setUsers] = useState<User[]>([])
     const [departments, setDepartments] = useState<Department[]>([])
+    const [roles, setRoles] = useState<Role[]>([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const [bulkActionLoading, setBulkActionLoading] = useState(false)
@@ -55,6 +59,7 @@ export default function UserManagement() {
     const [formEmployeeId, setFormEmployeeId] = useState('')
     const [formDepartment, setFormDepartment] = useState('')
     const [formPosition, setFormPosition] = useState('')
+    const [formRoleId, setFormRoleId] = useState('')
     const [formEmployeeType, setFormEmployeeType] = useState<EmployeeTypeEnum>('full-time')
     const [showPassword, setShowPassword] = useState(false)
 
@@ -83,6 +88,7 @@ export default function UserManagement() {
         setFormEmployeeId(u.employeeId || '')
         setFormDepartment(u.department || '')
         setFormPosition(u.position || '')
+        setFormRoleId((u as any).roleId || '')
         setFormEmployeeType(u.employeeType || 'full-time')
         setEditDialogOpen(true)
     }
@@ -101,12 +107,14 @@ export default function UserManagement() {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [userList, deptList] = await Promise.all([
+            const [userList, deptList, roleList] = await Promise.all([
                 getAllUsers(),
-                getAllDepartments()
+                getAllDepartments(),
+                roleService.getAllRoles()
             ])
             setUsers(userList)
             setDepartments(deptList)
+            setRoles(roleList)
         } catch (error) {
             toast.error('Failed to load data')
         } finally {
@@ -209,6 +217,8 @@ export default function UserManagement() {
 
         try {
             await deleteUser(userId)
+            const { logCustomActivity } = await import('@/lib/activityLogger')
+            await logCustomActivity('user_deleted', 'users', userId, userName, `User "${userName}" deleted permanently`)
             toast.success(`User "${userName}" deleted successfully`)
             loadUsers()
         } catch (error: any) {
@@ -276,7 +286,7 @@ export default function UserManagement() {
 
         try {
             const idToken = await user.getIdToken()
-            await createUser(
+            const userResult = await createUser(
                 formEmail,
                 formPassword,
                 formName,
@@ -286,9 +296,12 @@ export default function UserManagement() {
                     position: formPosition,
                     employeeType: formEmployeeType
                 },
-                [],
+                [formRoleId],
                 idToken
             )
+
+            const { logCustomActivity } = await import('@/lib/activityLogger')
+            await logCustomActivity('user_created', 'users', userResult?.id || 'new-user', formName, `User "${formName}" created with role "${roles.find(r => r.id === formRoleId)?.name || 'None'}"`)
 
             toast.success(`User ${formName} created successfully!`)
             setCreateDialogOpen(false)
@@ -310,8 +323,12 @@ export default function UserManagement() {
                 employeeId: formEmployeeId,
                 department: formDepartment,
                 position: formPosition,
-                employeeType: formEmployeeType
+                employeeType: formEmployeeType,
+                roleIds: [formRoleId]
             })
+            const { logCustomActivity } = await import('@/lib/activityLogger')
+            await logCustomActivity('user_updated', 'users', selectedUser.id, formName, `User "${formName}" updated`)
+
             toast.success('User updated successfully')
             setEditDialogOpen(false)
             resetForm()
@@ -343,24 +360,28 @@ export default function UserManagement() {
                     <p className="section-subtitle">See everyone who works here and what they can do</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={exportUsers}
-                        className="btn-secondary h-10 w-10 p-0 flex items-center justify-center rounded-lg"
-                        title="Download as CSV"
-                    >
-                        <Download className="h-4 w-4" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            resetForm();
-                            generateNextEmployeeId();
-                            setCreateDialogOpen(true);
-                        }}
-                        className="btn-primary h-10 px-6"
-                    >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Add Person
-                    </button>
+                    <PermissionGuard module="users" action="export">
+                        <button
+                            onClick={exportUsers}
+                            className="btn-secondary h-10 w-10 p-0 flex items-center justify-center rounded-lg"
+                            title="Download as CSV"
+                        >
+                            <Download className="h-4 w-4" />
+                        </button>
+                    </PermissionGuard>
+                    <PermissionGuard module="users" action="create">
+                        <button
+                            onClick={() => {
+                                resetForm();
+                                generateNextEmployeeId();
+                                setCreateDialogOpen(true);
+                            }}
+                            className="btn-primary h-10 px-6"
+                        >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Add Person
+                        </button>
+                    </PermissionGuard>
                 </div>
             </div>
 
@@ -509,36 +530,42 @@ export default function UserManagement() {
                                                 <DropdownMenuContent align="end" className="w-64 p-3 rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-top-2">
                                                     <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 px-5 py-4">Options</DropdownMenuLabel>
                                                     <DropdownMenuSeparator className="bg-muted mx-3" />
-                                                    <DropdownMenuItem
-                                                        onClick={() => openEdit(u)}
-                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
-                                                    >
-                                                        <Edit2 className="h-5 w-5 opacity-40" />
-                                                        Edit Details
-                                                    </DropdownMenuItem>
+                                                    <PermissionGuard module="users" action="edit">
+                                                        <DropdownMenuItem
+                                                            onClick={() => openEdit(u)}
+                                                            className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
+                                                        >
+                                                            <Edit2 className="h-5 w-5 opacity-40" />
+                                                            Edit Details
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
                                                     <DropdownMenuSeparator className="bg-muted mx-3" />
-                                                    <DropdownMenuItem
-                                                        onClick={() => updateUser(u.id, { isAdmin: !u.isAdmin })}
-                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
-                                                    >
-                                                        <Shield className="h-5 w-5 opacity-40" />
-                                                        {u.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() => updateUser(u.id, { isActive: u.isActive === false })}
-                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-muted cursor-pointer transition-colors"
-                                                    >
-                                                        <Activity className="h-5 w-5 opacity-40" />
-                                                        {u.isActive === false ? 'Unsuspend' : 'Suspend Account'}
-                                                    </DropdownMenuItem>
+                                                    <PermissionGuard module="users" action="manage">
+                                                        <DropdownMenuItem
+                                                            onClick={() => updateUser(u.id, { isAdmin: !u.isAdmin })}
+                                                            className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-primary/5 focus:text-primary cursor-pointer transition-colors"
+                                                        >
+                                                            <Shield className="h-5 w-5 opacity-40" />
+                                                            {u.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => updateUser(u.id, { isActive: u.isActive === false })}
+                                                            className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 focus:bg-muted cursor-pointer transition-colors"
+                                                        >
+                                                            <Activity className="h-5 w-5 opacity-40" />
+                                                            {u.isActive === false ? 'Unsuspend' : 'Suspend Account'}
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
                                                     <DropdownMenuSeparator className="bg-muted mx-3" />
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleDeleteUser(u.id, u.fullName)}
-                                                        className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer transition-colors"
-                                                    >
-                                                        <Trash2 className="h-5 w-5" />
-                                                        Delete Permanently
-                                                    </DropdownMenuItem>
+                                                    <PermissionGuard module="users" action="delete">
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleDeleteUser(u.id, u.fullName)}
+                                                            className="rounded-2xl text-[11px] font-black uppercase tracking-widest py-4 px-5 flex items-center gap-4 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer transition-colors"
+                                                        >
+                                                            <Trash2 className="h-5 w-5" />
+                                                            Delete Permanently
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
@@ -783,6 +810,24 @@ export default function UserManagement() {
                                             <SelectItem value="full-time">Full-Time Staff</SelectItem>
                                             <SelectItem value="part-time">Part-Time / Seasonal</SelectItem>
                                             <SelectItem value="contract">Professional Contractor</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-2.5">
+                                    <Label className="ml-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">BOS Role / Access Level</Label>
+                                    <Select
+                                        value={formRoleId}
+                                        onValueChange={(v) => setFormRoleId(v)}
+                                        disabled={createLoading}
+                                    >
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100">
+                                            <SelectValue placeholder="Assign Role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {roles.map(role => (
+                                                <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>

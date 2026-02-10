@@ -6,11 +6,16 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { onAuthStateChange, getUserData, logOut } from '@/lib/authService'
 
+import { Permission } from '@/types/rbac'
+
 interface UserData {
     uid: string
     email: string | null
     fullName: string
-    isAdmin: boolean // Simple boolean - set by developer in Firebase
+    isAdmin: boolean
+    roleId?: string
+    roleName?: string
+    permissions: Permission[]
     avatar?: string
     teamId?: string
     department?: string
@@ -22,6 +27,8 @@ interface AuthContextType {
     loading: boolean
     error: string | null
     isAdmin: boolean
+    permissions: Permission[]
+    hasPermission: (module: string, action: string) => boolean
     logout: () => Promise<void>
     signOut: () => Promise<void>
     getDefaultRoute: () => string
@@ -33,6 +40,8 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     error: null,
     isAdmin: false,
+    permissions: [],
+    hasPermission: () => false,
     logout: async () => { },
     signOut: async () => { },
     getDefaultRoute: () => '/admin'
@@ -96,6 +105,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
                             email: data.email || firebaseUser.email,
                             fullName: data.fullName || firebaseUser.displayName || 'User',
                             isAdmin: adminStatus,
+                            roleId: data.roleId || undefined,
+                            roleName: data.roleName || '',
+                            permissions: data.permissions || [],
                             avatar: data.avatar || undefined,
                             teamId: data.teamId || undefined,
                             department: data.department || undefined
@@ -129,6 +141,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         return () => unsubscribe()
     }, [])
 
+    const hasPermission = (module: string, action: string) => {
+        if (isAdmin) return true
+        return userData?.permissions.some(p => p.module === module && p.action === action) || false
+    }
+
     const logout = async () => {
         try {
             await logOut()
@@ -153,6 +170,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         loading,
         error,
         isAdmin,
+        permissions: userData?.permissions || [],
+        hasPermission,
         logout,
         signOut: logout,
         getDefaultRoute

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/authMiddleware';
 import { adminDb } from '@/lib/firebase-admin';
+import { hasPermissionServer } from '@/lib/server/authService';
 
 
 // Helper to convert Firestore Timestamp to Date
@@ -19,28 +20,31 @@ export async function GET(request: NextRequest) {
         const assignedByUserId = searchParams.get('assignedBy');
         const showAll = searchParams.get('all') === 'true';
 
-        // Check if user is admin
-        const userDoc = await adminDb.collection('users').doc(userId).get();
-        const isAdmin = userDoc.data()?.isAdmin === true;
+        // Use hasPermissionServer for granular checks
+        const canViewAll = await hasPermissionServer(userId, 'tasks', 'view_all');
+        const canViewOwn = await hasPermissionServer(userId, 'tasks', 'view');
 
-        let query: any = adminDb.collection('tasks');
+        if (!canViewOwn && !canViewAll) {
+            return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+        }
+
+        let querySnapshot: any;
+        const tasksRef = adminDb.collection('tasks');
 
         if (assignedByUserId) {
             // Fetch tasks that this user has assigned to others
-            query = adminDb.collection('tasks').where('assignedBy', '==', assignedByUserId);
-        } else if (isAdmin && showAll) {
-            // Fetch all tasks for admin
-            query = adminDb.collection('tasks');
-        } else if (isAdmin && filterUserId) {
-            // Fetch for specific user for admin
-            query = adminDb.collection('tasks').where('assignedTo', 'array-contains', filterUserId);
+            querySnapshot = await tasksRef.where('assignedBy', '==', assignedByUserId).get();
+        } else if (canViewAll && showAll) {
+            // Fetch all tasks for users with view_all permission
+            querySnapshot = await tasksRef.get();
+        } else if (canViewAll && filterUserId) {
+            // Fetch for specific user for authorized users
+            querySnapshot = await tasksRef.where('assignedTo', 'array-contains', filterUserId).get();
         } else {
             // Default: Fetch for current user
-            query = adminDb.collection('tasks').where('assignedTo', 'array-contains', userId);
+            querySnapshot = await tasksRef.where('assignedTo', 'array-contains', userId).get();
         }
-
-        const tasksSnap = await query.get();
-        const tasks = tasksSnap.docs.map((doc: any) => {
+        const tasks = querySnapshot.docs.map((doc: any) => {
             const data = doc.data();
             return {
                 id: doc.id,

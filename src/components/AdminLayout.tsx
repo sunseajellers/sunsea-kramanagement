@@ -30,44 +30,58 @@ const menuItems = [
         label: 'Home',
         icon: LayoutDashboard,
     },
+    // Pillar 1: Strategy
+    {
+        href: '/admin/operations',
+        label: 'Strategy',
+        icon: ClipboardCheck,
+    },
+    {
+        href: '/admin/okr',
+        label: 'OKRs',
+        icon: Target,
+    },
+    // Pillar 2: Execution
+    {
+        href: '/admin/system',
+        label: 'Executing',
+        icon: LayoutDashboard, // Will check if there's a better one for tasks
+    },
+    // Pillar 3: Performance
+    {
+        href: '/admin/performance',
+        label: 'KPIs',
+        icon: Activity,
+    },
+    {
+        href: '/admin/governance',
+        label: 'Governance',
+        icon: Award,
+    },
+    // Support & Resources
     {
         href: '/admin/organization',
         label: 'Team',
         icon: Users,
     },
     {
-        href: '/admin/operations',
-        label: 'KRA',
-        icon: ClipboardCheck,
-    },
-    {
-        href: '/admin/performance',
-        label: 'KPI',
-        icon: Activity,
-    },
-    {
-        href: '/admin/okr',
-        label: 'OKR',
-        icon: Target,
-    },
-    {
-        href: '/admin/governance',
-        label: 'Govern',
-        icon: Award,
-    },
-    {
         href: '/admin/learning-hub',
-        label: 'Guides',
+        label: 'Academy',
         icon: BookOpen,
     },
     {
         href: '/admin/helpdesk',
-        label: 'Help',
+        label: 'Support',
         icon: Ticket,
     },
     {
+        href: '/admin/roles',
+        label: 'Access',
+        icon: Shield,
+    },
+    {
         href: '/admin/activity-log',
-        label: 'Log',
+        label: 'Audit',
         icon: History,
     },
 ];

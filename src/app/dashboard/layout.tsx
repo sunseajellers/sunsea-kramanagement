@@ -11,14 +11,18 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { user, loading } = useAuth();
+    const { user, loading, hasPermission } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.push('/');
+        if (!loading) {
+            if (!user) {
+                router.push('/');
+            } else if (!hasPermission('dashboard', 'view')) {
+                router.push('/admin'); // Redirect to admin if dashboard view is not permitted
+            }
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, hasPermission]);
 
     if (loading) {
         return (
