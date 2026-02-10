@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { Campaign, getAllCampaigns } from '@/lib/marketingService';
+import { Campaign } from '@/types';
+import { getCampaigns } from '@/lib/marketingService';
 import { Button } from '@/components/ui/button';
 import {
     Plus, Search, Filter, MoreVertical,
@@ -22,7 +23,7 @@ export default function CampaignManager() {
     const loadCampaigns = async () => {
         try {
             setLoading(true);
-            const data = await getAllCampaigns();
+            const data = await getCampaigns();
             setCampaigns(data);
         } catch (error) {
             toast.error('Failed to load campaigns');
@@ -99,33 +100,33 @@ export default function CampaignManager() {
                             <div className="space-y-4">
                                 <div>
                                     <h3 className="font-black text-slate-900 tracking-tight">{camp.name}</h3>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Started {camp.startDate.toLocaleDateString()}</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Started {camp.startDate?.toLocaleDateString() || 'Pending'}</p>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-50">
                                     <div className="text-center">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Leads</p>
-                                        <p className="text-sm font-black text-slate-900">{camp.leads}</p>
+                                        <p className="text-sm font-black text-slate-900">{camp.leads || 0}</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Conv.</p>
-                                        <p className="text-sm font-black text-slate-900">{camp.conversions}</p>
+                                        <p className="text-sm font-black text-slate-900">{camp.conversions || 0}</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ROI</p>
-                                        <p className="text-sm font-black text-emerald-600">{camp.roi}x</p>
+                                        <p className="text-sm font-black text-emerald-600">{(camp.roi || 0).toFixed(1)}x</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
                                         <span className="text-slate-400">Budget $USD</span>
-                                        <span className="text-slate-900">${camp.spend} / ${camp.budget}</span>
+                                        <span className="text-slate-900">${camp.spend || 0} / ${camp.budget}</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-primary"
-                                            style={{ width: `${(camp.spend / camp.budget) * 100}%` }}
+                                            style={{ width: `${((camp.spend || 0) / camp.budget) * 100}%` }}
                                         />
                                     </div>
                                 </div>

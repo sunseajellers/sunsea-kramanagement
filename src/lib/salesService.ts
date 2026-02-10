@@ -1,57 +1,141 @@
-
 import { db } from './firebase';
-import {
-    collection,
-    updateDoc,
-    doc,
-    serverTimestamp
-} from 'firebase/firestore';
-import { Sale, PipelineStage } from '@/types';
+import { collection, addDoc, getDocs, query, where, orderBy, updateDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
+import { Quote, Sale } from '@/types';
 
-const COLLECTION_NAME = 'sales';
+// --- Quote Management ---
 
-import { getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
-
-export const getAllSales = async (): Promise<Sale[]> => {
+export const createQuote = async (quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'quoteNumber'>) => {
     try {
-        const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => {
+        // Generate a simple quote number (in production, use a counter or transaction)
+        const quoteNumber = `QT-${Date.now().toString().slice(-6)}`;
+
+        const docRef = await addDoc(collection(db, 'quotes'), {
+            ...quoteData,
+            quoteNumber,
+            status: 'draft',
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            expiryDate: Timestamp.fromDate(quoteData.expiryDate)
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error('Error creating quote:', error);
+        throw error;
+    }
+};
+
+export const getQuotes = async (status?: string): Promise<Quote[]> => {
+    try {
+        let q = query(collection(db, 'quotes'), orderBy('createdAt', 'desc'));
+
+        if (status) {
+            q = query(q, where('status', '==', status));
+        }
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 ...data,
                 id: doc.id,
-                expectedClosedDate: data.expectedClosedDate instanceof Timestamp ? data.expectedClosedDate.toDate() : data.expectedClosedDate,
-                actualClosedDate: data.actualClosedDate instanceof Timestamp ? data.actualClosedDate.toDate() : data.actualClosedDate,
-                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
-                updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt,
-            } as Sale;
+                expiryDate: data.expiryDate.toDate(),
+                createdAt: data.createdAt.toDate(),
+                updatedAt: data.updatedAt.toDate()
+            } as Quote;
         });
     } catch (error) {
-        console.error('Error getting sales:', error);
+        console.error('Error fetching quotes:', error);
+        return [];
+    }
+};
+
+export const updateQuoteStatus = async (quoteId: string, status: Quote['status']) => {
+    try {
+        await updateDoc(doc(db, 'quotes', quoteId), {
+            status,
+            updatedAt: Timestamp.now()
+        });
+        return true;
+    } catch (error) {
+        console.error('Error updating quote status:', error);
         throw error;
     }
 };
 
-export const updateSaleStage = async (id: string, stage: PipelineStage): Promise<void> => {
+// --- Conversion Logic ---
+
+export const convertQuoteToInvoice = async (quoteId: string) => {
     try {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        await updateDoc(docRef, {
-            stage,
-            updatedAt: serverTimestamp(),
-            ...(stage === 'closed_won' || stage === 'closed_lost' ? { actualClosedDate: serverTimestamp() } : {})
-        });
+        const quoteRef = doc(db, 'quotes', quoteId);
+        const quoteSnap = await getDoc(quoteRef);
+
+        if (!quoteSnap.exists()) {
+            throw new Error('Quote not found');
+        }
+
+        const quoteData = quoteSnap.data() as Quote;
+
+        // Create Invoice
+        const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+        const invoiceData = {
+            invoiceNumber,
+            customerId: quoteData.customerId || 'guest',
+            customerName: quoteData.customerName || 'Guest Customer',
+            amount: quoteData.totalAmount,
+            status: 'pending',
+            items: quoteData.items,
+            notes: `Converted from Quote ${quoteData.quoteNumber}`,
+            issuedDate: Timestamp.now(),
+            dueDate: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // +30 days
+            createdAt: Timestamp.now()
+        };
+
+        const invoiceRef = await addDoc(collection(db, 'invoices'), invoiceData);
+
+        // Update Quote status
+        await updateDoc(quoteRef, { status: 'converted', updatedAt: Timestamp.now() });
+
+        return invoiceRef.id;
     } catch (error) {
-        console.error('Error updating sale stage:', error);
+        console.error('Error converting quote to invoice:', error);
         throw error;
+    }
+};
+
+// --- Sales Management ---
+
+export const getAllSales = async (): Promise<Sale[]> => {
+    try {
+        const q = query(collection(db, 'sales'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            updatedAt: doc.data().updatedAt?.toDate()
+        } as Sale));
+    } catch (error) {
+        console.error('Error fetching sales:', error);
+        return [];
     }
 };
 
 export const PIPELINE_STAGES = [
-    { id: 'lead' as PipelineStage, label: 'Lead', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-    { id: 'contacted' as PipelineStage, label: 'Contacted', color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-    { id: 'proposal' as PipelineStage, label: 'Proposal', color: 'bg-amber-50 text-amber-600 border-amber-100' },
-    { id: 'negotiation' as PipelineStage, label: 'Negotiation', color: 'bg-purple-50 text-purple-600 border-purple-100' },
-    { id: 'closed_won' as PipelineStage, label: 'Won', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-    { id: 'closed_lost' as PipelineStage, label: 'Lost', color: 'bg-rose-50 text-rose-600 border-rose-100' },
+    { id: 'lead', name: 'Leads', label: 'Leads', color: 'bg-slate-500' },
+    { id: 'contacted', name: 'Contacted', label: 'Contacted', color: 'bg-blue-500' },
+    { id: 'proposal', name: 'Proposal', label: 'Proposal', color: 'bg-indigo-500' },
+    { id: 'negotiation', name: 'Negotiation', label: 'Negotiation', color: 'bg-amber-500' },
+    { id: 'closed_won', name: 'Closed Won', label: 'Closed Won', color: 'bg-emerald-500' },
+    { id: 'closed_lost', name: 'Closed Lost', label: 'Closed Lost', color: 'bg-rose-500' }
 ];
+
+// --- Sales & Commission (Placeholder) ---
+export const getSalesStats = async () => {
+    // Mock data for now
+    return {
+        totalRevenue: 125000,
+        pendingQuotes: 12,
+        conversionRate: 24,
+        averageDealSize: 5200
+    };
+};

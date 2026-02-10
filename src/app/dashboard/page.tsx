@@ -18,8 +18,14 @@ import {
     Target,
     BookOpen,
     Ticket,
-    RotateCcw
+    RotateCcw,
+    FileText,
+    UploadCloud,
+    Trash2,
+    Eye
 } from 'lucide-react';
+import { uploadUserDocument } from '@/lib/storageService';
+import toast from 'react-hot-toast';
 import { TicketDashboard } from '@/components/features/tickets/TicketDashboard';
 import { isPast, isToday, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -49,11 +55,21 @@ const statusLabels: Record<TaskStatus, string> = {
 export default function EmployeeDashboard() {
     const { user, loading: authLoading, signOut } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'tasks' | 'delegated' | 'history' | 'profile' | 'performance' | 'okr' | 'academy' | 'helpdesk'>('tasks');
+    const [activeTab] = useState<'tasks' | 'delegated' | 'history' | 'profile' | 'performance' | 'okr' | 'academy' | 'helpdesk'>('tasks');
     const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed' | 'overdue'>('all');
     const [editingProfile, setEditingProfile] = useState(false);
-    const [profileForm, setProfileForm] = useState({ fullName: '', phone: '' });
+    const [profileForm, setProfileForm] = useState({
+        fullName: '',
+        phone: '',
+        dateOfBirth: '',
+        aadharNumber: '',
+        panNumber: '',
+        aadharPhotoUrl: '',
+        panPhotoUrl: '',
+        personalDocuments: [] as any[]
+    });
     const [savingProfile, setSavingProfile] = useState(false);
+    const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
     const [showPasswordChange, setShowPasswordChange] = useState(false);
     const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [changingPassword, setChangingPassword] = useState(false);
@@ -85,7 +101,13 @@ export default function EmployeeDashboard() {
         if (userProfile) {
             setProfileForm({
                 fullName: userProfile.fullName || user?.displayName || '',
-                phone: userProfile.phone || ''
+                phone: userProfile.phone || '',
+                dateOfBirth: userProfile.dateOfBirth ? new Date(userProfile.dateOfBirth).toISOString().split('T')[0] : '',
+                aadharNumber: userProfile.aadharNumber || '',
+                panNumber: userProfile.panNumber || '',
+                aadharPhotoUrl: userProfile.aadharPhotoUrl || '',
+                panPhotoUrl: userProfile.panPhotoUrl || '',
+                personalDocuments: userProfile.personalDocuments || []
             });
         }
     }, [userProfile, user?.displayName]);
@@ -102,20 +124,69 @@ export default function EmployeeDashboard() {
                 },
                 body: JSON.stringify({
                     fullName: profileForm.fullName,
-                    phone: profileForm.phone
+                    phone: profileForm.phone,
+                    dateOfBirth: profileForm.dateOfBirth ? new Date(profileForm.dateOfBirth) : null,
+                    aadharNumber: profileForm.aadharNumber,
+                    panNumber: profileForm.panNumber,
+                    aadharPhotoUrl: profileForm.aadharPhotoUrl,
+                    panPhotoUrl: profileForm.panPhotoUrl,
+                    personalDocuments: profileForm.personalDocuments
                 })
             });
             if (response.ok) {
-                const updated = await response.json();
-                setUserProfile(updated);
+                const result = await response.json();
+                setUserProfile(result.user);
                 setEditingProfile(false);
+                toast.success('Profile updated successfully');
+            } else {
+                toast.error('Failed to update profile');
             }
         } catch (error) {
             console.error('Error updating profile:', error);
+            toast.error('An error occurred while saving');
         } finally {
             setSavingProfile(false);
         }
     }, [profileForm, user?.uid]);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+
+        setUploadingDoc(type);
+        try {
+            const url = await uploadUserDocument(user.uid, file, type);
+
+            if (type === 'aadhar_photo') {
+                setProfileForm(prev => ({ ...prev, aadharPhotoUrl: url }));
+            } else if (type === 'pan_photo') {
+                setProfileForm(prev => ({ ...prev, panPhotoUrl: url }));
+            } else {
+                const newDoc = {
+                    name: file.name,
+                    url: url,
+                    uploadedAt: new Date()
+                };
+                setProfileForm(prev => ({
+                    ...prev,
+                    personalDocuments: [...prev.personalDocuments, newDoc]
+                }));
+            }
+            toast.success('File uploaded successfully');
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error('Failed to upload file');
+        } finally {
+            setUploadingDoc(null);
+        }
+    };
+
+    const removeDocument = (index: number) => {
+        setProfileForm(prev => ({
+            ...prev,
+            personalDocuments: prev.personalDocuments.filter((_, i) => i !== index)
+        }));
+    };
 
     const handleChangePassword = useCallback(async () => {
         if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
@@ -210,101 +281,8 @@ export default function EmployeeDashboard() {
 
     return (
         <div className="min-h-screen pb-20">
-            {/* Desktop Header - Hidden on Mobile */}
-            <header className="hidden sm:flex sticky top-4 z-50 mx-4 mb-8 rounded-2xl glass-panel px-4 sm:px-5 py-2.5 items-center justify-between gap-4 shadow-xl shadow-primary/5 border-white/40 bg-white/90 backdrop-blur-xl transition-all">
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95">
-                        <img src="/logo.png" alt="Logo" className="w-5 h-5 sm:w-6 sm:h-6 object-contain brightness-0 invert" />
-                    </div>
-                    <div className="hidden sm:block">
-                        <h1 className="font-black text-lg text-primary tracking-tighter leading-none uppercase">Dashboard</h1>
-                    </div>
-                </div>
-
-                <nav className="flex items-center gap-1">
-                    {[
-                        { id: 'tasks', label: 'Works', icon: ClipboardList, module: 'tasks', action: 'view' },
-                        { id: 'delegated', label: 'Assign', icon: Plus, module: 'tasks', action: 'create' },
-                        { id: 'history', label: 'History', icon: History, module: 'activity_log', action: 'view' },
-                        { id: 'performance', label: 'Results', icon: Trophy, module: 'performance', action: 'view' },
-                        { id: 'okr', label: 'Strategy', icon: Target, module: 'okrs', action: 'view' },
-                        { id: 'helpdesk', label: 'Support', icon: Ticket, module: 'tickets', action: 'view' },
-                        { id: 'academy', label: 'Hub', icon: BookOpen, module: 'academy', action: 'view' },
-                        { id: 'profile', label: 'Me', icon: User, module: 'profile', action: 'view' },
-                    ].map((tab) => {
-                        const { hasPermission } = useAuth();
-                        if (tab.id !== 'profile' && !hasPermission(tab.module, tab.action)) return null;
-
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={cn(
-                                    "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden group whitespace-nowrap shrink-0",
-                                    activeTab === tab.id
-                                        ? "bg-primary text-white shadow-md shadow-primary/30"
-                                        : "text-primary/60 hover:text-primary hover:bg-primary/5"
-                                )}
-                            >
-                                <tab.icon className={cn("w-3 h-3 transition-transform duration-500", activeTab === tab.id ? "scale-110" : "group-hover:scale-110 group-hover:rotate-12")} />
-                                <span>{tab.label}</span>
-                            </button>
-                        );
-                    })}
-                </nav>
-
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="hidden lg:flex flex-col items-end mr-1">
-                        <p className="text-[10px] font-black text-primary leading-none mb-1">{userProfile?.fullName || 'User'}</p>
-                        <p className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none">{userProfile?.department || 'Operations'}</p>
-                    </div>
-                    <button
-                        onClick={() => signOut()}
-                        className="group w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all flex items-center justify-center border border-rose-100/50 active:scale-95"
-                        title="Logout"
-                    >
-                        <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                </div>
-            </header>
-
-            {/* Mobile Bottom Navigation - Sticky & Compact */}
-            <div className="fixed bottom-6 left-2 right-2 z-[100] sm:hidden">
-                <div className="flex items-center justify-between p-1 rounded-full glass-panel bg-white/95 backdrop-blur-2xl border-white/40 shadow-2xl shadow-primary/20">
-                    {[
-                        { id: 'tasks', label: 'Works', icon: ClipboardList, module: 'tasks', action: 'view' },
-                        { id: 'delegated', label: 'Assign', icon: Plus, module: 'tasks', action: 'create' },
-                        { id: 'history', label: 'History', icon: History, module: 'activity_log', action: 'view' },
-                        { id: 'performance', label: 'Results', icon: Trophy, module: 'performance', action: 'view' },
-                        { id: 'okr', label: 'Strategy', icon: Target, module: 'okrs', action: 'view' },
-                        { id: 'helpdesk', label: 'Support', icon: Ticket, module: 'tickets', action: 'view' },
-                        { id: 'academy', label: 'Hub', icon: BookOpen, module: 'academy', action: 'view' },
-                        { id: 'profile', label: 'Me', icon: User, module: 'profile', action: 'view' },
-                    ].map((tab) => {
-                        const { hasPermission } = useAuth();
-                        if (tab.id !== 'profile' && !hasPermission(tab.module, tab.action)) return null;
-
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={cn(
-                                    "flex items-center justify-center p-2 rounded-full transition-all duration-300 flex-1",
-                                    activeTab === tab.id
-                                        ? "bg-primary text-white shadow-lg shadow-primary/25 scale-110"
-                                        : "text-primary/40 hover:text-primary"
-                                )}
-                                title={tab.label}
-                            >
-                                <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "scale-110" : "")} />
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             {/* Content Area */}
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-12 sm:pt-6 pb-32">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
                 {/* Centered Tab Identity - Optimized for Mobile */}
                 {(() => {
                     const activeTabData = [
@@ -353,7 +331,13 @@ export default function EmployeeDashboard() {
                                                 setEditingProfile(false);
                                                 setProfileForm({
                                                     fullName: userProfile?.fullName || user?.displayName || '',
-                                                    phone: userProfile?.phone || ''
+                                                    phone: userProfile?.phone || '',
+                                                    dateOfBirth: userProfile?.dateOfBirth ? new Date(userProfile.dateOfBirth).toISOString().split('T')[0] : '',
+                                                    aadharNumber: userProfile?.aadharNumber || '',
+                                                    panNumber: userProfile?.panNumber || '',
+                                                    aadharPhotoUrl: userProfile?.aadharPhotoUrl || '',
+                                                    panPhotoUrl: userProfile?.panPhotoUrl || '',
+                                                    personalDocuments: userProfile?.personalDocuments || []
                                                 });
                                             }}
                                             className="btn-secondary"
@@ -403,6 +387,166 @@ export default function EmployeeDashboard() {
                                 <div className="p-6 rounded-3xl bg-white/50 border border-white/60 shadow-sm">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Email Address</p>
                                     <p className="text-xl font-bold text-primary truncate">{user?.email || 'N/A'}</p>
+                                </div>
+                                <div className="p-6 rounded-3xl bg-white/50 border border-white/60 shadow-sm">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Date of Birth</p>
+                                    {editingProfile ? (
+                                        <input
+                                            type="date"
+                                            value={profileForm.dateOfBirth}
+                                            onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })}
+                                            className="form-input"
+                                        />
+                                    ) : (
+                                        <p className="text-xl font-bold text-primary">{profileForm.dateOfBirth || 'Not provided'}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* KYC Documents Section */}
+                            <div className="mt-8 pt-8 border-t border-primary/5">
+                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">KYC & Identity Documents</h3>
+                                <div className="grid gap-6 sm:grid-cols-2">
+                                    {/* Aadhar Card */}
+                                    <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100 shadow-sm space-y-4">
+                                        <div>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Aadhar Card Number</p>
+                                            {editingProfile ? (
+                                                <input
+                                                    type="text"
+                                                    value={profileForm.aadharNumber}
+                                                    onChange={(e) => setProfileForm({ ...profileForm, aadharNumber: e.target.value })}
+                                                    className="form-input bg-white"
+                                                    placeholder="Enter Aadhar Number"
+                                                />
+                                            ) : (
+                                                <p className="text-lg font-bold text-primary font-mono">{profileForm.aadharNumber || 'Not provided'}</p>
+                                            )}
+                                        </div>
+                                        <div className="pt-2">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Photocopy of Aadhar</p>
+                                            <div className="flex items-center gap-3">
+                                                {profileForm.aadharPhotoUrl ? (
+                                                    <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
+                                                        <FileText className="w-4 h-4 text-indigo-600" />
+                                                        <span className="text-xs font-bold text-indigo-600">aadhar_card.jpg</span>
+                                                        <a href={profileForm.aadharPhotoUrl} target="_blank" rel="noreferrer" className="p-1 hover:bg-white rounded-lg transition-colors">
+                                                            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                                        </a>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground italic">No file uploaded</p>
+                                                )}
+                                                {editingProfile && (
+                                                    <label className="cursor-pointer group flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all">
+                                                        {uploadingDoc === 'aadhar_photo' ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                                                        ) : (
+                                                            <UploadCloud className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary" />
+                                                        )}
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-primary">
+                                                            {uploadingDoc === 'aadhar_photo' ? 'Uploading...' : 'Upload'}
+                                                        </span>
+                                                        <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'aadhar_photo')} disabled={!!uploadingDoc} />
+                                                    </label>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PAN Card */}
+                                    <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100 shadow-sm space-y-4">
+                                        <div>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">PAN Card Number</p>
+                                            {editingProfile ? (
+                                                <input
+                                                    type="text"
+                                                    value={profileForm.panNumber}
+                                                    onChange={(e) => setProfileForm({ ...profileForm, panNumber: e.target.value })}
+                                                    className="form-input bg-white"
+                                                    placeholder="Enter PAN Number"
+                                                />
+                                            ) : (
+                                                <p className="text-lg font-bold text-primary font-mono">{profileForm.panNumber || 'Not provided'}</p>
+                                            )}
+                                        </div>
+                                        <div className="pt-2">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Photocopy of PAN Card</p>
+                                            <div className="flex items-center gap-3">
+                                                {profileForm.panPhotoUrl ? (
+                                                    <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
+                                                        <FileText className="w-4 h-4 text-indigo-600" />
+                                                        <span className="text-xs font-bold text-indigo-600">pan_card.jpg</span>
+                                                        <a href={profileForm.panPhotoUrl} target="_blank" rel="noreferrer" className="p-1 hover:bg-white rounded-lg transition-colors">
+                                                            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                                        </a>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground italic">No file uploaded</p>
+                                                )}
+                                                {editingProfile && (
+                                                    <label className="cursor-pointer group flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all">
+                                                        {uploadingDoc === 'pan_photo' ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                                                        ) : (
+                                                            <UploadCloud className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary" />
+                                                        )}
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-primary">
+                                                            {uploadingDoc === 'pan_photo' ? 'Uploading...' : 'Upload'}
+                                                        </span>
+                                                        <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'pan_photo')} disabled={!!uploadingDoc} />
+                                                    </label>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Personal Documents Section */}
+                            <div className="mt-8 pt-8 border-t border-primary/5">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Other Personal Documents</h3>
+                                    {editingProfile && (
+                                        <label className="btn-secondary h-9 px-4 cursor-pointer text-[10px] font-black uppercase tracking-widest">
+                                            <Plus className="w-3 h-3 mr-2" />
+                                            Add Document
+                                            <input type="file" className="hidden" multiple onChange={(e) => handleFileUpload(e, 'personal')} disabled={!!uploadingDoc} />
+                                        </label>
+                                    )}
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {(profileForm.personalDocuments || []).length === 0 ? (
+                                        <div className="col-span-full py-8 px-4 rounded-[2rem] bg-slate-50/30 border border-slate-100 border-dashed text-center">
+                                            <p className="text-xs text-slate-400 font-medium italic">No additional documents uploaded</p>
+                                        </div>
+                                    ) : (
+                                        (profileForm.personalDocuments || []).map((doc, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                    <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary">
+                                                        <FileText className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <p className="text-xs font-bold text-slate-800 truncate uppercase tracking-tight">{doc.name}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                            {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'N/A'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <a href={doc.url} target="_blank" rel="noreferrer" className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-primary">
+                                                        <Eye className="w-4 h-4" />
+                                                    </a>
+                                                    {editingProfile && (
+                                                        <button onClick={() => removeDocument(idx)} className="p-2 hover:bg-rose-50 rounded-lg transition-colors text-slate-300 hover:text-rose-500">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
 

@@ -1114,6 +1114,8 @@ src/components/
 *   **Custom Roles**: Admin-defined roles with granular permission assignment.
 *   **Performance History**: Historical score tracking, achievement badges.
 *   **Bulk Import**: CSV upload for mass user provisioning.
+*   **Enhanced Profiles**: Detailed personal information including Date of Birth, Aadhar, and PAN.
+*   **Document Management**: Secure upload and storage of KYC documents and personal records.
 
 ### 📊 Analytics & Reporting
 *   **Personal Dashboard**: Individual task and OKR progress tracking.

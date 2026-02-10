@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
+import UnifiedHeader from '@/components/layout/UnifiedHeader';
 
 export default function DashboardLayout({
     children,
@@ -36,5 +37,12 @@ export default function DashboardLayout({
         return null;
     }
 
-    return <>{children}</>;
+    return (
+        <div className="min-h-screen bg-slate-50/50">
+            <UnifiedHeader mode="dashboard" />
+            <main className="pt-24">
+                {children}
+            </main>
+        </div>
+    );
 }

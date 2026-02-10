@@ -46,13 +46,14 @@ export function getDefaultHeaderConfig(): HeaderConfig {
         logo: '',
         title: 'JewelMatrix',
         navigation: [
-            { name: 'Home', href: '/dashboard', roles: ['admin', 'user'] },
-            { name: 'Team', href: '/admin/operations', roles: ['admin'] },
-            { name: 'People', href: '/admin/organization', roles: ['admin'] },
-            { name: 'Tasks', href: '/dashboard/tasks', roles: ['user'] },
-            { name: 'Score', href: '/dashboard/my-updates', roles: ['user'] },
-            { name: 'OKRs', href: '/dashboard/kras', roles: ['user'] },
-            { name: 'Academy', href: '/dashboard/learning-hub', roles: ['admin', 'user'] },
+            { name: 'Dashboard', href: '/dashboard', roles: ['admin', 'user'] },
+            { name: 'Sales', href: '/admin/sales', roles: ['admin'] },
+            { name: 'Marketing', href: '/admin/marketing', roles: ['admin'] },
+            { name: 'Helpdesk', href: '/admin/helpdesk', roles: ['admin'] },
+            { name: 'OKRs', href: '/okr', roles: ['admin', 'user'] },
+            { name: 'Academy', href: '/learning-hub', roles: ['admin', 'user'] },
+            { name: 'HR', href: '/admin/staff', roles: ['admin'] },
+            { name: 'Security', href: '/admin/security', roles: ['admin'] },
         ],
         theme: 'indian'
     };

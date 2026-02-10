@@ -74,6 +74,11 @@ export interface Ticket {
     // Metadata
     attachments?: string[]
     tags?: string[]
+
+    // Smart Routing Fields
+    autoAssigned?: boolean
+    department?: string
+    priorityScore?: number
 }
 
 export interface TicketSolution {
@@ -319,15 +324,33 @@ export interface LearningHubStats {
 }
 
 // RBAC Types - Supports both system and custom roles
+export interface RolePermissions {
+    [module: string]: {
+        [action: string]: boolean | undefined;
+    };
+}
+
 export interface Role {
-    id: string
-    name: RoleName           // Can be SystemRole or custom string
-    description: string
-    isSystem: boolean        // true = can't delete, false = custom role
-    isActive: boolean
-    permissions: string[]    // Embedded permission IDs for simplified lookup
-    createdAt: Date
-    updatedAt: Date
+    id: string;
+    name: string;
+    permissions: RolePermissions;
+    description?: string;
+    isSystem?: boolean;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface SecurityConfig {
+    whitelistedIps: string[];
+    enforceIpWhitelist: boolean;
+    maxSessionDuration: number;
+    mfaEnforcedRoles: string[];
+    passwordPolicy: {
+        minLength: number;
+        requireSpecialChar: boolean;
+        expiryDays: number;
+    };
 }
 
 export interface Permission {
@@ -393,6 +416,15 @@ export interface User {
     // Optional additional fields
     dateOfBirth?: Date
     address?: string
+    aadharNumber?: string
+    panNumber?: string
+    aadharPhotoUrl?: string
+    panPhotoUrl?: string
+    personalDocuments?: {
+        name: string
+        url: string
+        uploadedAt: Date
+    }[]
     emergencyContact?: {
         name: string
         phone: string
@@ -894,4 +926,109 @@ export interface Invoice {
     issuedDate: Date
     items: SaleItem[]
     notes?: string
+}
+
+// ========================================
+// QUOTE MANAGEMENT TYPES
+// ========================================
+
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'converted'
+
+export interface Quote {
+    id: string
+    quoteNumber: string
+    leadId?: string
+    leadName?: string
+    customerId?: string
+    customerName?: string
+    items: SaleItem[]
+    subtotal: number
+    tax: number
+    totalAmount: number
+    status: QuoteStatus
+    expiryDate: Date
+    notes?: string
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
+}
+
+// ========================================
+// MARKETING AUTOMATION TYPES
+// ========================================
+
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'completed'
+export type CampaignType = 'email' | 'social' | 'web' | 'sms' | 'ads'
+
+export interface CampaignMetrics {
+    sent: number
+    opened: number
+    clicked: number
+    converted: number
+    revenue: number
+    leads?: number
+    conversions?: number
+    roi?: number
+}
+
+export interface Campaign {
+    id: string
+    name: string
+    type: CampaignType
+    status: CampaignStatus
+    subject?: string // For email
+    content?: string
+    targetAudience?: string[] // Tags or Segment IDs
+    scheduleDate?: Date
+    startDate?: Date
+    budget: number
+    spend?: number
+    metrics: CampaignMetrics
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
+    leads?: number
+    conversions?: number
+    roi?: number
+}
+
+// ========================================
+// HR / LEAVE TYPES
+// ========================================
+
+export type LeaveType = 'annual' | 'sick' | 'personal' | 'maternity' | 'paternity' | 'unpaid' | 'other' | 'casual'
+
+export interface LeaveRequest {
+    id: string
+    userId: string
+    userName: string
+    leaveType: LeaveType
+    startDate: Date
+    endDate: Date
+    daysCount?: number
+    type?: string // Legacy or display type
+    reason: string
+    status: 'pending' | 'approved' | 'rejected'
+    approvedBy?: string
+    createdAt: Date
+}
+
+// ========================================
+// HELPDESK & SUPPORT TYPES (additional)
+// ========================================
+
+export type TicketPriority = Priority  // Alias for helpdesk usage
+
+export interface KBArticle {
+    id: string
+    title: string
+    content: string
+    category: string
+    tags: string[]
+    authorId: string
+    isPublished: boolean
+    views: number
+    helpfulCount: number
+    createdAt: Date
+    updatedAt: Date
 }

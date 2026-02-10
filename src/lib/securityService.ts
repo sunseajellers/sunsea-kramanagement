@@ -1,5 +1,6 @@
 import { db } from './firebase';
-import { collection, getDocs, query, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, Timestamp, addDoc } from 'firebase/firestore';
+import { Role } from '@/types';
 
 export interface AuditEvent {
     id: string;
@@ -76,5 +77,57 @@ export const getComplianceStatus = async () => {
     } catch (error) {
         console.error('Error getting compliance status:', error);
         return [];
+    }
+};
+
+// Mock Config Data (In a real app, this would be in a 'system_settings' collection)
+let mockSecurityConfig = {
+    whitelistedIps: ['192.168.1.1', '10.0.0.1'],
+    enforceIpWhitelist: false,
+    maxSessionDuration: 120,
+    mfaEnforcedRoles: ['admin', 'super_admin'],
+    passwordPolicy: {
+        minLength: 8,
+        requireSpecialChar: true,
+        expiryDays: 90
+    }
+};
+
+export const getSecurityConfig = async () => {
+    // Simulate API call
+    return mockSecurityConfig;
+};
+
+
+
+export const updateSecurityConfig = async (config: any) => {
+    // Simulate API call
+    mockSecurityConfig = config;
+    return true;
+};
+
+// --- Role Management ---
+
+export const getRoles = async (): Promise<Role[]> => {
+    try {
+        const snapshot = await getDocs(collection(db, 'roles'));
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Role));
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        return [];
+    }
+};
+
+export const createRole = async (roleData: any) => {
+    try {
+        const docRef = await addDoc(collection(db, 'roles'), {
+            ...roleData,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error('Error creating role:', error);
+        throw error;
     }
 };

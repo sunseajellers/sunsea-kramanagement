@@ -1,4 +1,4 @@
-import { OKRDashboard } from '@/components/features/okr/OKRDashboard'
+import OKRDashboard from '@/components/features/okr/OKRDashboard'
 
 export default function AdminOKRPage() {
     return (

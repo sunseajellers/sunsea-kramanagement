@@ -40,7 +40,7 @@ export default function SalesPipeline() {
 
     return (
         <div className="flex gap-6 overflow-x-auto pb-6 scroll-panel min-h-[600px]">
-            {PIPELINE_STAGES.map((stage) => {
+            {PIPELINE_STAGES.map((stage: { id: string, name: string, color: string, label: string }) => {
                 const stageSales = sales.filter(s => s.stage === stage.id)
                 const totalAmount = stageSales.reduce((sum, s) => sum + s.amount, 0)
 

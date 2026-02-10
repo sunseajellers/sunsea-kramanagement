@@ -1,80 +1,75 @@
 import { db } from './firebase';
-import { collection, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { Campaign } from '@/types';
 
-export interface Campaign {
-    id: string;
-    name: string;
-    status: 'active' | 'paused' | 'completed' | 'draft';
-    type: 'email' | 'social' | 'ads' | 'sms';
-    budget: number;
-    spend: number;
-    leads: number;
-    conversions: number;
-    roi: number;
-    startDate: Date;
-}
+// --- Campaign Management ---
 
-export interface MarketingStats {
-    totalLeads: number;
-    conversionRate: number;
-    activeCampaigns: number;
-    monthlySpend: number;
-}
-
-const COLLECTION_NAME = 'campaigns';
-
-export const getAllCampaigns = async (): Promise<Campaign[]> => {
+export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt' | 'metrics'>) => {
     try {
-        const q = query(collection(db, COLLECTION_NAME), orderBy('startDate', 'desc'));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => {
+        const docRef = await addDoc(collection(db, 'campaigns'), {
+            ...campaignData,
+            status: 'draft',
+            metrics: {
+                sent: 0,
+                opened: 0,
+                clicked: 0,
+                converted: 0,
+                revenue: 0
+            },
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error('Error creating campaign:', error);
+        throw error;
+    }
+};
+
+export const getCampaigns = async (status?: string): Promise<Campaign[]> => {
+    try {
+        let q = query(collection(db, 'campaigns'), orderBy('createdAt', 'desc'));
+
+        if (status) {
+            q = query(q, where('status', '==', status));
+        }
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 ...data,
                 id: doc.id,
-                startDate: data.startDate instanceof Timestamp ? data.startDate.toDate() : data.startDate,
+                scheduleDate: data.scheduleDate ? data.scheduleDate.toDate() : undefined,
+                createdAt: data.createdAt.toDate(),
+                updatedAt: data.updatedAt.toDate()
             } as Campaign;
         });
     } catch (error) {
-        console.error('Error getting campaigns:', error);
+        console.error('Error fetching campaigns:', error);
         return [];
     }
 };
 
-export const getMarketingStats = async (): Promise<MarketingStats> => {
+export const updateCampaignStatus = async (campaignId: string, status: Campaign['status']) => {
     try {
-        const campaigns = await getAllCampaigns();
-
-        return {
-            totalLeads: campaigns.reduce((sum, c) => sum + (c.leads || 0), 0),
-            conversionRate: campaigns.length > 0
-                ? (campaigns.reduce((sum, c) => sum + (c.conversions || 0), 0) / campaigns.reduce((sum, c) => sum + (c.leads || 1), 0)) * 100
-                : 0,
-            activeCampaigns: campaigns.filter(c => c.status === 'active').length,
-            monthlySpend: campaigns.reduce((sum, c) => sum + (c.spend || 0), 0)
-        };
+        await updateDoc(doc(db, 'campaigns', campaignId), {
+            status,
+            updatedAt: Timestamp.now()
+        });
+        return true;
     } catch (error) {
-        console.error('Error getting marketing stats:', error);
-        return {
-            totalLeads: 0,
-            conversionRate: 0,
-            activeCampaigns: 0,
-            monthlySpend: 0
-        };
+        console.error('Error updating campaign status:', error);
+        throw error;
     }
 };
 
-export const getChannelPerformance = async () => {
-    try {
-        // In real app, aggregate leads by source from 'customers' collection
-        return [
-            { channel: 'Search Ads', leads: 450, growth: '+12%', color: 'bg-indigo-500' },
-            { channel: 'Email Marketing', leads: 380, growth: '+5%', color: 'bg-emerald-500' },
-            { channel: 'Social Media', leads: 290, growth: '-2%', color: 'bg-rose-500' },
-            { channel: 'Referral', leads: 150, growth: '+8%', color: 'bg-amber-500' },
-        ];
-    } catch (error) {
-        console.error('Error getting channel performance:', error);
-        return [];
-    }
+// --- Mock Analytics Data ---
+export const getMarketingStats = async () => {
+    return {
+        totalLeads: 1240,
+        activeCampaigns: 3,
+        emailOpenRate: 24.5,
+        conversionRate: 3.2
+    };
 };

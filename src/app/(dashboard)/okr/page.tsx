@@ -1,7 +1,7 @@
 'use client'
 
 import OKRList from '@/components/features/okr/OKRList'
-import { Target, Info, Loader2 } from 'lucide-react'
+import { Info, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
@@ -14,24 +14,7 @@ export default function OKRPage() {
 
     return (
         <div className="min-h-screen bg-[#F8FAFC]">
-            {/* Simple Top Nav for Context */}
-            <div className="bg-white border-b border-slate-100 px-10 py-6">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-fuchsia-600 rounded-2xl shadow-lg shadow-fuchsia-100">
-                            <Target className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight">OKR Dashboard</h1>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Objectives & Strategic Results</p>
-                        </div>
-                    </div>
 
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
-                        Define New Goal
-                    </button>
-                </div>
-            </div>
 
             <main className="max-w-7xl mx-auto px-10 py-12 space-y-12">
                 {/* Intro Tooltip */}

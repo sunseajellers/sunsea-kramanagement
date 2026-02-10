@@ -2,6 +2,7 @@
 'use client';
 
 import { PermissionGuard } from '@/components/guards/PermissionGuard';
+import UnifiedHeader from '@/components/layout/UnifiedHeader';
 import { ReactNode } from 'react';
 
 export default function AdminRootLayout({
@@ -11,7 +12,12 @@ export default function AdminRootLayout({
 }) {
     return (
         <PermissionGuard module="admin" action="view">
-            {children}
+            <div className="min-h-screen bg-slate-50/50">
+                <UnifiedHeader mode="admin" showAdminControls={true} />
+                <main className="pt-24 pb-12 admin-container">
+                    {children}
+                </main>
+            </div>
         </PermissionGuard>
     );
 }

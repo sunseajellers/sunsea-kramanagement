@@ -79,7 +79,7 @@ export async function PATCH(
         }
 
         const body = await request.json()
-        const { fullName, phone } = body
+        const { fullName, phone, dateOfBirth, aadharNumber, panNumber, aadharPhotoUrl, panPhotoUrl, personalDocuments } = body
 
         // Prepare update data - only allow specific fields for self-update
         const updateData: any = {
@@ -98,6 +98,30 @@ export async function PATCH(
 
         if (phone !== undefined) {
             updateData.phone = phone
+        }
+
+        if (dateOfBirth !== undefined) {
+            updateData.dateOfBirth = dateOfBirth
+        }
+
+        if (aadharNumber !== undefined) {
+            updateData.aadharNumber = aadharNumber
+        }
+
+        if (panNumber !== undefined) {
+            updateData.panNumber = panNumber
+        }
+
+        if (aadharPhotoUrl !== undefined) {
+            updateData.aadharPhotoUrl = aadharPhotoUrl
+        }
+
+        if (panPhotoUrl !== undefined) {
+            updateData.panPhotoUrl = panPhotoUrl
+        }
+
+        if (personalDocuments !== undefined) {
+            updateData.personalDocuments = personalDocuments
         }
 
         // Update Firestore document
