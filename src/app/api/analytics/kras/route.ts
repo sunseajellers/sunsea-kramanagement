@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const analytics = await getKRAAnalytics(userId);
+        const analytics = await getKRAAnalytics();
 
         return NextResponse.json({
             success: true,

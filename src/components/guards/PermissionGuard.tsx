@@ -1,14 +1,15 @@
 'use client'
 
-import React from 'react'
+
+import { FC, ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Action } from '@/types/rbac'
 
 interface PermissionGuardProps {
     module: string
     action: Action
-    children: React.ReactNode
-    fallback?: React.ReactNode
+    children: ReactNode
+    fallback?: ReactNode
     mode?: 'hide' | 'disable'
 }
 
@@ -18,7 +19,7 @@ interface PermissionGuardProps {
  * A wrapper component that conditionally renders children based on the user's permissions.
  * Matches the Deep Jewel aesthetic by potentially applying translucent disabled states.
  */
-export const PermissionGuard: React.FC<PermissionGuardProps> = ({
+export const PermissionGuard: FC<PermissionGuardProps> = ({
     module,
     action,
     children,

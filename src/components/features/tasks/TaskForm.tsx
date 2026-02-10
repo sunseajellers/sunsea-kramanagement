@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { createTask, updateTask } from '@/lib/taskService'
 import { fetchKRAs } from '@/lib/kraService'
 import { okrService } from '@/lib/okrService'
@@ -142,7 +142,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
     }, [initialData])
 
     const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
         const value = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value
         setForm({ ...form, [e.target.name]: value })
@@ -152,7 +152,7 @@ export default function TaskForm({ initialData, onClose, onSaved }: Props) {
         setForm({ ...form, [name]: value })
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!user) return
 

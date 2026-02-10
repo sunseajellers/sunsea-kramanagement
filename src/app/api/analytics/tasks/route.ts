@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const analytics = await getTaskAnalytics(userId);
+        const analytics = await getTaskAnalytics();
 
         return NextResponse.json({
             success: true,

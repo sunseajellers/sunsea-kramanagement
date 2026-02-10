@@ -1,7 +1,6 @@
 // src/app/api/intelligence/personal/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { IntelligenceService } from '@/lib/intelligenceService';
 
 export async function GET(request: NextRequest) {
     try {

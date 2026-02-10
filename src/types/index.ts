@@ -819,3 +819,79 @@ export interface Holiday {
     createdAt: Date
     updatedAt: Date
 }
+
+// ========================================
+// CRM & CUSTOMER MANAGEMENT TYPES
+// ========================================
+
+export type CustomerType = 'individual' | 'corporate' | 'lead'
+export type CustomerStatus = 'active' | 'inactive' | 'archived'
+
+export interface Customer {
+    id: string
+    name: string
+    email: string
+    phone: string
+    type: CustomerType
+    status: CustomerStatus
+    address?: string
+    company?: string
+    notes?: string
+    lastContacted?: Date
+    lifetimeValue?: number
+    tags?: string[]
+    createdAt: Date
+    updatedAt: Date
+}
+
+// ========================================
+// SALES & REVENUE MANAGEMENT TYPES
+// ========================================
+
+export type SaleStatus = 'draft' | 'pending' | 'completed' | 'cancelled'
+export type PipelineStage = 'discovery' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
+
+export interface Sale {
+    id: string
+    customerId: string
+    customerName: string
+    amount: number
+    currency: string
+    status: SaleStatus
+    stage: PipelineStage
+    items: SaleItem[]
+    notes?: string
+    probability?: number // 0-100
+    expectedClosedDate?: Date
+    actualClosedDate?: Date
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
+}
+
+export interface SaleItem {
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+    totalPrice: number
+}
+
+// ========================================
+// INVOICE & PAYMENT TYPES
+// ========================================
+
+export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled'
+
+export interface Invoice {
+    id: string
+    invoiceNumber: string
+    customerId: string
+    customerName: string
+    amount: number
+    status: InvoiceStatus
+    dueDate: Date
+    issuedDate: Date
+    items: SaleItem[]
+    notes?: string
+}

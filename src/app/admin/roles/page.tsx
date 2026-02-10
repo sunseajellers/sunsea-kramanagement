@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { roleService } from '@/lib/roleService'
 import { Role, Permission } from '@/types/rbac'
 import { Button } from '@/components/ui/button'
@@ -10,17 +10,16 @@ import { Label } from '@/components/ui/label'
 import { PermissionMatrix } from '@/components/features/rbac/PermissionMatrix'
 import { Shield, Plus, Edit2, Trash2, Loader2, Info } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { cn } from '@/lib/utils'
 
 export default function RolesPage() {
     const [roles, setRoles] = useState<Role[]>([])
-    const [loading, setLoading] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editingRole, setEditingRole] = useState<Role | null>(null)
     const [roleName, setRoleName] = useState('')
     const [roleDescription, setRoleDescription] = useState('')
     const [selectedPermissions, setSelectedPermissions] = useState<Permission[]>([])
     const [submitting, setSubmitting] = useState(false)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         loadRoles()
@@ -53,9 +52,12 @@ export default function RolesPage() {
         setDialogOpen(true)
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
-        if (!roleName) return toast.error('Role name is required')
+        if (!roleName) {
+            toast.error('Role name is required')
+            return
+        }
 
         setSubmitting(true)
         try {

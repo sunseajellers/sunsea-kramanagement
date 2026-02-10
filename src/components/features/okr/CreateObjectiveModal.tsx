@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -68,7 +68,7 @@ export function CreateObjectiveModal({ isOpen, onClose, onSuccess }: CreateObjec
         setKeyResults(updated)
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!user || !userData) return
 

@@ -420,8 +420,6 @@ export class OKRService {
         const kpiDoc = await getDoc(doc(db, 'kpis', kpiId))
         if (!kpiDoc.exists()) return
 
-        const kpiData = kpiDoc.data()
-
         // Find all Key Results linking to this KPI
         const keyResults = await this.getKeyResultsByKPI(kpiId)
 

@@ -1,16 +1,17 @@
 // src/app/admin/layout.tsx
 'use client';
 
-import AdminLayout from '@/components/AdminLayout';
+import { PermissionGuard } from '@/components/guards/PermissionGuard';
+import { ReactNode } from 'react';
 
 export default function AdminRootLayout({
     children,
 }: {
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     return (
-        <AdminLayout>
+        <PermissionGuard module="admin" action="view">
             {children}
-        </AdminLayout>
+        </PermissionGuard>
     );
 }

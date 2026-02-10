@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     return withAdmin(request, async (_request: NextRequest, _userId: string) => {
         try {
-            const { reportType, dateRange } = await request.json();
+            const { reportType } = await request.json();
 
             if (!reportType) {
                 return NextResponse.json(
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            const report = await generateAdminReport(reportType, dateRange);
+            const report = await generateAdminReport(reportType);
 
             return NextResponse.json({
                 success: true,

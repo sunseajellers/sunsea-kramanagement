@@ -1,7 +1,7 @@
 // Simple modal for resolving task revision
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import { X, ClipboardList, Info } from 'lucide-react'
 import { resolveTaskRevision } from '@/lib/revisionService'
 import toast from 'react-hot-toast'
@@ -30,7 +30,7 @@ export default function RevisionResolveModal({
     const [proofLink, setProofLink] = useState('')
     const [loading, setLoading] = useState(false)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!proofOfWork.trim()) {
             toast.error('Please provide a description of the work done')

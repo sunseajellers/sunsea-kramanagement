@@ -6,12 +6,10 @@ import {
     addDoc,
     updateDoc,
     deleteDoc,
-    query,
-    where,
     serverTimestamp
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { Role, Permission } from '@/types/rbac'
+import { Role } from '@/types/rbac'
 
 const ROLES_COLLECTION = 'roles'
 

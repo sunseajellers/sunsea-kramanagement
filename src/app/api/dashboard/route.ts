@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return withAdmin(request, async (_request: NextRequest, userId: string) => {
         try {
             const [stats, tasks, kras, taskAnalytics, kraAnalytics] = await Promise.all([
-                getDashboardStats(userId),
+                getDashboardStats(),
                 (async () => {
                     const tasksSnap = await adminDb.collection('tasks').where('assignedTo', 'array-contains', userId).limit(5).get();
                     return tasksSnap.docs.map((doc) => {
@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
                         };
                     }).filter((kra: any) => kra.status === 'in_progress');
                 })(),
-                getTaskAnalytics(userId),
-                getKRAAnalytics(userId),
+                getTaskAnalytics(),
+                getKRAAnalytics(),
             ]);
 
             return NextResponse.json({

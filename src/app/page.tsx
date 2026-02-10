@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { signInWithEmail } from '@/lib/authService'
@@ -23,7 +23,7 @@ export default function LoginPage() {
         }
     }, [user, loading, router, getDefaultRoute])
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: FormEvent) => {
         e.preventDefault()
 
         if (!email || !password) {
@@ -81,8 +81,8 @@ export default function LoginPage() {
                         <span className="text-4xl font-black text-white tracking-tighter">JM</span>
                     </div>
                     <div className="text-center">
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">JewelMatrix</h1>
-                        <p className="text-slate-500 font-medium text-sm mt-1">Operational Excellence Platform</p>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">BOH</h1>
+                        <p className="text-slate-500 font-medium text-sm mt-1">Business Operations Hub</p>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 // src/lib/performanceService.ts
-import { Task, ScoringConfig, WeeklyReport } from '@/types';
+import { Task, ScoringConfig } from '@/types';
 import { db } from './firebase';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 /**
  * Performance Service

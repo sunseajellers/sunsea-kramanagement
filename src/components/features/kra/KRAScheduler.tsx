@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { KRATemplate, getAllKRATemplates, createKRATemplate, toggleKRATemplateStatus, deleteKRATemplate, generateScheduledKRAs } from '@/lib/kraAutomation'
 import { Trash2, Play, Plus, Loader2 } from 'lucide-react'
@@ -270,7 +270,7 @@ function CreateTemplateForm({ onClose, onSuccess }: { onClose: () => void; onSuc
     })
     const [saving, setSaving] = useState(false)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!user) return
         setSaving(true)

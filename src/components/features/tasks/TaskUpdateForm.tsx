@@ -62,8 +62,7 @@ export default function TaskUpdateForm({ onClose, onSaved }: Props) {
         (selectedItem as Task).dueDate && new Date((selectedItem as Task).dueDate!) < new Date() &&
         selectedItem.status !== 'completed'
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleSubmit = async () => {
         if (!selectedItemId) {
             setError('Please select a Task or KRA')
             return

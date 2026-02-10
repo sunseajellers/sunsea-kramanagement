@@ -3,13 +3,13 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
     children,
 }: {
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     const { user, loading, hasPermission } = useAuth();
     const router = useRouter();

@@ -64,7 +64,7 @@ export default function TaskDetailModal({ task, onClose, onUpdate }: Props) {
     const [loadingChecklist, setLoadingChecklist] = useState(false)
     const [linkedObjective, setLinkedObjective] = useState<any>(null)
     const [linkedKR, setLinkedKR] = useState<any>(null)
-    const [loadingLinks, setLoadingLinks] = useState(false)
+    const [, setLoadingLinks] = useState(false)
 
     useEffect(() => {
         setLocalTask(task)

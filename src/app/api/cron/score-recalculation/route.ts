@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
         console.log('[CRON] Starting score recalculation queue processing...');
 
         // Process up to 100 requests per run
-        const batchSize = 100;
         const result = await PerformanceServiceServer.processRecalculationQueue(100);
 
         console.log(`[CRON] Score recalculation completed: ${result.processed} processed`);

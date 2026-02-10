@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { Rajdhani, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/contexts/AuthContext'
@@ -21,8 +22,8 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-    title: 'Dot Panel - JewelMatrix',
-    description: 'JewelMatrix Admin Panel - Task Delegation & Performance Tracking',
+    title: 'BOH - Business Operations Hub',
+    description: 'Business Operations Hub - Unified Operational Excellence Platform',
 }
 
 export const viewport: Viewport = {
@@ -33,7 +34,7 @@ export const viewport: Viewport = {
 export default function RootLayout({
     children,
 }: {
-    children: React.ReactNode
+    children: ReactNode
 }) {
     return (
         <html lang="en" suppressHydrationWarning className={`${rajdhani.variable} ${jetbrainsMono.variable}`} data-scroll-behavior="smooth">

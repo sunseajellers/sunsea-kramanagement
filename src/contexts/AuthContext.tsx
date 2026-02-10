@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react'
 import { User } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -55,7 +55,7 @@ export const useAuth = () => {
     return context
 }
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }): React.ReactElement => {
+export const AuthProvider = ({ children }: { children: ReactNode }): React.ReactElement => {
     const [user, setUser] = useState<User | null>(null)
     const [userData, setUserData] = useState<UserData | null>(null)
     const [loading, setLoading] = useState(true)
@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }): React
         return isAdmin ? '/admin' : '/dashboard'
     }
 
-    const value = React.useMemo(() => ({
+    const value = useMemo(() => ({
         user,
         userData,
         loading,

@@ -8,88 +8,33 @@ import {
     BarChart3,
     Loader2,
     Shield,
-    Activity,
-    Ticket,
-    Target,
-    BookOpen,
     Users,
     ClipboardCheck,
-    History,
-    Award
+    Activity,
+    Target
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/features/notifications/NotificationBell';
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 
 const menuItems = [
-    {
-        href: '/admin',
-        label: 'Home',
-        icon: LayoutDashboard,
-    },
-    // Pillar 1: Strategy
-    {
-        href: '/admin/operations',
-        label: 'Strategy',
-        icon: ClipboardCheck,
-    },
-    {
-        href: '/admin/okr',
-        label: 'OKRs',
-        icon: Target,
-    },
-    // Pillar 2: Execution
-    {
-        href: '/admin/system',
-        label: 'Executing',
-        icon: LayoutDashboard, // Will check if there's a better one for tasks
-    },
-    // Pillar 3: Performance
-    {
-        href: '/admin/performance',
-        label: 'KPIs',
-        icon: Activity,
-    },
-    {
-        href: '/admin/governance',
-        label: 'Governance',
-        icon: Award,
-    },
-    // Support & Resources
-    {
-        href: '/admin/organization',
-        label: 'Team',
-        icon: Users,
-    },
-    {
-        href: '/admin/learning-hub',
-        label: 'Academy',
-        icon: BookOpen,
-    },
-    {
-        href: '/admin/helpdesk',
-        label: 'Support',
-        icon: Ticket,
-    },
-    {
-        href: '/admin/roles',
-        label: 'Access',
-        icon: Shield,
-    },
-    {
-        href: '/admin/activity-log',
-        label: 'Audit',
-        icon: History,
-    },
+    { href: '/admin', label: 'Hub', icon: LayoutDashboard },
+    { href: '/admin/crm', label: 'CRM', icon: Users },
+    { href: '/admin/sales', label: 'Sales', icon: BarChart3 },
+    { href: '/admin/staff', label: 'Staff', icon: ClipboardCheck },
+    { href: '/admin/analytics', label: 'Analytics', icon: Activity },
+    { href: '/admin/marketing', label: 'Marketing', icon: Target },
+    { href: '/admin/operations', label: 'Workflow', icon: LayoutDashboard },
+    { href: '/admin/security', label: 'Security', icon: Shield },
 ];
 
 export default function AdminLayout({
     children,
 }: {
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -110,7 +55,6 @@ export default function AdminLayout({
         }
     };
 
-    // Show loading state
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
@@ -128,28 +72,21 @@ export default function AdminLayout({
     if (!user) return null;
 
     return (
-        <div className="min-h-screen flex flex-col bg-background">
-            {/* Top Brand Bar */}
+        <div className="min-h-screen flex flex-col bg-background font-sans">
             <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
                 <div className="max-w-[1800px] mx-auto">
                     <div className="glass-panel px-6 py-3 flex items-center justify-between border-border shadow-xl shadow-primary/5">
-                        {/* Brand */}
                         <div className="flex items-center gap-10">
                             <Link href="/admin" className="flex items-center group">
                                 <div className="p-2.5 rounded-2xl bg-foreground group-hover:bg-primary transition-all duration-500 shadow-xl shadow-foreground/10">
                                     <Shield className="w-5 h-5 text-primary-foreground" />
                                 </div>
                                 <div className="ml-4 flex flex-col">
-                                    <span className="text-base font-bold tracking-tight text-foreground leading-none">
-                                        JewelMatrix
-                                    </span>
-                                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest mt-1">
-                                        Admin Panel
-                                    </span>
+                                    <span className="text-base font-bold tracking-tight text-foreground leading-none">BOH</span>
+                                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest mt-1">Operations Hub</span>
                                 </div>
                             </Link>
 
-                            {/* Unified Header Menu (lg and above) */}
                             <div className="hidden lg:flex items-center gap-1.5 bg-muted/30 p-1 rounded-xl border border-border/50">
                                 {menuItems.map((item) => {
                                     const isActive = item.href === '/admin'
@@ -174,7 +111,6 @@ export default function AdminLayout({
                             </div>
                         </div>
 
-                        {/* Right Actions */}
                         <div className="flex items-center gap-4">
                             <NotificationBell />
                             <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
@@ -190,8 +126,6 @@ export default function AdminLayout({
                 </div>
             </nav>
 
-
-            {/* Mobile Navigation Bar */}
             <div className="lg:hidden fixed top-[100px] left-0 right-0 z-40 px-6">
                 <div className="glass-panel overflow-x-auto p-1.5 scrollbar-none border-border shadow-lg shadow-primary/5">
                     <div className="flex items-center gap-1.5 whitespace-nowrap min-w-max">
@@ -219,7 +153,6 @@ export default function AdminLayout({
                 </div>
             </div>
 
-            {/* Main Content Area */}
             <main className="flex-1 pt-40 lg:pt-28 pb-16">
                 <div className="admin-container">
                     {children}
@@ -228,6 +161,3 @@ export default function AdminLayout({
         </div>
     );
 }
-
-
-// End of file

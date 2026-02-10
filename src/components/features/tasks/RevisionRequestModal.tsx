@@ -1,7 +1,7 @@
 // Simple modal for requesting task revision
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { requestTaskRevision } from '@/lib/revisionService'
 import toast from 'react-hot-toast'
@@ -26,7 +26,7 @@ export default function RevisionRequestModal({
     const [reason, setReason] = useState('')
     const [loading, setLoading] = useState(false)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
 
         if (!reason.trim()) {

@@ -1,9 +1,8 @@
 'use client'
 
-import React from 'react'
+import { FC } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Action, Permission } from '@/types/rbac'
-import { cn } from '@/lib/utils'
 
 interface PermissionMatrixProps {
     selectedPermissions: Permission[]
@@ -35,7 +34,7 @@ const ACTIONS: { id: Action; label: string }[] = [
  * 
  * A Sunsea-styled grid for selecting granular permissions.
  */
-export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
+export const PermissionMatrix: FC<PermissionMatrixProps> = ({
     selectedPermissions,
     onChange
 }) => {

@@ -1,14 +1,14 @@
 // src/components/ui/page-header.tsx
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface PageHeaderProps {
     title: string;
     description?: string;
     icon?: LucideIcon;
-    actions?: React.ReactNode;
+    actions?: ReactNode;
     breadcrumbs?: { label: string; href?: string }[];
 }
 
@@ -37,7 +37,7 @@ export function PageHeader({
                     ))}
                 </nav>
             )}
-            
+
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1">
                     {Icon && (
@@ -52,7 +52,7 @@ export function PageHeader({
                         )}
                     </div>
                 </div>
-                
+
                 {actions && (
                     <div className="flex items-center gap-2">
                         {actions}

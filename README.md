@@ -1,6 +1,6 @@
 # 💎 JewelMatrix: Enterprise Digital Operating System
 
-**Version 2.1.0 | Status: Production Ready | Last Updated: January 2026**
+**Version 2.2.0 | Status: Production Ready | Last Updated: February 2026**
 
 JewelMatrix is a high-performance, enterprise-grade **Digital Operating System (DOS)** designed to synchronize organizational strategy with daily tactical execution. It acts as a central nervous system for modern organizations, unifying **OKRs (Strategy)**, **Tasks (Execution)**, **Support (Operations)**, **Performance Analytics**, and **Continuous Measurement** into a single, cohesive, premium-designed platform.
 
@@ -870,6 +870,12 @@ JewelMatrix provides a comprehensive service layer with 40+ specialized services
 *   **[exportService.ts](src/lib/exportService.ts)**: CSV/PDF export functionality for reports and data dumps.
 *   **[pdfExportService.ts](src/lib/pdfExportService.ts)**: PDF generation for performance reports and documentation.
 
+#### Business & Growth
+*   **[crmService.ts](src/lib/crmService.ts)**: Customer management, portfolio tracking, and relationship analytics.
+*   **[marketingService.ts](src/lib/marketingService.ts)**: Campaign tracking, lead analytics, and channel performance metrics.
+*   **[salesService.ts](src/lib/salesService.ts)**: Sales pipeline management, deal tracking, and revenue forecasting.
+*   **[staffService.ts](src/lib/staffService.ts)**: Employee productivity tracking, attendance, and performance metrics.
+
 #### Admin & System
 *   **[adminService.ts](src/lib/adminService.ts)**: System health checks, settings management, and admin utilities.
 *   **[activityLogger.ts](src/lib/activityLogger.ts)**: Immutable audit trail logging for compliance.
@@ -1406,6 +1412,22 @@ npm run test              # Run tests once
 npm run test:watch       # Run tests in watch mode
 npm run test:coverage    # Generate coverage report
 ```
+
+### Build & Stability Standards
+
+To ensure 100% project stability, all changes must pass strict TypeScript compilation and production build checks.
+
+#### Verification Commands
+```bash
+# Full stability check: TypeScript + Production Build
+npx tsc --strict --noUnusedLocals --noUnusedParameters --noImplicitReturns --noEmit && npm run build
+```
+
+#### Standards
+*   **Zero-Error Tolerance**: `tsc` must return 0 errors before any merge.
+*   **Import Optimization**: Remove all unused imports including icons and types.
+*   **Property Safety**: Use optional chaining (`?.`) for all potentially undefined properties from services.
+*   **Layout Consistency**: Use `ReactNode` (from 'react') for all `children` props in layouts and guards.
 
 ### Git Workflow
 *   Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`.

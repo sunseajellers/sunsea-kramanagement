@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { createKRA, updateKRA } from '@/lib/kraService'
 import { KRA, KRAType, Priority, KRAStatus } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -101,7 +101,7 @@ export default function KRAForm({ initialData, onClose, onSaved }: Props) {
         }))
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!user) return
 

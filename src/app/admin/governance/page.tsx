@@ -20,7 +20,6 @@ import {
     ArrowDownRight,
     Clock,
     Zap,
-    Shield,
     Award
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';

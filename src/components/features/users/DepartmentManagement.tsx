@@ -1,43 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import {
-    Plus,
-    MoreHorizontal,
-    Search,
-    Building2,
-    ShieldCheck,
-    Trash2,
-    Edit2,
-    Loader2,
-} from 'lucide-react'
+import { useState, useEffect, FormEvent } from 'react'
+import { Plus, MoreHorizontal, Search, Trash2, Edit2, Loader2, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    DialogHeader,
-    DialogFooter,
-} from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogFooter } from '@/components/ui/dialog'
 import { getAllDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/lib/departmentService'
 import { getAllUsers } from '@/lib/userService'
 import { Department, User } from '@/types'
@@ -45,7 +15,7 @@ import { toast } from 'sonner'
 
 export default function DepartmentManagement() {
     const [departments, setDepartments] = useState<Department[]>([])
-    const [users, setUsers] = useState<User[]>([])
+    const [, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -78,7 +48,7 @@ export default function DepartmentManagement() {
         }
     }
 
-    const handleCreate = async (e: React.FormEvent) => {
+    const handleCreate = async (e: FormEvent) => {
         e.preventDefault()
         setSaving(true)
         try {
@@ -94,7 +64,7 @@ export default function DepartmentManagement() {
         }
     }
 
-    const handleUpdate = async (e: React.FormEvent) => {
+    const handleUpdate = async (e: FormEvent) => {
         e.preventDefault()
         if (!selectedDept) return
         setSaving(true)
@@ -239,8 +209,8 @@ export default function DepartmentManagement() {
                 ))}
             </div>
 
-            <Dialog open={isCreateModalOpen || isEditModalOpen} onOpenChange={(val) => {
-                if (!val) {
+            <Dialog open={isCreateModalOpen || isEditModalOpen} onOpenChange={(open) => {
+                if (!open) {
                     setIsCreateModalOpen(false)
                     setIsEditModalOpen(false)
                 }
@@ -265,7 +235,7 @@ export default function DepartmentManagement() {
                         <div className="space-y-4 sm:space-y-6">
                             <div className="flex items-center gap-3 mb-1 sm:mb-2">
                                 <div className="h-8 w-1 bg-primary rounded-full transition-all" />
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Group Details</h3>
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Group Details</h3>
                             </div>
 
                             <div className="grid grid-cols-1 gap-5">
